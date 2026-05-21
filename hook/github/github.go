@@ -12,8 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"hash"
 	"io"
-	"io/ioutil"
-	"net/http"
+		"net/http"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -27,7 +26,7 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 			logrus.Warnf("%s", string(debug.Stack()))
 		}
 	}()
-	data, err := ioutil.ReadAll(
+	data, err := io.ReadAll(
 		io.LimitReader(req.Body, 10000000),
 	)
 	if err != nil {
@@ -245,7 +244,7 @@ func convertPullRequestURL(u string) (*githubPullRequestURL, error) {
 		logrus.Errorf("github convertPullRequestURL Do err %v", err)
 		return nil, err
 	}
-	all, err := ioutil.ReadAll(res.Body)
+	all, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
 		logrus.Errorf("github convertPullRequestURL ReadAll err %v", err)

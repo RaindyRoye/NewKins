@@ -42,6 +42,18 @@ func regApi() {
 	if core.Debug {
 		comm.WebEgn.Use(util.MidAccessAllowFun)
 	}
+	// Health check endpoints
+	comm.WebEgn.GET("/healthz", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok", "version": comm.Version})
+	})
+	comm.WebEgn.GET("/readyz", func(c *gin.Context) {
+		if comm.Db != nil && comm.BCache != nil {
+			c.JSON(200, gin.H{"status": "ready", "db": "connected", "cache": "connected"})
+		} else {
+			c.JSON(503, gin.H{"status": "not_ready", "db": comm.Db != nil, "cache": comm.BCache != nil})
+		}
+	})
+
 	util.GinRegController(comm.WebEgn, &route.ApiController{})
 	util.GinRegController(comm.WebEgn, &route.ArtifactController{})
 	util.GinRegController(comm.WebEgn, &route.ArtPublicController{})

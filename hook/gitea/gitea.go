@@ -12,8 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"hash"
 	"io"
-	"io/ioutil"
-	"net/http"
+		"net/http"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -28,7 +27,7 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 		}
 	}()
 	logrus.Debugf("Gitea Parse ~")
-	data, err := ioutil.ReadAll(
+	data, err := io.ReadAll(
 		io.LimitReader(req.Body, 10000000),
 	)
 	if err != nil {

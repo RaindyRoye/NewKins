@@ -1,12 +1,12 @@
 package httpex
 
 import (
+	"io"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+		"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -51,7 +51,7 @@ func Posts(ul string, params *url.Values, timeout time.Duration, hds ...http.Hea
 		return 0, nil, err
 	}
 
-	bts, err := ioutil.ReadAll(res.Body)
+	bts, err := io.ReadAll(res.Body)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -85,7 +85,7 @@ func PostResult(ul string, params *url.Values, result interface{}, timeout time.
 	if err != nil {
 		return 0, nil, err
 	}
-	bts, err := ioutil.ReadAll(res.Body)
+	bts, err := io.ReadAll(res.Body)
 	if res.StatusCode != 200 {
 		return res.StatusCode, bts, fmt.Errorf("response err(code:%d):%s", res.StatusCode, string(bts))
 	}
@@ -102,7 +102,7 @@ func PostJSONResult(ul string, params interface{}, result interface{}, timeout t
 	if err != nil {
 		return 0, nil, err
 	}
-	bts, err := ioutil.ReadAll(res.Body)
+	bts, err := io.ReadAll(res.Body)
 	if res.StatusCode != 200 {
 		return res.StatusCode, bts, fmt.Errorf("response err(code:%d):%s", res.StatusCode, string(bts))
 	}

@@ -1,9 +1,9 @@
 package gitlabapi
 
 import (
+	"io"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+		"net/http"
 	"testing"
 )
 
@@ -14,7 +14,7 @@ func TestGiteeContents(t *testing.T) {
 		fmt.Println(fmt.Errorf("Gitee Api :%v err : %v", u, err))
 		return
 	}
-	all, err := ioutil.ReadAll(resp.Body)
+	all, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(fmt.Errorf("Gitee ReadAll :%v err : %v", u, err))
 		return
@@ -29,7 +29,7 @@ func TestGiteeCode(t *testing.T) {
 		fmt.Println(fmt.Errorf("Gitee Api :%v err : %v", u, err))
 		return
 	}
-	all, err := ioutil.ReadAll(resp.Body)
+	all, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(fmt.Errorf("Gitee ReadAll :%v err : %v", u, err))
 		return

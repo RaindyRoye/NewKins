@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func CreateToken(claims jwt.MapClaims, key string, tmout time.Duration) (string, error) {

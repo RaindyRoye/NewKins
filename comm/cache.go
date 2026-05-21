@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/boltdb/bolt"
+	"time"
+
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
-	"time"
+	bolt "go.etcd.io/bbolt"
 )
 
 var mainCacheBucket = []byte("mainCacheBucket")

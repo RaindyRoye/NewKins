@@ -6,14 +6,13 @@ import (
 	"time"
 
 	"github.com/gokins/gokins/engine"
-	"github.com/gokins/gokins/models"
+	"github.com/gokins/gokins/model"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/bean"
 	"github.com/gokins/gokins/comm"
-	"github.com/gokins/gokins/model"
-	"github.com/gokins/gokins/service"
+		"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"gopkg.in/yaml.v3"
@@ -60,7 +59,7 @@ func (PipelineController) orgPipelines(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "No Auth")
 		return
 	}
-	ls := make([]*models.TPipeline, 0)
+	ls := make([]*model.TPipeline, 0)
 	var err error
 	var page *bean.Page
 	//if comm.IsMySQL {
@@ -91,7 +90,7 @@ func (PipelineController) orgPipelines(c *gin.Context, m *hbtp.Map) {
 			v.Nick = usr.Nick
 			v.Avat = usr.Avatar
 		}
-		last := &models.RunBuild{}
+		last := &model.RunBuild{}
 		v.Buildln, _ = comm.Db.Where("pipeline_id=?", v.Id).Count(last)
 		if v.Buildln > 0 {
 			ok, _ = comm.Db.Where("pipeline_id=?", v.Id).OrderBy("created DESC").Get(last)
@@ -106,7 +105,7 @@ func (PipelineController) getPipelines(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 	lgusr := service.GetMidLgUser(c)
-	ls := make([]*models.TPipeline, 0)
+	ls := make([]*model.TPipeline, 0)
 	var err error
 	var page *bean.Page
 	//if comm.IsMySQL {
@@ -137,7 +136,7 @@ func (PipelineController) getPipelines(c *gin.Context, m *hbtp.Map) {
 			v.Nick = usr.Nick
 			v.Avat = usr.Avatar
 		}
-		last := &models.RunBuild{}
+		last := &model.RunBuild{}
 		v.Buildln, _ = comm.Db.Where("pipeline_id=?", v.Id).Count(last)
 		if v.Buildln > 0 {
 			ok, _ = comm.Db.Where("pipeline_id=?", v.Id).OrderBy("created DESC").Get(last)
@@ -341,7 +340,7 @@ func (PipelineController) info(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "No Auth")
 		return
 	}
-	pipe := &models.TPipelineInfo{}
+	pipe := &model.TPipelineInfo{}
 	ok, _ := comm.Db.Where("id=? and deleted != 1", id).Get(pipe)
 	if !ok {
 		c.String(404, "未找到流水线信息")
@@ -490,7 +489,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 	pipelineId := m.GetString("pipelineId")
 	pg, _ := m.GetInt("page")
 	usr := service.GetMidLgUser(c)
-	ls := make([]*models.TPipelineVersion, 0)
+	ls := make([]*model.TPipelineVersion, 0)
 	var page *bean.Page
 	var err error
 	if pipelineId != "" {
@@ -538,7 +537,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 	}
 
 	for _, v := range ls {
-		last := &models.RunBuild{}
+		last := &model.RunBuild{}
 		ok, _ := comm.Db.Where("pipeline_version_id=?", v.Id).OrderBy("created DESC").Get(last)
 		if ok {
 			v.Build = last
@@ -560,9 +559,9 @@ func (PipelineController) pipelineVersion(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "not found pv")
 		return
 	}
-	usr := &models.TUser{}
+	usr := &model.TUser{}
 	service.GetIdOrAid(pv.Uid, usr)
-	build := &models.RunBuild{}
+	build := &model.RunBuild{}
 	ok, _ = comm.Db.Where("pipeline_version_id=?", pv.Id).Get(build)
 	if !ok {
 		c.String(404, "not found build")

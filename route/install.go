@@ -1,8 +1,8 @@
 package route
 
 import (
-	"io/ioutil"
-	"net/http"
+	"os"
+		"net/http"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -151,7 +151,7 @@ func initConfig() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filepath.Join(comm.WorkPath, "app.yml"), bts, 0644)
+	return os.WriteFile(filepath.Join(comm.WorkPath, "app.yml"), bts, 0644)
 }
 
 func Install(c *gin.Context) {
@@ -478,7 +478,7 @@ func Install(c *gin.Context) {
 	</html>
 	`)
 	if core.Debug {
-		bs, err := ioutil.ReadFile("install.html")
+		bs, err := os.ReadFile("install.html")
 		if err == nil {
 			bts = bs
 		}

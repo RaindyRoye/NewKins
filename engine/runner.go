@@ -5,8 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"os"
+		"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -219,7 +218,7 @@ func (c *baseRunner) GetEnv(buildId, jobId, key string) (string, bool) {
 		return "", false
 	}
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, job.step.BuildId, common.PathJobs, job.step.Id)
-	bts, err := ioutil.ReadFile(filepath.Join(dir, "build.env"))
+	bts, err := os.ReadFile(filepath.Join(dir, "build.env"))
 	if err != nil {
 		return "", false
 	}
@@ -251,7 +250,7 @@ func (c *baseRunner) GenEnv(buildId, jobId string, env utils.EnvVal) error {
 		return err
 	}
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, job.step.BuildId, common.PathJobs, job.step.Id)
-	err = ioutil.WriteFile(filepath.Join(dir, "build.env"), bts, 0640)
+	err = os.WriteFile(filepath.Join(dir, "build.env"), bts, 0640)
 	return err
 }
 

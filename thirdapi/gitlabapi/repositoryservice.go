@@ -1,6 +1,7 @@
 package gitlabapi
 
 import (
+	"io"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -8,8 +9,7 @@ import (
 	"github.com/gokins/gokins/bean/thirdbean"
 	"github.com/gokins/gokins/thirdapi"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
-	"net/http"
+		"net/http"
 	"net/url"
 	"strconv"
 )
@@ -40,7 +40,7 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 		logrus.Errorf("Gitlab Api GetRepos url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, errors.New("Gitlab Api GetRepos failed ")
 	}
-	repos, err := ioutil.ReadAll(resp.Body)
+	repos, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	if err != nil {
 		logrus.Errorf("Gitlab Api GetRepos ReadAll err : %v", err)
@@ -88,7 +88,7 @@ func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookId string)
 		return err
 	}
 	defer resp.Body.Close()
-	all, err := ioutil.ReadAll(resp.Body)
+	all, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Errorf("Gitlab Api DeleteHooks url :%v ReadAll err : %v", parse, err)
 		return err
@@ -139,7 +139,7 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backUrl, pa
 		return nil, err
 	}
 	defer resp.Body.Close()
-	all, err := ioutil.ReadAll(resp.Body)
+	all, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Errorf("Gitlab Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
 		return nil, err
@@ -178,7 +178,7 @@ func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]
 		return nil, err
 	}
 	defer resp.Body.Close()
-	all, err := ioutil.ReadAll(resp.Body)
+	all, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Errorf("Gitlab Api GetRepoBranches url :%v ReadAll err : %v", parse, err)
 		return nil, err
@@ -217,7 +217,7 @@ func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, p
 		return nil, err
 	}
 	defer resp.Body.Close()
-	all, err := ioutil.ReadAll(resp.Body)
+	all, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Errorf("Gitlab Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
 		return nil, err

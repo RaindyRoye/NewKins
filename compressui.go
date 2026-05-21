@@ -1,3 +1,5 @@
+//go:build ignore
+
 package main
 
 import (
@@ -5,8 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gokins/core/utils"
-	"io/ioutil"
-	"os"
+		"os"
 	"path/filepath"
 )
 
@@ -32,12 +33,12 @@ func gengo() error {
 	if err != nil {
 		return err
 	}
-	bts, err := ioutil.ReadFile(zipfl)
+	bts, err := os.ReadFile(zipfl)
 	if err != nil {
 		return err
 	}
 	cont := base64.StdEncoding.EncodeToString(bts)
-	err = ioutil.WriteFile("comm/uis.go",
+	err = os.WriteFile("comm/uis.go",
 		[]byte(fmt.Sprintf("package comm\n\nconst StaticPkg = \"%s\"", cont)),
 		0644)
 	if err != nil {

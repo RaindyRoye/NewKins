@@ -15,7 +15,6 @@ import (
 	"github.com/gokins/gokins/bean"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
-	"github.com/gokins/gokins/models"
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
@@ -58,7 +57,7 @@ func (ArtifactController) orgList(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "No Auth")
 		return
 	}
-	ls := make([]*models.TArtifactory, 0)
+	ls := make([]*model.TArtifactory, 0)
 	var err error
 	var page *bean.Page
 	//if comm.IsMySQL {
@@ -106,7 +105,7 @@ func (ArtifactController) info(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "no permission")
 		return
 	}
-	usr := &models.TUser{}
+	usr := &model.TUser{}
 	ok = service.GetIdOrAid(arty.Uid, usr)
 	if !ok {
 		c.String(404, "not found user?")
@@ -229,7 +228,7 @@ func (ArtifactController) packageList(c *gin.Context, m *hbtp.Map) {
 	}
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
-	var ls []*models.TArtifactPackage
+	var ls []*model.TArtifactPackage
 	ses := comm.Db.Where("deleted!=1 and repo_id=?", repoId).OrderBy("aid DESC")
 	if q != "" {
 		qs := "%" + q + "%"
@@ -283,7 +282,7 @@ func (ArtifactController) versionList(c *gin.Context, m *hbtp.Map) {
 }
 func (ArtifactController) versionInfos(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
-	artv := &models.TArtifactVersion{}
+	artv := &model.TArtifactVersion{}
 	ok := service.GetIdOrAid(id, artv)
 	if !ok {
 		c.String(404, "Not Found")
@@ -318,7 +317,7 @@ func (ArtifactController) versionInfos(c *gin.Context, m *hbtp.Map) {
 func (ArtifactController) versionUrl(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	pth := m.GetString("path")
-	artv := &models.TArtifactVersion{}
+	artv := &model.TArtifactVersion{}
 	ok := service.GetIdOrAid(id, artv)
 	if !ok {
 		c.String(404, "Not Found")
@@ -352,7 +351,7 @@ func (ArtifactController) versionUrl(c *gin.Context, m *hbtp.Map) {
 }
 func (ArtifactController) versionSave(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
-	artv := &models.TArtifactVersion{}
+	artv := &model.TArtifactVersion{}
 	ok := service.GetIdOrAid(id, artv)
 	if !ok {
 		c.String(404, "Not Found")
@@ -387,7 +386,7 @@ func (ArtifactController) versionSave(c *gin.Context, m *hbtp.Map) {
 }
 func (ArtifactController) versionRm(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
-	artv := &models.TArtifactVersion{}
+	artv := &model.TArtifactVersion{}
 	ok := service.GetIdOrAid(id, artv)
 	if !ok {
 		c.String(404, "Not Found")

@@ -3,6 +3,8 @@ package migrates
 import (
 	"database/sql"
 	"errors"
+	"strings"
+
 	"github.com/gokins/gokins/comm"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
@@ -10,7 +12,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
-	"strings"
+	"github.com/sirupsen/logrus"
 )
 
 func UpMysqlMigrate(ul string) error {
@@ -19,20 +21,20 @@ func UpMysqlMigrate(ul string) error {
 	}
 	db, err := sql.Open("mysql", ul)
 	if err != nil {
-		//core.Log.Errorf("could not connect to postgres database... %v", err)
-		println("open db err:" + err.Error())
+		logrus.Errorf("mysql open db error: %v", err)
 		return err
 	}
-	err = db.Ping()
 	defer db.Close()
+	err = db.Ping()
 	if err != nil {
+		logrus.Errorf("mysql ping failed: %v", err)
 		return err
 	}
 
 	// Run migrations
 	driver, err := mysql.WithInstance(db, &mysql.Config{})
 	if err != nil {
-		println("could not start sql migration... ", err.Error())
+		logrus.Errorf("mysql migration driver error: %v", err)
 		return err
 	}
 	defer driver.Close()
@@ -73,20 +75,20 @@ func UpPostgresMigrate(ul string) error {
 	}
 	db, err := sql.Open("postgres", ul)
 	if err != nil {
-		//core.Log.Errorf("could not connect to postgres database... %v", err)
-		println("open db err:" + err.Error())
+		logrus.Errorf("postgres open db error: %v", err)
 		return err
 	}
-	err = db.Ping()
 	defer db.Close()
+	err = db.Ping()
 	if err != nil {
+		logrus.Errorf("postgres ping failed: %v", err)
 		return err
 	}
 
 	// Run migrations
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		println("could not start sql migration... ", err.Error())
+		logrus.Errorf("postgres migration driver error: %v", err)
 		return err
 	}
 	defer driver.Close()
@@ -126,20 +128,20 @@ func UpSqliteMigrate(ul string) error {
 	}
 	db, err := sql.Open("sqlite3", ul)
 	if err != nil {
-		//core.Log.Errorf("could not connect to postgres database... %v", err)
-		println("open db err:" + err.Error())
+		logrus.Errorf("sqlite open db error: %v", err)
 		return err
 	}
-	err = db.Ping()
 	defer db.Close()
+	err = db.Ping()
 	if err != nil {
+		logrus.Errorf("sqlite ping failed: %v", err)
 		return err
 	}
 
 	// Run migrations
 	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
 	if err != nil {
-		println("could not start sql migration... ", err.Error())
+		logrus.Errorf("sqlite migration driver error: %v", err)
 		return err
 	}
 	defer driver.Close()

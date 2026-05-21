@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/engine"
-	"github.com/gokins/gokins/models"
+	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/util"
 )
 
@@ -20,7 +20,7 @@ func (c *YmlController) Routes(g gin.IRoutes) {
 	g.POST("/plugins", util.GinReqParseJson(c.plugins))
 }
 func (YmlController) templates(c *gin.Context) {
-	ls := make([]*models.TYmlTemplate, 0)
+	ls := make([]*model.TYmlTemplate, 0)
 	comm.Db.Where("deleted != 1").Find(&ls)
 	c.JSON(200, ls)
 }
@@ -32,11 +32,11 @@ func (YmlController) plugins(c *gin.Context) {
     name: xxx
     commands:
       - echo hello world`
-	ls := make([]*models.TYmlPlugin, 0)
+	ls := make([]*model.TYmlPlugin, 0)
 	comm.Db.Where("deleted != 1").Find(&ls)
 	plugs := engine.Mgr.Plugins()
 	for i, v := range plugs {
-		ls = append(ls, &models.TYmlPlugin{
+		ls = append(ls, &model.TYmlPlugin{
 			Aid:        int64(1000 + i),
 			Name:       v,
 			YmlContent: strings.ReplaceAll(conts, "%PLUGIN_NAME%", v),

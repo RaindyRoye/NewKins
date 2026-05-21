@@ -7,8 +7,7 @@ import (
 	"github.com/gokins/gokins/hook"
 	"github.com/sirupsen/logrus"
 	"io"
-	"io/ioutil"
-	"net/http"
+		"net/http"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -22,7 +21,7 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 			logrus.Warnf("%s", string(debug.Stack()))
 		}
 	}()
-	data, err := ioutil.ReadAll(
+	data, err := io.ReadAll(
 		io.LimitReader(req.Body, 10000000),
 	)
 	if err != nil {

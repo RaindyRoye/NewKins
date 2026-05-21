@@ -1,19 +1,45 @@
-FROM golang:1.16.15-alpine3.15 AS builder
-# ENV GOPROXY=https://goproxy.cn,direct
-# RUN apk add git build-base && git clone https://gitee.com/gokins/gokins.git /build
-RUN apk add git build-base && git clone https://github.com/gokins/gokins.git /build
+# Stage 1: Build
+FROM golang:1.22-alpine AS builder
+
 WORKDIR /build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/gokins main.go
 
+# Install build dependencies
+RUN apk add --no-cache git build-base ca-certificates
 
-FROM alpine:latest AS final
+# Copy go mod files
+COPY go.mod go.sum ./
 
-ENV GOKINS_WORKPATH=/data/gokins
+# Download dependencies
+RUN go mod download
 
-RUN apk --no-cache add openssl ca-certificates curl git wget \
-    && rm -rf /var/cache/apk \
-    && mkdir -p /app /data/gokins
+# Copy source code
+COPY . .
 
-COPY --from=builder /build/bin/gokins /app
+# Build flags
+ARG GIT_COMMIT=unknown
+ARG BUILD_TIME=unknown
+ARG VERSION=1.3.7
+
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-X 'github.com/gokins/gokins/comm.Version=${VERSION}' \
+              -X 'github.com/gokins/gokins/comm.BuildTime=${BUILD_TIME}' \
+              -X 'github.com/gokins/gokins/comm.GitCommit=${GIT_COMMIT}'" \
+    -o /gokins ./cmd/...
+
+# Stage 2: Run
+FROM alpine:3.18
+
 WORKDIR /app
-ENTRYPOINT ["/app/gokins"]
+
+# Install runtime dependencies (git is needed for CI/CD operations)
+RUN apk add --no-cache ca-certificates git tzdata
+
+# Copy binary from builder
+COPY --from=builder /gokins /app/gokins
+
+# Expose port
+EXPOSE 8030
+
+# Run
+ENTRYPOINT ["/app/gokins", "run", "--web", ":8030"]

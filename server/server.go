@@ -2,8 +2,7 @@ package server
 
 import (
 	"errors"
-	"io/ioutil"
-	"os"
+		"os"
 	"path/filepath"
 	"time"
 
@@ -72,9 +71,9 @@ func Run() error {
 	return nil
 }
 func parseConfig() error {
-	bts, err := ioutil.ReadFile(filepath.Join(comm.WorkPath, "app.yml"))
+	bts, err := os.ReadFile(filepath.Join(comm.WorkPath, "app.yml"))
 	if err != nil {
-		bts, err = ioutil.ReadFile(filepath.Join(comm.WorkPath, "app.yaml"))
+		bts, err = os.ReadFile(filepath.Join(comm.WorkPath, "app.yaml"))
 	}
 	if err != nil {
 		return err

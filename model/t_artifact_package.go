@@ -15,4 +15,6 @@ type TArtifactPackage struct {
 	Updated     time.Time `xorm:"DATETIME" json:"updated"`
 	Deleted     int       `xorm:"INT(1)" json:"deleted"`
 	DeletedTime time.Time `xorm:"DATETIME" json:"deletedTime"`
+
+	Verln int64 `xorm:"-" json:"verln"`
 }

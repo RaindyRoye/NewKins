@@ -1,7 +1,13 @@
 package model
 
 import (
+	"os"
+	"path/filepath"
 	"time"
+
+	"github.com/gokins/core/common"
+	"github.com/gokins/gokins/comm"
+	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 )
 
 type TArtifactVersion struct {
@@ -16,4 +22,44 @@ type TArtifactVersion struct {
 	Preview   int       `xorm:"INT(1)" json:"preview"`
 	Created   time.Time `xorm:"DATETIME" json:"created"`
 	Updated   time.Time `xorm:"DATETIME" json:"updated"`
+
+	Files []hbtp.Map `xorm:"-" json:"files"`
+}
+
+func (c *TArtifactVersion) ReadFiles() error {
+	dir := filepath.Join(comm.WorkPath, common.PathArtifacts, c.Id)
+	fls, err := c.readDir(dir)
+	c.Files = fls
+	return err
+}
+func (c *TArtifactVersion) readDir(pth string) ([]hbtp.Map, error) {
+	var rts []hbtp.Map
+	fls, err := os.ReadDir(pth)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range fls {
+		if v.IsDir() {
+			fls, err := c.readDir(filepath.Join(pth, v.Name()))
+			if err != nil {
+				return nil, err
+			}
+			var chd []hbtp.Map
+			chd = append(chd, fls...)
+			rts = append(rts, hbtp.Map{
+				"name":  v.Name(),
+				"dir":   true,
+				"size":  0,
+				"child": chd,
+			})
+		} else {
+			info, _ := v.Info()
+			rts = append(rts, hbtp.Map{
+				"name": v.Name(),
+				"dir":  false,
+				"size": info.Size(),
+			})
+		}
+	}
+	return rts, nil
 }

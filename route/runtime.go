@@ -12,7 +12,6 @@ import (
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/engine"
 	"github.com/gokins/gokins/model"
-	"github.com/gokins/gokins/models"
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
@@ -37,18 +36,18 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 		c.String(500, "param err")
 		return
 	}
-	var ls []*models.RunStage
+	var ls []*model.RunStage
 	err := comm.Db.Where("pipeline_version_id=?", pvId).OrderBy("sort ASC").Find(&ls)
 	if err != nil {
 		c.String(500, "db err:"+err.Error())
 		return
 	}
 	ids := make([]string, 0)
-	stages := map[string]*models.RunStage{}
-	steps := map[string]*models.RunStep{}
+	stages := map[string]*model.RunStage{}
+	steps := map[string]*model.RunStep{}
 	for _, v := range ls {
 		v.Stepids = make([]string, 0)
-		var spls []*models.RunStep
+		var spls []*model.RunStep
 		err := comm.Db.Where("stage_id=?", v.Id).OrderBy("sort ASC").Find(&spls)
 		if err == nil {
 			ids = append(ids, v.Id)

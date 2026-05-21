@@ -1,17 +1,17 @@
 package route
 
 import (
-	"github.com/gokins/gokins/models"
-	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gokins/core/common"
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/bean"
 	"github.com/gokins/gokins/comm"
+	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
+	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 )
@@ -29,7 +29,7 @@ func (LoginController) info(c *gin.Context) {
 	rt := hbtp.Map{}
 	usr, ok := service.CurrUserCache(c)
 	if ok {
-		usrs := &models.TUser{}
+		usrs := &model.TUser{}
 		utils.Struct2Struct(usrs, usr)
 		rt["user"] = usrs
 		info, _ := service.GetUserInfo(usrs.Id)

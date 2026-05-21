@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gokins/core"
 	"github.com/gokins/gokins/comm"

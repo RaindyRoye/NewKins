@@ -8,7 +8,6 @@ import (
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/engine"
 	"github.com/gokins/gokins/model"
-	"github.com/gokins/gokins/models"
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
@@ -49,7 +48,7 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 			return
 		}
 	}
-	ls := make([]*models.TTrigger, 0)
+	ls := make([]*model.TTrigger, 0)
 	session := comm.Db.NewSession()
 	if pipelineId != "" {
 		session.And("pipeline_id = ?", pipelineId)
@@ -181,7 +180,7 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "No Auth")
 		return
 	}
-	var ls []*models.TTriggerRun
+	var ls []*model.TTriggerRun
 	session := comm.Db.Where("tid = ?", tt.Id).Desc("created")
 	page, err := comm.FindPage(session, &ls, pg)
 	if err != nil {
@@ -192,7 +191,7 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 		if v.Error != "" || v.PipeVersionId == "" {
 			continue
 		}
-		rpv := &models.RunPipelineVersion{}
+		rpv := &model.RunPipelineVersion{}
 		ok, _ = comm.Db.Table("t_pipeline_version").
 			Where("t_pipeline_version.id = ?", v.PipeVersionId).
 			Join("left", "t_build", "t_build.pipeline_version_id = ?", v.PipeVersionId).

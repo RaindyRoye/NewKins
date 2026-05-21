@@ -1,9 +1,9 @@
 package route
 
 import (
+	"io"
 	"errors"
-	"io/ioutil"
-
+	
 	"github.com/gin-gonic/gin"
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/core/utils"
@@ -31,7 +31,7 @@ func (ApiController) version(c *gin.Context) {
 	c.String(200, comm.Version)
 }
 func (ApiController) test(c *gin.Context) {
-	all, err := ioutil.ReadAll(c.Request.Body)
+	all, err := io.ReadAll(c.Request.Body)
 	y := &bean.Pipeline{}
 	err = yaml.Unmarshal(all, y)
 	if err != nil {

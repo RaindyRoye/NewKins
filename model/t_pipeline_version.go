@@ -19,4 +19,6 @@ type TPipelineVersion struct {
 	Deleted             int       `xorm:"default 0 TINYINT(1)" json:"deleted"`
 	PrNumber            int64     `xorm:"BIGINT(20)" json:"prNumber"`
 	RepoCloneUrl        string    `xorm:"VARCHAR(255)" json:"repoCloneUrl"`
+
+	Build *RunBuild `xorm:"-" json:"build"`
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
-	"github.com/gokins/gokins/models"
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
@@ -29,7 +28,7 @@ func (c *UserController) Routes(g gin.IRoutes) {
 	g.POST("/perm", util.GinReqParseJson(c.perm))
 }
 func (UserController) page(c *gin.Context, m *hbtp.Map) {
-	var ls []*models.TUser
+	var ls []*model.TUser
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 
@@ -101,7 +100,7 @@ func (UserController) info(c *gin.Context, m *hbtp.Map) {
 		c.String(500, "param err")
 		return
 	}
-	usr := &models.TUser{}
+	usr := &model.TUser{}
 	ok := service.GetIdOrAid(id, usr)
 	if !ok {
 		c.String(404, "not found user")
@@ -123,7 +122,7 @@ func (UserController) upinfo(c *gin.Context, m *hbtp.Map) {
 		c.String(500, "param err")
 		return
 	}
-	usr := &models.TUser{}
+	usr := &model.TUser{}
 	ok := service.GetIdOrAid(id, usr)
 	if !ok {
 		c.String(404, "not found user")
@@ -253,7 +252,7 @@ func (UserController) perm(c *gin.Context, m *hbtp.Map) {
 			return
 		}
 	}
-	usr := &models.TUser{}
+	usr := &model.TUser{}
 	ok := service.GetIdOrAid(id, usr)
 	if !ok {
 		c.String(404, "not found user")

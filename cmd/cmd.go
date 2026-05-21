@@ -11,52 +11,82 @@ import (
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/server"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
-	"gopkg.in/alecthomas/kingpin.v2"
+	"github.com/spf13/cobra"
 )
 
-var app = kingpin.New("gokins", "A golang workflow application.")
+var (
+	webHost   string
+	workPath  string
+	notUpPass bool
+	debugLog  bool
+)
+
+var rootCmd = &cobra.Command{
+	Use:   "gokins",
+	Short: "A golang workflow application.",
+	Long:  `Gokins is a lightweight CI/CD pipeline tool built with Go.`,
+}
+
+var runCmd = &cobra.Command{
+	Use:   "run",
+	Short: "Run process",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runProcess()
+	},
+}
+
+var daemonCmd = &cobra.Command{
+	Use:   "daemon",
+	Short: "Run process background",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runDaemon()
+	},
+}
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Show version",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("gokins version:" + comm.Version)
+	},
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringVar(&webHost, "web", ":8030", "gokins web host")
+	rootCmd.PersistentFlags().StringVarP(&workPath, "workdir", "w", "", "gokins work path")
+	rootCmd.PersistentFlags().BoolVar(&notUpPass, "nupass", false, "can't update password")
+
+	runCmd.Flags().BoolVar(&debugLog, "debug", false, "debug log show")
+
+	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(daemonCmd)
+	rootCmd.AddCommand(versionCmd)
+
+	rootCmd.SetVersionTemplate("gokins version: {{.Version}}\n")
+}
 
 func Run() {
-	regs()
-	kingpin.Version(comm.Version)
-	kingpin.MustParse(app.Parse(os.Args[1:]))
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
-func regs() {
-	app.Flag("web", "gokins web host").Default(":8030").StringVar(&comm.WebHost)
-	//app.Flag("hbtp", "gokins hbtp host").Default(":8031").StringVar(&comm.HbtpHost)
-	app.Flag("workdir", "gokins work path").Short('w').StringVar(&comm.WorkPath)
-	app.Flag("nupass", "can't update password").Hidden().BoolVar(&comm.NotUpPass)
-	cmd := app.Command("run", "run process").Default().
-		Action(run)
-	cmd.Flag("debug", "debug log show").BoolVar(&core.Debug)
 
-	cmd = app.Command("daemon", "run process background").
-		Action(start)
-
-	cmd = app.Command("version", "show verison").
-		Action(showvs)
-}
 func getArgs() []string {
-	args := make([]string, 0)
-	args = append(args, "run")
-	if comm.WebHost != "" {
-		args = append(args, "--web")
-		args = append(args, comm.WebHost)
+	args := []string{"run"}
+	if webHost != "" {
+		args = append(args, "--web", webHost)
 	}
-	/*if comm.HbtpHost != "" {
-		args = append(args, "--hbtp")
-		args = append(args, comm.HbtpHost)
-	}*/
-	if comm.WorkPath != "" {
-		args = append(args, "--workdir")
-		args = append(args, comm.WorkPath)
+	if workPath != "" {
+		args = append(args, "--workdir", workPath)
 	}
-	if comm.NotUpPass {
+	if notUpPass {
 		args = append(args, "--nupass")
 	}
 	return args
 }
-func start(pc *kingpin.ParseContext) error {
+
+func runDaemon() error {
 	args := getArgs()
 	fullpth, err := os.Executable()
 	if err != nil {
@@ -70,7 +100,14 @@ func start(pc *kingpin.ParseContext) error {
 	}
 	return nil
 }
-func run(pc *kingpin.ParseContext) error {
+
+func runProcess() error {
+	// Apply global flags to comm package
+	comm.WebHost = webHost
+	comm.WorkPath = workPath
+	comm.NotUpPass = notUpPass
+	core.Debug = debugLog
+
 	csig := make(chan os.Signal, 1)
 	signal.Notify(csig, os.Interrupt, syscall.SIGALRM)
 	go func() {
@@ -82,8 +119,4 @@ func run(pc *kingpin.ParseContext) error {
 		hbtp.Debug = true
 	}
 	return server.Run()
-}
-func showvs(pc *kingpin.ParseContext) error {
-	fmt.Println("gokins version:" + comm.Version)
-	return nil
 }

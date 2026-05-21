@@ -9,7 +9,6 @@ import (
 	"github.com/gokins/gokins/bean"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
-	"github.com/gokins/gokins/models"
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
@@ -38,7 +37,7 @@ func (c *OrgController) Routes(g gin.IRoutes) {
 }
 
 func (OrgController) list(c *gin.Context, m *hbtp.Map) {
-	var ls []*models.TOrgInfo
+	var ls []*model.TOrgInfo
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 
@@ -142,7 +141,7 @@ func (OrgController) info(c *gin.Context, m *hbtp.Map) {
 		c.String(500, "param err")
 		return
 	}
-	org := &models.TOrg{}
+	org := &model.TOrg{}
 	ok := service.GetIdOrAid(id, org)
 	if !ok || org.Deleted == 1 {
 		c.String(404, "not found org")
@@ -153,7 +152,7 @@ func (OrgController) info(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "no permission")
 		return
 	}
-	usr := &models.TUser{}
+	usr := &model.TUser{}
 	ok = service.GetIdOrAid(org.Uid, usr)
 	if !ok {
 		c.String(404, "not found user?")
@@ -187,7 +186,7 @@ func (OrgController) users(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "not found org")
 		return
 	}
-	var usrs []*models.TUserOrgInfo
+	var usrs []*model.TUserOrgInfo
 	//if comm.IsMySQL {
 	ses := comm.Db.SQL(`
 		select usr.*,urg.perm_adm,urg.perm_rw,urg.perm_exec,urg.perm_down,urg.created as join_time from t_user usr
@@ -201,8 +200,8 @@ func (OrgController) users(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	//}
-	var usrsAdm []*models.TUserOrgInfo
-	var usrsOtr []*models.TUserOrgInfo
+	var usrsAdm []*model.TUserOrgInfo
+	var usrsOtr []*model.TUserOrgInfo
 	for _, v := range usrs {
 		if v.PermAdm == 1 {
 			usrsAdm = append(usrsAdm, v)
@@ -289,7 +288,7 @@ func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "not found org")
 		return
 	}
-	usr := &models.TUser{}
+	usr := &model.TUser{}
 	ok := service.GetIdOrAid(uid, usr)
 	if !ok {
 		c.String(404, "not found user")
@@ -361,7 +360,7 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "not found org")
 		return
 	}
-	usr := &models.TUser{}
+	usr := &model.TUser{}
 	ok := service.GetIdOrAid(uid, usr)
 	if !ok {
 		c.String(404, "not found user")

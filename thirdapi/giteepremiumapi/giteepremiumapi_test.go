@@ -9,7 +9,7 @@ package giteepremiumapi
 //		fmt.Println(fmt.Errorf("GiteePremium Api :%v err : %v", u, err))
 //		return
 //	}
-//	all, err := ioutil.ReadAll(resp.Body)
+//	all, err := io.ReadAll(resp.Body)
 //	if err != nil {
 //		fmt.Println(fmt.Errorf("GiteePremium ReadAll :%v err : %v", u, err))
 //		return

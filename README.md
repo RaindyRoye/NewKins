@@ -1,94 +1,84 @@
+# Gokins: Lightweight CI/CD Pipeline Tool
 
-# Gokins文档
+![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go)
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
 
-# Gokins: *More Power*
+Gokins is a lightweight, self-hosted continuous integration and continuous delivery (CI/CD) tool built with Go and Vue. It supports pipeline-as-code via YAML configuration, integrates with major Git platforms (GitHub, GitLab, Gitee, Gitea), and provides artifact management.
 
-![](https://static01.imgkr.com/temp/5ca8a54f7d6544b6a2c740d5f559e5c4.jpg)
+## Features
 
-
-
-
-Gokins一款由Go语言和Vue编写的款轻量级、能够持续集成和持续交付的工具.
-
-* **持续集成和持续交付**
-
-  作为一个可扩展的自动化服务器，Gokins 可以用作简单的 CI 服务器，或者变成任何项目的持续交付中心
-
-* **简易安装**
-
-  Gokins 是一个基于 Go 的独立程序，可以立即运行，包含 Windows、Mac OS X 和其他类 Unix 操作系统。
-
-
-* **安全**
-
-  绝不收集任何用户、服务器信息，是一个独立安全的服务
-
-## Gokins 官网
-
-**地址 : http://gokins.cn**
-
-可在官网上获取最新的Gokins动态
-
-## Gokins Demo
-http://demo.gokins.cn
-```
-用户名: guest
-密码: 123456
-```
+- **Continuous Integration & Delivery** - Pipeline-as-code with YAML configuration, stages, and steps
+- **Multi-Platform Support** - Works on Linux, macOS, Windows
+- **Git Platform Integration** - GitHub, GitLab, Gitee, Gitea webhook support
+- **Artifact Management** - Store and manage build artifacts
+- **Self-Hosted** - No data collection, runs entirely on your infrastructure
+- **Database Support** - SQLite (default), MySQL, PostgreSQL
 
 ## Quick Start
 
-It is super easy to get started with your first project.
+### Prerequisites
 
+- Go 1.22+ (for building from source)
+- SQLite (built-in) or MySQL / PostgreSQL
 
-#### Step 1: 环境准备
+### Build from Source
 
-- Mysql
-- Dokcer(非必要)
-- Postgres（可选，[示例说明](document/gokins_postgres.md)）
-#### Step 2: 下载
-- Linux下载:http://bin.gokins.cn/gokins-linux-amd64
-- Mac下载:http://bin.gokins.cn/gokins-darwin-amd64
-> 我们推荐使用docker或者直接下载release的方式安装Gokins`
+```bash
+# Clone the repository
+git clone https://github.com/RaindyRoye/NewKins.git gokins
+cd gokins
 
-#### Step 3: 启动服务
+# Build
+make build
 
+# Run
+./gokins run
 ```
-./gokins
-``` 
 
-#### Step 3: 安装Gokins
+### Run with Docker
 
-访问 `http://localhost:8030`进入到Gokins安装页面
-
-![](https://static01.imgkr.com/temp/e484d9747dec43108325c22283abe39f.png)
-
-按页面上的提示填入信息
-
-默认管理员账号密码
-
-`username :gokins `
-
-`pwd: 123456 `
-
-#### Step 4:  新建流水线
-
-- 进入到流水线页面
-
-![](https://static01.imgkr.com/temp/ce383350056d4a63872b868c8f169c39.png)
-
-
-
-- 点击新建流水线
-
-![](https://static01.imgkr.com/temp/a3c2a870c9d94956bda2a685cc447077.png)
-
-
-填入流水线基本信息
-
-- 流水线配置
-
+```bash
+make docker
+docker run -p 8030:8030 -v ~/.gokins:/root/.gokins gokins:latest
 ```
+
+### Binary Download
+
+Pre-built binaries are available at the [Releases](https://github.com/RaindyRoye/NewKins/releases) page.
+
+### Installation
+
+After starting Gokins, visit `http://localhost:8030` to complete the installation wizard.
+
+Default admin credentials:
+- Username: `gokins`
+- Password: `123456`
+
+## Configuration
+
+Gokins reads configuration from `~/.gokins/app.yml`:
+
+```yaml
+datasource:
+  driver: sqlite3
+  url: ~/.gokins/gokins.db
+server:
+  runLimit: 5  # max concurrent builds
+```
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `GOKINS_WORKPATH` | Working directory for Gokins data | `~/.gokins` |
+| `GOKINS_NOTUPDATEPASS` | Prevent password updates | `false` |
+
+## Pipeline Configuration
+
+Define pipelines using YAML:
+
+```yaml
 version: 1.0
 vars:
 stages:
@@ -99,23 +89,87 @@ stages:
       - step: shell@sh
         displayName: test-build
         name: build
-        env:
         commands:
           - echo Hello World
-
 ```
 
-关于流水线配置的YML更多信息请访问 [YML文档](http://gokins.cn/%E5%B7%A5%E4%BD%9C%E6%B5%81%E8%AF%AD%E6%B3%95/)
+See the [YML Documentation](http://gokins.cn/工作流语法/) for full syntax reference.
 
+## Health Checks
 
-- 运行流水线
+Gokins provides health check endpoints for monitoring:
 
-![](https://static01.imgkr.com/temp/f002a22738644c8dbd40f0860c2bbb9e.png)
+- `GET /healthz` - Basic liveness check, returns version info
+- `GET /readyz` - Readiness check, verifies database and cache connectivity
 
+## CLI Commands
 
-`这里可以选择输入仓库分支或者commitSha,如果不填则为默认分支`
+```
+gokins [command]
 
-- 查看运行结果
+Available Commands:
+  completion  Generate shell autocompletion
+  daemon      Run as background daemon
+  help        Help about any command
+  run         Run in foreground
+  version     Show version info
 
-![](https://static01.imgkr.com/temp/681c8ea0a7dc45bcb9fe14234c5761be.png)
+Flags:
+  -h, --help             Help for gokins
+      --nupass           Prevent password updates
+      --web string       Web host (default ":8030")
+  -w, --workdir string   Working directory
+```
 
+## Project Structure
+
+```
+├── cmd/          - CLI entrypoint (Cobra commands)
+├── comm/         - Shared configuration and database access
+├── engine/       - Build engine and task scheduling
+├── model/        - Database models (XORM)
+├── route/        - HTTP route handlers (Gin controllers)
+├── server/       - Server initialization and setup
+├── service/      - Business logic layer
+├── hook/         - Webhook handlers (GitHub, GitLab, etc.)
+├── thirdapi/     - Third-party API clients
+├── util/         - Utility functions
+├── bean/         - Request/response DTOs
+├── migrates/     - Database migrations
+├── Makefile      - Build automation
+└── Dockerfile    - Multi-stage Docker build
+```
+
+## Development
+
+```bash
+# Run all tests
+make test
+
+# Run linter
+make lint
+
+# Format code
+make fmt
+
+# Clean build artifacts
+make clean
+```
+
+## Architecture
+
+Gokins uses:
+- **Gin** for HTTP routing
+- **XORM** for ORM/database operations
+- **bbolt** for embedded key-value cache
+- **Cobra** for CLI commands
+- **golang-migrate** for database migrations
+
+## Links
+
+- **Website**: http://gokins.cn
+- **Demo**: http://demo.gokins.cn (guest / 123456)
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.

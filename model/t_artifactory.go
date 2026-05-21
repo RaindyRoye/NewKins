@@ -19,4 +19,8 @@ type TArtifactory struct {
 	Updated     time.Time `xorm:"DATETIME" json:"updated"`
 	Deleted     int       `xorm:"INT(1)" json:"deleted"`
 	DeletedTime time.Time `xorm:"DATETIME" json:"deletedTime"`
+
+	Nick  string `xorm:"-" json:"nick"`
+	Avat  string `xorm:"-" json:"avat"`
+	Artln int64  `xorm:"-" json:"artln"`
 }
