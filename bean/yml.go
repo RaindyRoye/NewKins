@@ -37,10 +37,12 @@ type Stage struct {
 	Steps       []*Step `yaml:"steps,omitempty" json:"steps"`
 }
 
-/*type Input struct {
-	Value string `yaml:"value"`
-	Required bool `yaml:"required"`
-}*/
+/*
+	type Input struct {
+		Value string `yaml:"value"`
+		Required bool `yaml:"required"`
+	}
+*/
 type Step struct {
 	Step         string            `yaml:"step" json:"step"`
 	DisplayName  string            `yaml:"displayName,omitempty" json:"displayName"`
@@ -84,13 +86,12 @@ func (c *Pipeline) ToJson() ([]byte, error) {
 func (c *Pipeline) ConvertCmd() {
 	for _, stage := range c.Stages {
 		for _, step := range stage.Steps {
-			v := step.Commands
-			switch v.(type) {
+			switch v := step.Commands.(type) {
 			case string:
-				step.Commands = v.(string)
+				step.Commands = v
 			case []interface{}:
 				var ls []string
-				for _, v1 := range v.([]interface{}) {
+				for _, v1 := range v {
 					ls = append(ls, fmt.Sprintf("%v", v1))
 				}
 				step.Commands = ls
@@ -105,18 +106,18 @@ func (c *Pipeline) ConvertCmd() {
 
 func (c *Pipeline) Check() error {
 	stages := make(map[string]map[string]*Step)
-	if c.Stages == nil || len(c.Stages) <= 0 {
+	if len(c.Stages) <= 0 {
 		return errors.New("stages 为空")
 	}
 	for _, v := range c.Stages {
 		if v.Name == "" {
 			return errors.New("stages name 为空")
 		}
-		if v.Steps == nil || len(v.Steps) <= 0 {
+		if len(v.Steps) <= 0 {
 			return errors.New("step 为空")
 		}
 		if _, ok := stages[v.Name]; ok {
-			return errors.New(fmt.Sprintf("build stages.%s 重复", v.Name))
+			return fmt.Errorf("build stages.%s 重复", v.Name)
 		}
 		m := map[string]*Step{}
 		stages[v.Name] = m
@@ -128,7 +129,7 @@ func (c *Pipeline) Check() error {
 				return errors.New("step name 为空")
 			}
 			if _, ok := m[e.Name]; ok {
-				return errors.New(fmt.Sprintf("steps.%s 重复", e.Name))
+				return fmt.Errorf("steps.%s 重复", e.Name)
 			}
 			m[e.Name] = e
 		}

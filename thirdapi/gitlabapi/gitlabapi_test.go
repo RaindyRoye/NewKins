@@ -1,9 +1,9 @@
 package gitlabapi
 
 import (
-	"io"
 	"fmt"
-		"net/http"
+	"io"
+	"net/http"
 	"testing"
 )
 

@@ -1,9 +1,9 @@
 package route
 
 import (
-	"io"
 	"errors"
-	
+	"io"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/core/utils"
@@ -31,9 +31,9 @@ func (ApiController) version(c *gin.Context) {
 	c.String(200, comm.Version)
 }
 func (ApiController) test(c *gin.Context) {
-	all, err := io.ReadAll(c.Request.Body)
+	all, _ := io.ReadAll(c.Request.Body)
 	y := &bean.Pipeline{}
-	err = yaml.Unmarshal(all, y)
+	err := yaml.Unmarshal(all, y)
 	if err != nil {
 		c.JSON(200, gin.H{
 			"err": err,
@@ -72,7 +72,7 @@ func prebuild(b *runtime.Build) error {
 	if b == nil {
 		return errors.New("build is empty")
 	}
-	if b.Stages == nil || len(b.Stages) <= 0 {
+	if len(b.Stages) == 0 {
 		return errors.New("stages is empty")
 	}
 	pipelineId := utils.NewXid()

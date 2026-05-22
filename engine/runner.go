@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-		"os"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -41,8 +41,8 @@ func (c *baseRunner) PullJob(name string, plugs []string) (*runners.RunJob, erro
 	}
 	return nil, errors.New("not found")
 }
-func (c *baseRunner) CheckCancel(buildId string) bool {
-	v, ok := Mgr.buildEgn.Get(buildId)
+func (c *baseRunner) CheckCancel(buildID string) bool {
+	v, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return true
 	}
@@ -61,8 +61,8 @@ func (c *baseRunner) Update(m *runners.UpdateJobInfo) error {
 	return nil
 }
 
-func (c *baseRunner) UpdateCmd(buildId, jobId, cmdId string, fs, code int) error {
-	tsk, ok := Mgr.buildEgn.Get(buildId)
+func (c *baseRunner) UpdateCmd(buildID, jobId, cmdId string, fs, code int) error {
+	tsk, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return errors.New("not found build")
 	}
@@ -79,8 +79,8 @@ func (c *baseRunner) UpdateCmd(buildId, jobId, cmdId string, fs, code int) error
 	tsk.UpJobCmd(cmd, fs, code)
 	return nil
 }
-func (c *baseRunner) PushOutLine(buildId, jobId, cmdId, bs string, iserr bool) error {
-	tsk, ok := Mgr.buildEgn.Get(buildId)
+func (c *baseRunner) PushOutLine(buildID, jobId, cmdId, bs string, iserr bool) error {
+	tsk, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return errors.New("not found build")
 	}
@@ -101,21 +101,27 @@ func (c *baseRunner) PushOutLine(buildId, jobId, cmdId, bs string, iserr bool) e
 
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, job.step.BuildId, common.PathJobs, job.step.Id)
 	logpth := filepath.Join(dir, "build.log")
-	os.MkdirAll(dir, 0755)
+	if err = os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
 	logfl, err := os.OpenFile(logpth, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
 	if err != nil {
 		return err
 	}
 	defer logfl.Close()
-	logfl.Write(bts)
-	logfl.WriteString("\n")
+	if _, err := logfl.Write(bts); err != nil {
+		return err
+	}
+	if _, err := logfl.WriteString("\n"); err != nil {
+		return err
+	}
 	return nil
 }
-func (c *baseRunner) FindJobId(buildId, stgNm, stpNm string) (string, bool) {
-	if buildId == "" || stgNm == "" || stpNm == "" {
+func (c *baseRunner) FindJobId(buildID, stgNm, stpNm string) (string, bool) {
+	if buildID == "" || stgNm == "" || stpNm == "" {
 		return "", false
 	}
-	build, ok := Mgr.buildEgn.Get(buildId)
+	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return "", false
 	}
@@ -135,11 +141,11 @@ func (c *baseRunner) FindJobId(buildId, stgNm, stpNm string) (string, bool) {
 	return "", false
 }
 
-func (c *baseRunner) ReadDir(fs int, buildId string, pth string) ([]*runners.DirEntry, error) {
-	if buildId == "" || pth == "" {
+func (c *baseRunner) ReadDir(fs int, buildID string, pth string) ([]*runners.DirEntry, error) {
+	if buildID == "" || pth == "" {
 		return nil, errors.New("param err")
 	}
-	build, ok := Mgr.buildEgn.Get(buildId)
+	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return nil, errors.New("not found build")
 	}
@@ -172,11 +178,11 @@ func (c *baseRunner) ReadDir(fs int, buildId string, pth string) ([]*runners.Dir
 	}
 	return ls, nil
 }
-func (c *baseRunner) ReadFile(fs int, buildId string, pth string, start int64) (int64, io.ReadCloser, error) {
-	if buildId == "" || pth == "" {
+func (c *baseRunner) ReadFile(fs int, buildID string, pth string, start int64) (int64, io.ReadCloser, error) {
+	if buildID == "" || pth == "" {
 		return 0, nil, errors.New("param err")
 	}
-	build, ok := Mgr.buildEgn.Get(buildId)
+	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return 0, nil, errors.New("not found build")
 	}
@@ -200,16 +206,18 @@ func (c *baseRunner) ReadFile(fs int, buildId string, pth string, start int64) (
 		return 0, nil, err
 	}
 	if start > 0 {
-		fl.Seek(start, io.SeekStart)
+		if _, err := fl.Seek(start, io.SeekStart); err != nil {
+			return 0, nil, err
+		}
 	}
 	return stat.Size(), fl, nil
 }
 
-func (c *baseRunner) GetEnv(buildId, jobId, key string) (string, bool) {
+func (c *baseRunner) GetEnv(buildID, jobId, key string) (string, bool) {
 	if jobId == "" || key == "" {
 		return "", false
 	}
-	tsk, ok := Mgr.buildEgn.Get(buildId)
+	tsk, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return "", false
 	}
@@ -227,17 +235,17 @@ func (c *baseRunner) GetEnv(buildId, jobId, key string) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	switch v.(type) {
+	switch val := v.(type) {
 	case string:
-		return v.(string), true
+		return val, true
 	}
 	return fmt.Sprintf("%v", v), true
 }
-func (c *baseRunner) GenEnv(buildId, jobId string, env utils.EnvVal) error {
+func (c *baseRunner) GenEnv(buildID, jobId string, env utils.EnvVal) error {
 	if jobId == "" || env == nil {
 		return errors.New("param err")
 	}
-	tsk, ok := Mgr.buildEgn.Get(buildId)
+	tsk, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return errors.New("not found build")
 	}
@@ -254,11 +262,11 @@ func (c *baseRunner) GenEnv(buildId, jobId string, env utils.EnvVal) error {
 	return err
 }
 
-func (c *baseRunner) StatFile(fs int, buildId, jobId string, dir, pth string) (*runners.FileStat, error) {
+func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*runners.FileStat, error) {
 	if jobId == "" || pth == "" {
 		return nil, errors.New("param err")
 	}
-	build, ok := Mgr.buildEgn.Get(buildId)
+	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return nil, errors.New("not found build")
 	}
@@ -287,11 +295,11 @@ func (c *baseRunner) StatFile(fs int, buildId, jobId string, dir, pth string) (*
 		Size:  stat.Size(),
 	}, err
 }
-func (c *baseRunner) UploadFile(fs int, buildId, jobId string, dir, pth string, start int64) (io.WriteCloser, error) {
+func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, start int64) (io.WriteCloser, error) {
 	if jobId == "" || pth == "" {
 		return nil, errors.New("param err")
 	}
-	build, ok := Mgr.buildEgn.Get(buildId)
+	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return nil, errors.New("not found build")
 	}
@@ -311,27 +319,32 @@ func (c *baseRunner) UploadFile(fs int, buildId, jobId string, dir, pth string, 
 		return nil, errors.New("path param err")
 	}
 	dirs := filepath.Dir(pths)
-	os.MkdirAll(dirs, 0750)
+	if err := os.MkdirAll(dirs, 0750); err != nil {
+		return nil, err
+	}
 	fl, err := os.OpenFile(pths, os.O_CREATE|os.O_RDWR, 0640)
 	if err != nil {
 		return nil, err
 	}
 	if start > 0 {
-		fl.Seek(start, io.SeekStart)
+		if _, err := fl.Seek(start, io.SeekStart); err != nil {
+			_ = fl.Close()
+			return nil, err
+		}
 	}
 	return fl, nil
 }
-func (c *baseRunner) FindArtVersionId(buildId, idnt string, names string) (string, error) {
+func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (string, error) {
 	tnms := strings.Split(strings.TrimSpace(names), "@")
 	name := tnms[0]
 	vers := ""
 	if len(tnms) > 1 {
 		vers = tnms[1]
 	}
-	if buildId == "" || idnt == "" || name == "" {
+	if buildID == "" || idnt == "" || name == "" {
 		return "", errors.New("param err")
 	}
-	build, ok := Mgr.buildEgn.Get(buildId)
+	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return "", errors.New("not found build")
 	}
@@ -374,12 +387,12 @@ func (c *baseRunner) FindArtVersionId(buildId, idnt string, names string) (strin
 	}
 	return artv.Id, nil
 }
-func (c *baseRunner) NewArtVersionId(buildId, idnt string, name string) (string, error) {
+func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string, error) {
 	name = strings.Split(strings.TrimSpace(name), "@")[0]
-	if buildId == "" || idnt == "" || name == "" {
+	if buildID == "" || idnt == "" || name == "" {
 		return "", errors.New("param err")
 	}
-	build, ok := Mgr.buildEgn.Get(buildId)
+	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return "", errors.New("not found build")
 	}

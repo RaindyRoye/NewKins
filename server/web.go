@@ -119,7 +119,9 @@ func midUiHandle(c *gin.Context) {
 		if n <= 0 {
 			break
 		}
-		c.Writer.Write(bts[:n])
+		if _, werr := c.Writer.Write(bts[:n]); werr != nil {
+			break
+		}
 		if err != nil {
 			break
 		}

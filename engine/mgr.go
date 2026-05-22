@@ -60,6 +60,8 @@ func Start() error {
 	}()
 	return nil
 }
+
+//nolint:unused // Reserved for future use
 func (c *Manager) run() {
 	defer func() {
 		if err := recover(); err != nil {

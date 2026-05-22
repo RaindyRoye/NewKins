@@ -24,7 +24,7 @@ func UpMysqlMigrate(ul string) error {
 		logrus.Errorf("mysql open db error: %v", err)
 		return err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	err = db.Ping()
 	if err != nil {
 		logrus.Errorf("mysql ping failed: %v", err)
@@ -37,7 +37,7 @@ func UpMysqlMigrate(ul string) error {
 		logrus.Errorf("mysql migration driver error: %v", err)
 		return err
 	}
-	defer driver.Close()
+	defer func() { _ = driver.Close() }()
 	var nms []string
 	tms := comm.AssetNames()
 	for _, v := range tms {
@@ -52,17 +52,17 @@ func UpMysqlMigrate(ul string) error {
 	if err != nil {
 		return err
 	}
-	defer sc.Close()
+	defer func() { _ = sc.Close() }()
 	mgt, err := migrate.NewWithInstance(
 		"bindata", sc,
 		"mysql", driver)
 	if err != nil {
 		return err
 	}
-	defer mgt.Close()
+	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
 	if err != nil && err != migrate.ErrNoChange {
-		mgt.Down()
+		_ = mgt.Down()
 		return err
 	}
 
@@ -78,7 +78,7 @@ func UpPostgresMigrate(ul string) error {
 		logrus.Errorf("postgres open db error: %v", err)
 		return err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	err = db.Ping()
 	if err != nil {
 		logrus.Errorf("postgres ping failed: %v", err)
@@ -91,7 +91,7 @@ func UpPostgresMigrate(ul string) error {
 		logrus.Errorf("postgres migration driver error: %v", err)
 		return err
 	}
-	defer driver.Close()
+	defer func() { _ = driver.Close() }()
 	var nms []string
 	tms := comm.AssetNames()
 	for _, v := range tms {
@@ -106,17 +106,17 @@ func UpPostgresMigrate(ul string) error {
 	if err != nil {
 		return err
 	}
-	defer sc.Close()
+	defer func() { _ = sc.Close() }()
 	mgt, err := migrate.NewWithInstance(
 		"bindata", sc,
 		"postgres", driver)
 	if err != nil {
 		return err
 	}
-	defer mgt.Close()
+	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
 	if err != nil && err != migrate.ErrNoChange {
-		mgt.Down()
+		_ = mgt.Down()
 		return err
 	}
 
@@ -131,7 +131,7 @@ func UpSqliteMigrate(ul string) error {
 		logrus.Errorf("sqlite open db error: %v", err)
 		return err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	err = db.Ping()
 	if err != nil {
 		logrus.Errorf("sqlite ping failed: %v", err)
@@ -144,7 +144,7 @@ func UpSqliteMigrate(ul string) error {
 		logrus.Errorf("sqlite migration driver error: %v", err)
 		return err
 	}
-	defer driver.Close()
+	defer func() { _ = driver.Close() }()
 	var nms []string
 	tms := comm.AssetNames()
 	for _, v := range tms {
@@ -159,17 +159,17 @@ func UpSqliteMigrate(ul string) error {
 	if err != nil {
 		return err
 	}
-	defer sc.Close()
+	defer func() { _ = sc.Close() }()
 	mgt, err := migrate.NewWithInstance(
 		"bindata", sc,
 		"sqlite3", driver)
 	if err != nil {
 		return err
 	}
-	defer mgt.Close()
+	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
 	if err != nil && err != migrate.ErrNoChange {
-		mgt.Down()
+		_ = mgt.Down()
 		return err
 	}
 

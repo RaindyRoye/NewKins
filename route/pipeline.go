@@ -12,7 +12,7 @@ import (
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/bean"
 	"github.com/gokins/gokins/comm"
-		"github.com/gokins/gokins/service"
+	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"gopkg.in/yaml.v3"
@@ -167,8 +167,11 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	y := &bean.Pipeline{}
-	err := yaml.Unmarshal([]byte(content), y)
-	err = y.Check()
+	if err := yaml.Unmarshal([]byte(content), y); err != nil {
+		c.String(500, "yaml parse err:"+err.Error())
+		return
+	}
+	err := y.Check()
 	if err != nil {
 		c.String(500, "yaml Check err:"+err.Error())
 		return
@@ -287,7 +290,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 		c.String(500, "db err:"+err.Error())
 		return
 	}
-	if npipe.Vars != nil && len(npipe.Vars) > 0 {
+	if len(npipe.Vars) > 0 {
 		for _, v := range npipe.Vars {
 			pipelineVar := &model.TPipelineVar{}
 			err = utils.Struct2Struct(pipelineVar, v)

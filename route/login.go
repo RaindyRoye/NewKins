@@ -5,15 +5,15 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/gokins/core/common"
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/bean"
 	"github.com/gokins/gokins/comm"
-	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
+	"github.com/golang-jwt/jwt/v5"
+	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 )
 
 type LoginController struct{}
@@ -30,7 +30,7 @@ func (LoginController) info(c *gin.Context) {
 	usr, ok := service.CurrUserCache(c)
 	if ok {
 		usrs := &model.TUser{}
-		utils.Struct2Struct(usrs, usr)
+		_ = utils.Struct2Struct(usrs, usr)
 		rt["user"] = usrs
 		info, _ := service.GetUserInfo(usrs.Id)
 		rt["info"] = info
@@ -85,5 +85,5 @@ func (LoginController) login(c *gin.Context, m *bean.LoginReq) {
 	c.JSON(200, rt)
 
 	usr.LoginTime = time.Now()
-	comm.Db.Cols("login_time").Where("id=?", usr.Id).Update(usr)
+	_, _ = comm.Db.Cols("login_time").Where("id=?", usr.Id).Update(usr)
 }

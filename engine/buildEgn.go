@@ -2,14 +2,15 @@ package engine
 
 import (
 	"container/list"
+	"runtime/debug"
+	"sync"
+	"time"
+
 	"github.com/gokins/core/common"
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/gokins/comm"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
-	"runtime/debug"
-	"sync"
-	"time"
 )
 
 type BuildEngine struct {
@@ -52,19 +53,19 @@ func (c *BuildEngine) init() {
 	}*/
 
 	cont := "server restart"
-	comm.Db.Exec(
+	_, _ = comm.Db.Exec(
 		"update `t_build` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	)
-	comm.Db.Exec(
+	_, _ = comm.Db.Exec(
 		"update `t_stage` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	)
-	comm.Db.Exec(
+	_, _ = comm.Db.Exec(
 		"update `t_step` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	)
-	comm.Db.Exec(
+	_, _ = comm.Db.Exec(
 		"update `t_cmd_line` set `status`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	)

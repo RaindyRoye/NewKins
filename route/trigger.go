@@ -2,6 +2,8 @@ package route
 
 import (
 	"encoding/json"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/bean"
@@ -11,7 +13,6 @@ import (
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
-	"time"
 )
 
 type TriggerController struct{}
@@ -120,7 +121,10 @@ func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
 		}
 	}
 	if tt.Types == "timer" {
-		engine.Mgr.TimerEng().Refresh(tt.Id)
+		if err := engine.Mgr.TimerEng().Refresh(tt.Id); err != nil {
+			c.String(500, "timer refresh err:"+err.Error())
+			return
+		}
 	}
 	c.JSON(200, "ok")
 }

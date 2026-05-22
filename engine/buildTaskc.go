@@ -39,7 +39,7 @@ func (c *BuildTask) check() bool {
 			}
 		} */
 	}
-	if c.build.Stages == nil || len(c.build.Stages) <= 0 {
+	if len(c.build.Stages) <= 0 {
 		c.build.Event = common.BuildEventCheckParam
 		c.build.Error = "build Stages is empty"
 		return false
@@ -56,7 +56,7 @@ func (c *BuildTask) check() bool {
 			c.build.Error = "build Stage name is empty"
 			return false
 		}
-		if v.Steps == nil || len(v.Steps) <= 0 {
+		if len(v.Steps) <= 0 {
 			c.build.Event = common.BuildEventCheckParam
 			c.build.Error = "build Stages is empty"
 			return false
@@ -224,7 +224,7 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 		}
 		_, err = comm.Db.InsertOne(cmd)
 		if err != nil {
-			comm.Db.Where("build_id=? and step_id=?", cmd.BuildId, cmd.StepId).Delete(cmd)
+			_, _ = comm.Db.Where("build_id=? and step_id=?", cmd.BuildId, cmd.StepId).Delete(cmd)
 			return err
 		}
 	}
@@ -248,36 +248,31 @@ func (c *BuildTask) gencmds(runjb *runners.RunJob, cmds []interface{}) (rterr er
 		}
 	}()
 	for _, v := range cmds {
-		switch v.(type) {
+		switch val := v.(type) {
 		case string:
-			//gid := utils.NewXid()
-			//grp:=&hbtpBean.CmdGroupJson{Id: utils.NewXid()}
-			c.appendcmds(runjb, v.(string))
+			c.appendcmds(runjb, val)
 		case []interface{}:
-			//gid := utils.NewXid()
-			for _, v1 := range v.([]interface{}) {
+			for _, v1 := range val {
 				c.appendcmds(runjb, fmt.Sprintf("%v", v1))
 			}
 		case map[interface{}]interface{}:
-			for _, v1 := range v.(map[interface{}]interface{}) {
-				//gid := utils.NewXid()
-				switch v1.(type) {
+			for _, v1 := range val {
+				switch tv := v1.(type) {
 				case string:
-					c.appendcmds(runjb, fmt.Sprintf("%v", v1))
+					c.appendcmds(runjb, tv)
 				case []interface{}:
-					for _, v2 := range v1.([]interface{}) {
+					for _, v2 := range tv {
 						c.appendcmds(runjb, fmt.Sprintf("%v", v2))
 					}
 				}
 			}
 		case map[string]interface{}:
-			for _, v1 := range v.(map[string]interface{}) {
-				//gid := utils.NewXid()
-				switch v1.(type) {
+			for _, v1 := range val {
+				switch tv := v1.(type) {
 				case string:
-					c.appendcmds(runjb, fmt.Sprintf("%v", v1))
+					c.appendcmds(runjb, tv)
 				case []interface{}:
-					for _, v2 := range v1.([]interface{}) {
+					for _, v2 := range tv {
 						c.appendcmds(runjb, fmt.Sprintf("%v", v2))
 					}
 				}

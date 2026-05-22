@@ -2,7 +2,7 @@ package server
 
 import (
 	"errors"
-		"os"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -28,7 +28,9 @@ func Run() error {
 
 	logrus.Infof("gokins Run workpath:%s", comm.WorkPath)
 
-	os.MkdirAll(comm.WorkPath, 0750)
+	if err := os.MkdirAll(comm.WorkPath, 0750); err != nil {
+		logrus.Warnf("create work path err: %v", err)
+	}
 	core.InitLog(comm.WorkPath)
 	go runWeb()
 	time.Sleep(time.Millisecond * 10)
@@ -53,7 +55,7 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-	defer comm.BCache.Close()
+	defer func() { _ = comm.BCache.Close() }()
 
 	regApi()
 	comm.Installed = true

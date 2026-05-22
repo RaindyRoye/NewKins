@@ -1,6 +1,9 @@
 package route
 
 import (
+	"strings"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
@@ -8,8 +11,6 @@ import (
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
-	"strings"
-	"time"
 )
 
 type UserController struct{}
@@ -106,7 +107,7 @@ func (UserController) info(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "not found user")
 		return
 	}
-	uinfo, ok := service.GetUserInfo(usr.Id)
+	uinfo, _ := service.GetUserInfo(usr.Id)
 	c.JSON(200, hbtp.Map{
 		"user": usr,
 		"info": uinfo,

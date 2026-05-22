@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gokins/gokins/hook"
-	"github.com/sirupsen/logrus"
 	"io"
-		"net/http"
+	"net/http"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gokins/gokins/hook"
+	"github.com/sirupsen/logrus"
 )
 
 func Parse(req *http.Request, secret string) (hook.WebHook, error) {
@@ -28,18 +29,18 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 		return nil, err
 	}
 	var wb hook.WebHook
-	switch req.Header.Get(hook.GITEE_EVENT) {
-	case hook.GITEE_EVENT_PUSH:
+	switch req.Header.Get(hook.GiteeEvent) {
+	case hook.GiteeEventPush:
 		wb, err = parsePushHook(data)
-	case hook.GITEE_EVENT_NOTE:
+	case hook.GiteeEventNote:
 		wb, err = parseCommentHook(data)
-	case hook.GITEE_EVENT_PR:
+	case hook.GiteeEventPR:
 		wb, err = parsePullRequestHook(data)
 	// case "pull_request_review_comment":
 	// case "issues":
 	// case "issue_comment":
 	default:
-		return nil, errors.New(fmt.Sprintf("hook含有未知的header:%v", req.Header.Get(hook.GITEE_EVENT)))
+		return nil, fmt.Errorf("hook含有未知的header:%v", req.Header.Get(hook.GiteeEvent))
 	}
 	if err != nil {
 		return nil, err
@@ -1184,8 +1185,8 @@ type giteeCommentHook struct {
 	} `json:"sender"`
 	Url           string      `json:"url"`
 	Note          string      `json:"note"`
-	NoteableType  string      `json:"noteable_type"`
-	NoteableId    int         `json:"noteable_id"`
+	NoteableType  string      `json:"noteable_type"` //nolint:misspell // Gitee/GitLab API field name
+	NoteableId    int         `json:"noteable_id"`   //nolint:misspell // Gitee/GitLab API field name
 	Title         string      `json:"title"`
 	PerIid        string      `json:"per_iid"`
 	ShortCommitId interface{} `json:"short_commit_id"`

@@ -1,11 +1,12 @@
 package giteeapi
 
 import (
-	"github.com/gokins/gokins/thirdapi"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/gokins/gokins/thirdapi"
 )
 
 func New(uri string) (*thirdapi.Client, error) {

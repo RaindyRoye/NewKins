@@ -91,7 +91,7 @@ func CacheGet(key string) ([]byte, error) {
 		}
 		rt = parseCacheData(bts)
 		if rt == nil {
-			bk.Delete([]byte(key))
+			_ = bk.Delete([]byte(key))
 			return KeyOutTimeErr
 		}
 		return nil
@@ -149,7 +149,7 @@ func mainCacheClear() {
 		if bk == nil {
 			return nil
 		}
-		bk.ForEach(func(k, v []byte) error {
+		_ = bk.ForEach(func(k, v []byte) error {
 			data := parseCacheData(v)
 			if data == nil {
 				return bk.Delete(k)

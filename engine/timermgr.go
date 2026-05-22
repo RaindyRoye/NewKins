@@ -3,15 +3,16 @@ package engine
 import (
 	"encoding/json"
 	"errors"
+	"runtime/debug"
+	"sync"
+	"time"
+
 	"github.com/gokins/core/common"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/service"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
-	"runtime/debug"
-	"sync"
-	"time"
 )
 
 type TimerEngine struct {
@@ -95,7 +96,10 @@ func (c *TimerEngine) refresh() {
 		}
 	}()
 	var ls []*model.TTrigger
-	comm.Db.Where("enabled = 1 AND types = 'timer'").Find(&ls)
+	if err := comm.Db.Where("enabled = 1 AND types = 'timer'").Find(&ls); err != nil {
+		logrus.Errorf("TimerEngine refresh find err: %v", err)
+		return
+	}
 
 	c.tasklk.Lock()
 	defer c.tasklk.Unlock()

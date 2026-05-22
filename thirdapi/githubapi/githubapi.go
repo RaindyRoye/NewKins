@@ -1,6 +1,6 @@
 package githubapi
 
-//api 路径
+// api 路径
 const (
 	BaseApiGithub = "https://api.github.com"
 	/*
@@ -11,7 +11,7 @@ const (
 	/*
 	   /user/repos
 	*/
-	ApiGithubGetRepos = "/user/repos?type=%v&sort=%v&direction=%v&page=%v&per_page=%v"
+	ApiGithubGetRepos = "/user/repos?type=%v&sort=%v&direction=%v&page=%v&perPage=%v"
 
 	/*
 	   {owner}/{repo}/hooks
@@ -20,7 +20,7 @@ const (
 	/*
 	   /repos/{owner}/{repo}/hooks
 	*/
-	ApiGithubGetHooks = "/repos/%s/%s/hooks?page=%v&per_page=%v"
+	ApiGithubGetHooks = "/repos/%s/%s/hooks?page=%v&perPage=%v"
 
 	/*
 	   /repos/{owner}/{repo}/hooks/{hook_id}
@@ -29,5 +29,5 @@ const (
 	/*
 	  repos/{owner}/{repo}/branches
 	*/
-	ApiGithubGetRepoBranches = "/repos/%s/%s/branches?per_page=100"
+	ApiGithubGetRepoBranches = "/repos/%s/%s/branches?perPage=100"
 )

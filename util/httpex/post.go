@@ -1,12 +1,12 @@
 package httpex
 
 import (
-	"io"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-		"net/http"
+	"io"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"

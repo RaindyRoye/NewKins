@@ -5,16 +5,6 @@ import (
 	"strings"
 )
 
-func skipBranch(c *Condition, branch string) bool {
-	return !c.Match(branch)
-}
-func skipCommitMessages(c *Condition, branch string) bool {
-	return !c.Match(branch)
-}
-func skipCommitNotes(c *Condition, branch string) bool {
-	return !c.Match(branch)
-}
-
 func (c *Condition) Match(v string) bool {
 	if c == nil {
 		return false

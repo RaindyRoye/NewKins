@@ -1,6 +1,6 @@
 package gitlabapi
 
-//api 路径
+// api 路径
 const (
 	BaseApiGitlab = "https://gitlab.com/api/v4"
 	/*
@@ -11,7 +11,7 @@ const (
 	/*
 	  /users/:user_id/projects
 	*/
-	ApiGitlabGetRepos = "/users/%s/projects?type=%v&page=%v&per_page=%v"
+	ApiGitlabGetRepos = "/users/%s/projects?type=%v&page=%v&perPage=%v"
 
 	/*
 	  repos/{owner}/{repo}/hooks
@@ -20,7 +20,7 @@ const (
 	/*
 	   /projects/:id/hooks
 	*/
-	ApiGitlabGetHooks = "/projects/%s/hooks?page=%v&per_page=%v"
+	ApiGitlabGetHooks = "/projects/%s/hooks?page=%v&perPage=%v"
 
 	/*
 	   /projects/:id/hooks/:hook_id

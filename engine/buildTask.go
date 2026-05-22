@@ -337,7 +337,9 @@ func (c *BuildTask) getRepo() error {
 	if !c.isClone {
 		return nil
 	}
-	os.MkdirAll(c.repoPaths, 0750)
+	if err := os.MkdirAll(c.repoPaths, 0750); err != nil {
+		return err
+	}
 	if c.repoPath != "" {
 		err := c.gitClone(c.ctx, c.repoPaths, c.build.Repo)
 		if err != nil {

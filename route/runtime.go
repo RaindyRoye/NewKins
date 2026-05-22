@@ -54,7 +54,7 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 			stages[v.Id] = v
 			for _, step := range spls {
 				if step.Id != "" {
-					json.Unmarshal([]byte(step.Waits), &step.Waitings)
+					_ = json.Unmarshal([]byte(step.Waits), &step.Waitings)
 					v.Stepids = append(v.Stepids, step.Id)
 					steps[step.Id] = step
 				}
@@ -184,28 +184,25 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 		for i := 0; i < rn; i++ {
 			off++
 			b := bts[i]
-			if linebuf == nil && b == '{' {
+			if b == '{' {
 				linebuf.Reset()
 			}
-			if linebuf != nil {
-				if b == '\n' {
-					e := &bean.LogOutJsonRes{}
-					err := json.Unmarshal(linebuf.Bytes(), e)
-					linebuf.Reset()
-					if err == nil {
-						/*if e.Type == hbtpBean.TypeCmdLogLineSys {
-							continue
-						}*/
-						e.Offset = off - 1
-						ls = append(ls, e)
-						lastoff = e.Offset
-					}
-					if limit > 0 && limit >= int64(len(ls)) {
-						break
-					}
-				} else {
-					linebuf.WriteByte(b)
+			if b == '\n' {
+				e := &bean.LogOutJsonRes{}
+				if uerr := json.Unmarshal(linebuf.Bytes(), e); uerr == nil {
+					/*if e.Type == hbtpBean.TypeCmdLogLineSys {
+						continue
+					}*/
+					e.Offset = off - 1
+					ls = append(ls, e)
+					lastoff = e.Offset
 				}
+				linebuf.Reset()
+				if limit > 0 && limit >= int64(len(ls)) {
+					break
+				}
+			} else {
+				linebuf.WriteByte(b)
 			}
 		}
 		if err != nil {

@@ -1,16 +1,17 @@
 package giteaapi
 
 import (
-	"io"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"strconv"
+
 	"github.com/gokins/gokins/bean/thirdbean"
 	"github.com/gokins/gokins/thirdapi"
 	"github.com/sirupsen/logrus"
-		"net/http"
-	"strconv"
 )
 
 type RepositoryService struct {
@@ -28,10 +29,10 @@ type RepositoryService struct {
   direction : 如果sort参数为full_name，用升序(asc)。否则降序(desc)
   q : 搜索关键字
   page : 当前的页码
-  per_page : 每页的数量，最大为 100
+  perPage : 每页的数量，最大为 100
 */
-func (s *RepositoryService) GetRepos(accessToken, username, types, sort, direction string, page, per_page int) (*thirdapi.RepositoryPage, error) {
-	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaGetRepos, page, per_page))
+func (s *RepositoryService) GetRepos(accessToken, username, types, sort, direction string, page, perPage int) (*thirdapi.RepositoryPage, error) {
+	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaGetRepos, page, perPage))
 	if err != nil {
 		logrus.Errorf("Gitea Api GetRepos Parse err : %v", err)
 		return nil, err
@@ -67,13 +68,13 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 	lk := resp.Header.Get("x-total-count")
 	var totalPages int64 = 1
 	if lk != "" {
-		totalCount, err := strconv.ParseInt(lk, 10, 64)
-		if err != nil {
-			logrus.Errorf("Gitea Api GetRepos ParseInt err : %v", err)
-			return nil, err
+		totalCount, parseErr := strconv.ParseInt(lk, 10, 64)
+		if parseErr != nil {
+			logrus.Errorf("Gitea Api GetRepos ParseInt err : %v", parseErr)
+			return nil, parseErr
 		}
-		totalPages = totalCount / int64(per_page)
-		if totalCount%int64(per_page) > 0 {
+		totalPages = totalCount / int64(perPage)
+		if totalCount%int64(perPage) > 0 {
 			totalPages = totalPages + 1
 		}
 	}
@@ -85,8 +86,8 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 	return rp, err
 }
 
-func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookId string) error {
-	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaDeleteHooks, owner, repo, hookId))
+func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string) error {
+	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaDeleteHooks, owner, repo, hookID))
 	if err != nil {
 		logrus.Errorf("Gitea Api DeleteHooks Parse err : %v", err)
 		return err
@@ -121,10 +122,10 @@ func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookId string)
 /*
   owner : 仓库所属空间地址(企业、组织或个人的地址path)
   repo : 仓库路径(path)
-  backUrl : 回调地址
+  backURL : 回调地址
   password : webhook 密钥
 */
-func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backUrl, password string) (*thirdapi.RepositoryHook, error) {
+func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, password string) (*thirdapi.RepositoryHook, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaCreateHooks, owner, repo))
 	if err != nil {
 		logrus.Errorf("Gitea Api CreateWebHooks Parse err : %v", err)
@@ -132,7 +133,7 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backUrl, pa
 	}
 	logrus.Debugf("Gitea Api CreateWebHooks url : %s", parse.String())
 	m := map[string]interface{}{}
-	m["url"] = backUrl
+	m["url"] = backURL
 	m["content_type"] = "json"
 	m["secret"] = password
 	obj := map[string]interface{}{}
@@ -233,8 +234,7 @@ func (s *RepositoryService) GetPullQuest(accessToken, owner, repo string, index 
 		return nil, err
 	}
 	defer resp.Body.Close()
-	bys := []byte{}
-	bys, err = io.ReadAll(resp.Body)
+	bys, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Errorf("Gitea Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
 		return nil, err
@@ -247,8 +247,8 @@ func (s *RepositoryService) GetPullQuest(accessToken, owner, repo string, index 
 	return bys, nil
 }
 
-func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, per_page int) ([]*thirdapi.RepositoryHook, error) {
-	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaGetHooks, owner, repo, page, per_page))
+func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, perPage int) ([]*thirdapi.RepositoryHook, error) {
+	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaGetHooks, owner, repo, page, perPage))
 	if err != nil {
 		logrus.Errorf("Gitea Api GetWebHooks Parse err : %v", err)
 		return nil, err

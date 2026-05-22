@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
@@ -45,7 +46,7 @@ func ClearUserCache(uid string) {
 		return
 	}
 	uids := fmt.Sprintf("user:%s", uid)
-	comm.CacheSet(uids, nil)
+	_ = comm.CacheSet(uids, nil)
 }
 func GetUserCache(uid string) (*model.TUser, bool) {
 	var ok bool
@@ -57,7 +58,7 @@ func GetUserCache(uid string) (*model.TUser, bool) {
 	}
 	e, ok = GetUser(uid)
 	if ok {
-		comm.CacheSets(uids, e)
+		_ = comm.CacheSets(uids, e)
 	}
 	return e, ok
 }
@@ -208,17 +209,17 @@ func (c *OrgPerm) CanExec() bool {
 	return false
 }
 
-//LgUser maybe null
+// LgUser maybe null
 func (c *OrgPerm) LgUser() *model.TUser {
 	return c.lgusr
 }
 
-//Org maybe null
+// Org maybe null
 func (c *OrgPerm) Org() *model.TOrg {
 	return c.org
 }
 
-//UserOrg maybe null
+// UserOrg maybe null
 func (c *OrgPerm) UserOrg() *model.TUserOrg {
 	return c.usrOrg
 }
@@ -258,7 +259,7 @@ JOIN t_org_pipe op ON op.pipe_id=? and org.id=op.org_id
 LEFT JOIN t_user_org uo ON uo.uid=? and org.id=uo.org_id
 where org.deleted!=1 or org.public=1
 			`, pipe.Id, lgusr.Id)
-			ses.Find(&c.perms)
+			_ = ses.Find(&c.perms)
 		}
 	}
 	return c
@@ -321,12 +322,12 @@ func (c *PipePerm) CanExec() bool {
 	return false
 }
 
-//LgUser maybe null
+// LgUser maybe null
 func (c *PipePerm) LgUser() *model.TUser {
 	return c.lgusr
 }
 
-//Pipeline maybe null
+// Pipeline maybe null
 func (c *PipePerm) Pipeline() *model.TPipeline {
 	return c.pipe
 }

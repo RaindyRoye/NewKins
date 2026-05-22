@@ -1,10 +1,11 @@
 package githubapi
 
 import (
-	"github.com/gokins/gokins/thirdapi"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/gokins/gokins/thirdapi"
 )
 
 func New(uri string) (*thirdapi.Client, error) {

@@ -30,7 +30,7 @@ func findCount(cds builder.Cond, data interface{}) (int64, error) {
 		pv := reflect.New(sty)
 
 		ses := Db.NewSession()
-		defer ses.Close()
+		defer func() { _ = ses.Close() }()
 		return ses.Where(cds).Count(pv.Interface())
 	}
 	return 0, errors.New("GetCount err : not found any data")
@@ -46,7 +46,7 @@ func FindPage(ses *xorm.Session, ls interface{}, page int64, size ...int64) (*be
 func findPages(ses *xorm.Session, ls interface{}, count, page int64, size ...int64) (*bean.Page, error) {
 	var pageno int64 = 1
 	var sizeno int64 = 10
-	var pagesno int64 = 0
+	var pagesno int64
 	//var count=c.FindCount(pars)
 	if page > 0 {
 		pageno = page
@@ -79,7 +79,7 @@ func FindPages(gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*b
 	if gen.CountCols != "" {
 		counts = fmt.Sprintf("count(%s)", gen.CountCols)
 	}
-	sqls := strings.Replace(gen.SQL[:strings.LastIndex(gen.SQL,"\nORDER BY")], "{{select}}", counts, 1)
+	sqls := strings.Replace(gen.SQL[:strings.LastIndex(gen.SQL, "\nORDER BY")], "{{select}}", counts, 1)
 	sqls = strings.Replace(sqls, "{{limit}}", "", 1)
 	_, err := Db.SQL(sqls, gen.Args...).Get(&count)
 	if err != nil {
@@ -88,7 +88,7 @@ func FindPages(gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*b
 
 	var pageno int64 = 1
 	var sizeno int64 = 10
-	var pagesno int64 = 0
+	var pagesno int64
 	//var count=c.FindCount(pars)
 	if page > 0 {
 		pageno = page
@@ -103,7 +103,7 @@ func FindPages(gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*b
 		starts = fmt.Sprintf("%d,", start)
 	}
 	ses := Db.NewSession()
-	defer ses.Close()
+	defer func() { _ = ses.Close() }()
 	sqls = strings.Replace(gen.SQL, "{{select}}", gen.FindCols, 1)
 	if strings.Contains(sqls, "{{limit}}") {
 		sqls = strings.Replace(sqls, "{{limit}}", fmt.Sprintf("LIMIT %s%d", starts, sizeno), 1)

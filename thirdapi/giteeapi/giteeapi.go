@@ -1,6 +1,6 @@
 package giteeapi
 
-//api 路径
+// api 路径
 const (
 	BaseApiGitee = "https://gitee.com/api/v5"
 
@@ -10,9 +10,9 @@ const (
 	ApiGiteeCreateFile = "/repos/%s/%s/contents/%v"
 
 	/*
-	   https://gitee.com/api/v5/user/repos?access_token={access_token}&visibility={visibility}&affiliation={affiliation}&type={type}&sort={sort}&direction={direction}&q={1}&page={page}&per_page={per_page}
+	   https://gitee.com/api/v5/user/repos?access_token={access_token}&visibility={visibility}&affiliation={affiliation}&type={type}&sort={sort}&direction={direction}&q={1}&page={page}&perPage={perPage}
 	*/
-	ApiGiteeGetRepos = "/user/repos?access_token=%s&type=%v&sort=%v&direction=%v&page=%v&per_page=%v"
+	ApiGiteeGetRepos = "/user/repos?access_token=%s&type=%v&sort=%v&direction=%v&page=%v&perPage=%v"
 
 	/*
 	   https://gitee.com/api/v5/repos/{owner}/{repo}/hooks
@@ -21,7 +21,7 @@ const (
 	/*
 	   https://gitee.com/api/v5/repos/{owner}/{repo}/hooks
 	*/
-	ApiGiteeGetHooks = "/repos/%s/%s/hooks?access_token=%s&page=%v&per_page=%v"
+	ApiGiteeGetHooks = "/repos/%s/%s/hooks?access_token=%s&page=%v&perPage=%v"
 
 	/*
 	   https://gitee.com/api/v5/repos/{owner}/{repo}/hooks/{id}

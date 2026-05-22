@@ -2,21 +2,20 @@ package gitlab
 
 import (
 	"crypto/hmac"
-	"crypto/sha1"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gokins/gokins/hook"
-	"github.com/sirupsen/logrus"
 	"hash"
 	"io"
-		"net/http"
+	"net/http"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gokins/gokins/hook"
+	"github.com/sirupsen/logrus"
 )
 
 func Parse(req *http.Request, secret string) (hook.WebHook, error) {
@@ -33,15 +32,15 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 		return nil, err
 	}
 	var wb hook.WebHook
-	switch req.Header.Get(hook.GITLAB_EVENT) {
-	case hook.GITLAB_EVENT_PUSH:
+	switch req.Header.Get(hook.GitlabEvent) {
+	case hook.GitlabEventPush:
 		wb, err = parsePushHook(data)
-	case hook.GITLAB_EVENT_NOTE:
+	case hook.GitlabEventNote:
 		wb, err = parseCommentHook(data)
-	case hook.GITLAB_EVENT_PR:
+	case hook.GitlabEventPR:
 		wb, err = parsePullRequestHook(data)
 	default:
-		return nil, errors.New(fmt.Sprintf("hook含有未知的header:%v", req.Header.Get(hook.GITEE_EVENT)))
+		return nil, fmt.Errorf("hook含有未知的header:%v", req.Header.Get(hook.GitlabEvent))
 	}
 	if err != nil {
 		return nil, err
@@ -59,21 +58,6 @@ func Validate(h func() hash.Hash, message, key []byte, signature string) bool {
 		return false
 	}
 	return validate(h, message, key, decoded)
-}
-
-func validatePrefix(message, key []byte, signature string) bool {
-	parts := strings.Split(signature, "=")
-	if len(parts) != 2 {
-		return false
-	}
-	switch parts[0] {
-	case "sha1":
-		return Validate(sha1.New, message, key, parts[1])
-	case "sha256":
-		return Validate(sha256.New, message, key, parts[1])
-	default:
-		return false
-	}
 }
 
 func validate(h func() hash.Hash, message, key, signature []byte) bool {
@@ -210,7 +194,7 @@ func convertPushHook(gp *gitlabPushHook) *hook.PushHook {
 }
 func convertCommentHook(gp *gitlabCommentHook) (*hook.PullRequestCommentHook, error) {
 	return &hook.PullRequestCommentHook{
-		Action: hook.EVENTS_TYPE_COMMENT,
+		Action: hook.EventsTypeComment,
 		Repo: hook.Repository{
 			Ref:         gp.MergeRequest.SourceBranch,
 			Sha:         gp.MergeRequest.LastCommit.Id,

@@ -8,15 +8,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gokins/gokins/hook"
-	"github.com/sirupsen/logrus"
 	"hash"
 	"io"
-		"net/http"
+	"net/http"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gokins/gokins/hook"
+	"github.com/sirupsen/logrus"
 )
 
 func Parse(req *http.Request, secret string) (hook.WebHook, error) {
@@ -33,15 +34,15 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 		return nil, err
 	}
 	var wb hook.WebHook
-	switch req.Header.Get(hook.GITHUB_EVENT) {
-	case hook.GITHUB_EVENT_PUSH:
+	switch req.Header.Get(hook.GithubEvent) {
+	case hook.GithubEventPush:
 		wb, err = parsePushHook(data)
-	case hook.GITHUB_EVENT_ISSUE_COMMENT:
+	case hook.GithubEventIssueComment:
 		wb, err = parseCommentHook(data)
-	case hook.GITHUB_EVENT_PR:
+	case hook.GithubEventPR:
 		wb, err = parsePullRequestHook(data)
 	default:
-		return nil, errors.New(fmt.Sprintf("hook含有未知的header:%v", req.Header.Get(hook.GITHUB_EVENT)))
+		return nil, fmt.Errorf("hook含有未知的header:%v", req.Header.Get(hook.GithubEvent))
 	}
 	if err != nil {
 		return nil, err
@@ -265,7 +266,7 @@ func convertCommentHook(gp *githubCommentHook) (*hook.PullRequestCommentHook, er
 		return nil, err
 	}
 	return &hook.PullRequestCommentHook{
-		Action: hook.EVENTS_TYPE_COMMENT,
+		Action:	hook.EventsTypeComment,
 		Repo: hook.Repository{
 			Ref:        pullRequestHook.Head.Ref,
 			Sha:        pullRequestHook.Head.Sha,

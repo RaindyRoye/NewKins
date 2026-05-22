@@ -1,18 +1,19 @@
 package githubapi
 
 import (
-	"io"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gokins/gokins/bean/thirdbean"
-	"github.com/gokins/gokins/thirdapi"
-	"github.com/sirupsen/logrus"
-		"net/http"
+	"io"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/gokins/gokins/bean/thirdbean"
+	"github.com/gokins/gokins/thirdapi"
+	"github.com/sirupsen/logrus"
 )
 
 type RepositoryService struct {
@@ -30,10 +31,10 @@ type RepositoryService struct {
   direction : 如果sort参数为full_name，用升序(asc)。否则降序(desc)
   q : 搜索关键字
   page : 当前的页码
-  per_page : 每页的数量，最大为 100
+  perPage : 每页的数量，最大为 100
 */
-func (s *RepositoryService) GetRepos(accessToken, username, types, sort, direction string, page, per_page int) (*thirdapi.RepositoryPage, error) {
-	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGithubGetRepos, types, sort, direction, page, per_page))
+func (s *RepositoryService) GetRepos(accessToken, username, types, sort, direction string, page, perPage int) (*thirdapi.RepositoryPage, error) {
+	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGithubGetRepos, types, sort, direction, page, perPage))
 	if err != nil {
 		logrus.Errorf("Github Api GetRepos Parse err : %v", err)
 		return nil, err
@@ -93,8 +94,8 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 	return rp, err
 }
 
-func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookId string) error {
-	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGithubDeleteHooks, owner, repo, hookId))
+func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string) error {
+	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGithubDeleteHooks, owner, repo, hookID))
 	if err != nil {
 		logrus.Errorf("Github Api DeleteHooks Parse err : %v", err)
 		return err
@@ -129,10 +130,10 @@ func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookId string)
 /*
   owner : 仓库所属空间地址(企业、组织或个人的地址path)
   repo : 仓库路径(path)
-  backUrl : 回调地址
+  backURL : 回调地址
   password : webhook 密钥
 */
-func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backUrl, password string) (*thirdapi.RepositoryHook, error) {
+func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, password string) (*thirdapi.RepositoryHook, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGithubCreateHooks, owner, repo))
 	if err != nil {
 		logrus.Errorf("Github Api CreateWebHooks Parse err : %v", err)
@@ -140,7 +141,7 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backUrl, pa
 	}
 	logrus.Debugf("Github Api CreateWebHooks url : %s", parse.String())
 	m := map[string]interface{}{}
-	m["url"] = backUrl
+	m["url"] = backURL
 	m["content_type"] = "json"
 	m["secret"] = password
 	m["token"] = accessToken
@@ -221,8 +222,8 @@ func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]
 	return convertBranchList(branchList), err
 }
 
-func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, per_page int) ([]*thirdapi.RepositoryHook, error) {
-	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGithubGetHooks, owner, repo, page, per_page))
+func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, perPage int) ([]*thirdapi.RepositoryHook, error) {
+	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGithubGetHooks, owner, repo, page, perPage))
 	if err != nil {
 		logrus.Errorf("Github Api GetWebHooks Parse err : %v", err)
 		return nil, err

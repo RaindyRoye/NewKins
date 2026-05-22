@@ -1,8 +1,9 @@
 package httpex
 
 import (
-	"github.com/gin-gonic/gin"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 var HTMLMsgUrl = `

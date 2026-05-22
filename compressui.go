@@ -6,9 +6,10 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
-	"github.com/gokins/core/utils"
-		"os"
+	"os"
 	"path/filepath"
+
+	"github.com/gokins/core/utils"
 )
 
 var pth string

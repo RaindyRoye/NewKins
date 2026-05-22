@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
+
 	"github.com/gokins/gokins/comm"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
@@ -11,8 +14,6 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
-	"path/filepath"
-	"strings"
 )
 
 func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, errs error) {
@@ -34,7 +35,7 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 	}
 	err = db.Ping()
 	if err != nil {
-		db.Close()
+		_ = db.Close()
 		uls := fmt.Sprintf("%s:%s@tcp(%s)/?parseTime=true&multiStatements=true",
 			user,
 			pass,
@@ -45,17 +46,17 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 			errs = err
 			return
 		}
-		defer db.Close()
+		defer func() { _ = db.Close() }()
 		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE `%s` DEFAULT CHARACTER SET utf8mb4;", dbs))
 		if err != nil {
 			println("create dbs err:" + err.Error())
 			errs = err
 			return
 		}
-		db.Exec(fmt.Sprintf("USE `%s`;", dbs))
+		_, _ = db.Exec(fmt.Sprintf("USE `%s`;", dbs))
 		err = db.Ping()
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	wait = false
 	if err != nil {
 		errs = err
@@ -69,7 +70,7 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 		errs = err
 		return
 	}
-	defer driver.Close()
+	defer func() { _ = driver.Close() }()
 	var nms []string
 	tms := comm.AssetNames()
 	for _, v := range tms {
@@ -85,7 +86,7 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 		errs = err
 		return
 	}
-	defer sc.Close()
+	defer func() { _ = sc.Close() }()
 	mgt, err := migrate.NewWithInstance(
 		"bindata", sc,
 		"mysql", driver)
@@ -93,10 +94,10 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 		errs = err
 		return
 	}
-	defer mgt.Close()
+	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
 	if err != nil && err != migrate.ErrNoChange {
-		mgt.Down()
+		_ = mgt.Down()
 		errs = err
 		return
 	}
@@ -111,7 +112,7 @@ func InitSqliteMigrate() (rtul string, errs error) {
 		errs = err
 		return
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Run migrations
 	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
@@ -120,7 +121,7 @@ func InitSqliteMigrate() (rtul string, errs error) {
 		errs = err
 		return
 	}
-	defer driver.Close()
+	defer func() { _ = driver.Close() }()
 	var nms []string
 	tms := comm.AssetNames()
 	for _, v := range tms {
@@ -136,7 +137,7 @@ func InitSqliteMigrate() (rtul string, errs error) {
 		errs = err
 		return
 	}
-	defer sc.Close()
+	defer func() { _ = sc.Close() }()
 	mgt, err := migrate.NewWithInstance(
 		"bindata", sc,
 		"sqlite3", driver)
@@ -144,10 +145,10 @@ func InitSqliteMigrate() (rtul string, errs error) {
 		errs = err
 		return
 	}
-	defer mgt.Close()
+	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
 	if err != nil && err != migrate.ErrNoChange {
-		mgt.Down()
+		_ = mgt.Down()
 		errs = err
 		return
 	}
@@ -170,11 +171,11 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 	}
 	err = db.Ping()
 	if err != nil {
-		db.Close()
+		_ = db.Close()
 		errs = err
 		return
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	wait = false
 	if err != nil {
 		errs = err
@@ -188,7 +189,7 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 		errs = err
 		return
 	}
-	defer driver.Close()
+	defer func() { _ = driver.Close() }()
 	var nms []string
 	tms := comm.AssetNames()
 	for _, v := range tms {
@@ -204,7 +205,7 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 		errs = err
 		return
 	}
-	defer sc.Close()
+	defer func() { _ = sc.Close() }()
 	mgt, err := migrate.NewWithInstance(
 		"bindata", sc,
 		"postgres", driver)
@@ -212,10 +213,10 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 		errs = err
 		return
 	}
-	defer mgt.Close()
+	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
 	if err != nil && err != migrate.ErrNoChange {
-		mgt.Down()
+		_ = mgt.Down()
 		errs = err
 		return
 	}

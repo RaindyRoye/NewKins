@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+
 	"github.com/gokins/gokins/model"
 )
 

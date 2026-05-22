@@ -1,6 +1,6 @@
 package giteaapi
 
-//api 路径
+// api 路径
 const (
 	BaseApiGitea = "https://api.gitea.com"
 	/*

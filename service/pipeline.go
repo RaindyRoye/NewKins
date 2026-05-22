@@ -238,10 +238,10 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 func getOrgVars(pipelineId string) []*model.TOrgVar {
 	var rts []*model.TOrgVar
 	var orgs []*model.TOrgPipe
-	comm.Db.Where("pipe_id = ? ", pipelineId).Find(&orgs)
+	_ = comm.Db.Where("pipe_id = ? ", pipelineId).Find(&orgs)
 	for _, v := range orgs {
 		var ls []*model.TOrgVar
-		comm.Db.Where("org_id = ? ", v.OrgId).Find(&ls)
+		_ = comm.Db.Where("org_id = ? ", v.OrgId).Find(&ls)
 		if len(ls) > 0 {
 			rts = append(rts, ls...)
 		}
@@ -262,7 +262,7 @@ func convertVar(pipelineId string, vm map[string]string) map[string]*runtime.Var
 	}
 
 	var tVars []*model.TPipelineVar
-	comm.Db.Where("pipeline_id = ? ", pipelineId).Find(&tVars)
+	_ = comm.Db.Where("pipeline_id = ? ", pipelineId).Find(&tVars)
 	for _, v := range tVars {
 		vms[v.Name] = &runtime.Variables{
 			Name:   v.Name,
@@ -301,7 +301,7 @@ func replaceStage(stage *bean.Stage, mVars map[string]*runtime.Variables) {
 	stage.DisplayName = s
 	s, _ = replace(stage.Repo, mVars)
 	stage.Repo = s
-	if stage.Steps != nil && len(stage.Steps) > 0 {
+	if len(stage.Steps) > 0 {
 		replaceSteps(stage.Steps, mVars)
 	}
 }
@@ -321,10 +321,10 @@ func replaceStep(step *bean.Step, mVars map[string]*runtime.Variables) {
 	step.Image = s
 	s, _ = replace(step.Repo, mVars)
 	step.Repo = s
-	if step.Env != nil && len(step.Env) > 0 {
+	if len(step.Env) > 0 {
 		step.Env = replaceMaps(step.Env, mVars)
 	}
-	if step.Input != nil && len(step.Input) > 0 {
+	if len(step.Input) > 0 {
 		step.Input = replaceMaps(step.Input, mVars)
 	}
 }

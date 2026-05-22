@@ -4,12 +4,12 @@ import (
 	"os"
 	"path/filepath"
 
-	bolt "go.etcd.io/bbolt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gokins/core"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/migrates"
 	"github.com/sirupsen/logrus"
+	bolt "go.etcd.io/bbolt"
 	"xorm.io/xorm"
 )
 
@@ -25,10 +25,8 @@ func initDb() error {
 		switch dvs {
 		case comm.DATASOURCE_DRIVER_MYSQL:
 			err = migrates.UpMysqlMigrate(ul)
-			break
 		case comm.DATASOURCE_DRIVER_POSTGRES:
 			err = migrates.UpPostgresMigrate(ul)
-			break
 		default:
 			err = migrates.UpSqliteMigrate(ul)
 		}

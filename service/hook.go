@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
@@ -13,9 +17,6 @@ import (
 	"github.com/gokins/gokins/hook/github"
 	"github.com/gokins/gokins/hook/gitlab"
 	"github.com/gokins/gokins/model"
-	"net/http"
-	"strings"
-	"time"
 )
 
 func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err error) {
@@ -34,7 +35,7 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 		if infos != "" {
 			ttr.Infos = infos
 		}
-		comm.Db.InsertOne(ttr)
+		_, _ = comm.Db.InsertOne(ttr)
 	}()
 	if tt.Params == "" {
 		return nil, errors.New("触发器没有配置参数")
@@ -117,7 +118,7 @@ func TriggerWeb(tt *model.TTrigger, secret string) (rb *runtime.Build, err error
 		if err != nil {
 			ttr.Error = err.Error()
 		}
-		comm.Db.InsertOne(ttr)
+		_, _ = comm.Db.InsertOne(ttr)
 	}()
 	if tt.Params == "" {
 		return nil, errors.New("触发器没有配置参数")
@@ -163,7 +164,7 @@ func TriggerTimer(tt *model.TTrigger) (rb *runtime.Build, err error) {
 		if err != nil {
 			ttr.Error = err.Error()
 		}
-		comm.Db.InsertOne(ttr)
+		_, _ = comm.Db.InsertOne(ttr)
 	}()
 	err = TriggerPerm(tt)
 	if err != nil {

@@ -1,14 +1,14 @@
 package giteaapi
 
 import (
-	"io"
 	"fmt"
-		"net/http"
+	"io"
+	"net/http"
 	"testing"
 )
 
-func TestGiteeContents(t *testing.T) {
-	u := fmt.Sprintf(ApiGiteaGetRepos, "SuperHeroJim", "gokins-test", ".gokins", "1065cd3f8791b97224a823c954a0ec98")
+func TestGiteaRepos(t *testing.T) {
+	u := fmt.Sprintf(ApiGiteaGetRepos, 1, 10)
 	resp, err := http.Get(u)
 	if err != nil {
 		fmt.Println(fmt.Errorf("Gitee Api :%v err : %v", u, err))

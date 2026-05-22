@@ -6,10 +6,9 @@ func GetIdOrAid(id interface{}, e interface{}) bool {
 	if id == nil || e == nil {
 		return false
 	}
-	switch id.(type) {
+	switch v := id.(type) {
 	case string:
-		ids := id.(string)
-		if ids == "" {
+		if v == "" {
 			return false
 		}
 	}
