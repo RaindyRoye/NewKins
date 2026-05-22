@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -110,15 +111,16 @@ func (c *TimerEngine) refresh() {
 		}
 	}
 }
-func (c *TimerEngine) resetOne(tmr *model.TTrigger) error {
+func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 	defer func() {
 		if err := recover(); err != nil {
-			logrus.Warnf("TimerEngine refresh recover:%v", err)
+			logrus.Warnf("TimerEngine resetOne recover:%v", err)
 			logrus.Warnf("TimerEngine stack:%s", string(debug.Stack()))
+			rterr = fmt.Errorf("panic in resetOne: %v", err)
 		}
 	}()
 	if tmr.Types != "timer" {
-		return errors.New("type is err:" + tmr.Types)
+		return fmt.Errorf("expected trigger type 'timer', got '%s'", tmr.Types)
 	}
 	mp := hbtp.Map{}
 	err := json.Unmarshal([]byte(tmr.Params), &mp)
@@ -193,13 +195,16 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) error {
 }
 func (c *TimerEngine) Refresh(tmrid string) error {
 	if tmrid == "" {
-		return errors.New("param err")
+		return errors.New("timer id is empty")
 	}
 	tmr := &model.TTrigger{}
-	ok, _ := comm.Db.Where("id=?", tmrid).Get(tmr)
+	ok, err := comm.Db.Where("id=?", tmrid).Get(tmr)
+	if err != nil {
+		return fmt.Errorf("query trigger %s: %w", tmrid, err)
+	}
 	if !ok || tmr.Enabled != 1 {
 		c.Delete(tmrid)
-		return errors.New("not found")
+		return fmt.Errorf("trigger %s not found or disabled", tmrid)
 	}
 	return c.resetOne(tmr)
 }
