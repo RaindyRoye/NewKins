@@ -50,10 +50,11 @@ func Posts(ul string, params *url.Values, timeout time.Duration, hds ...http.Hea
 	if err != nil {
 		return 0, nil, err
 	}
+	defer res.Body.Close()
 
 	bts, err := io.ReadAll(res.Body)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("reading response body: %w", err)
 	}
 	return res.StatusCode, bts, nil
 }
@@ -85,12 +86,13 @@ func PostResult(ul string, params *url.Values, result interface{}, timeout time.
 	if err != nil {
 		return 0, nil, err
 	}
+	defer res.Body.Close()
 	bts, err := io.ReadAll(res.Body)
-	if res.StatusCode != 200 {
-		return res.StatusCode, bts, fmt.Errorf("response err(code:%d):%s", res.StatusCode, string(bts))
-	}
 	if err != nil {
-		return res.StatusCode, bts, err
+		return res.StatusCode, nil, fmt.Errorf("reading response body: %w", err)
+	}
+	if res.StatusCode != 200 {
+		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %s", res.StatusCode, string(bts))
 	}
 	return res.StatusCode, bts, json.Unmarshal(bts, result)
 }
@@ -102,12 +104,13 @@ func PostJSONResult(ul string, params interface{}, result interface{}, timeout t
 	if err != nil {
 		return 0, nil, err
 	}
+	defer res.Body.Close()
 	bts, err := io.ReadAll(res.Body)
-	if res.StatusCode != 200 {
-		return res.StatusCode, bts, fmt.Errorf("response err(code:%d):%s", res.StatusCode, string(bts))
-	}
 	if err != nil {
-		return res.StatusCode, bts, err
+		return res.StatusCode, nil, fmt.Errorf("reading response body: %w", err)
+	}
+	if res.StatusCode != 200 {
+		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %s", res.StatusCode, string(bts))
 	}
 	return res.StatusCode, bts, json.Unmarshal(bts, result)
 }

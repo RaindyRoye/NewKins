@@ -397,12 +397,12 @@ func (c *BuildTask) gitClone(ctx context.Context, clonePath string, repo *runtim
 	logrus.Debugf("gitClone : clone url: %s, sha: %s => %s", repo.CloneURL, repo.Sha, clonePath)
 	repository, err := util.CloneRepo(clonePath, gc, ctx)
 	if err != nil {
-		return fmt.Errorf("cloneRepo err:%v", err)
+		return fmt.Errorf("cloneRepo err: %w", err)
 	}
 	if plumbing.IsHash(repo.Sha) {
 		err = util.CheckOutHash(repository, repo.Sha)
 		if err != nil {
-			return fmt.Errorf("CheckOutHash [%s] err:%v", repo.Sha, err)
+			return fmt.Errorf("CheckOutHash [%s] err: %w", repo.Sha, err)
 		}
 	}
 	return nil

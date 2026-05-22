@@ -11,17 +11,17 @@ import (
 func bindata_read(data []byte, name string) ([]byte, error) {
 	gz, err := gzip.NewReader(bytes.NewBuffer(data))
 	if err != nil {
-		return nil, fmt.Errorf("Read %q: %v", name, err)
+		return nil, fmt.Errorf("Read %q: %w", name, err)
 	}
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, gz)
 	if closeErr := gz.Close(); closeErr != nil && err == nil {
-		return nil, fmt.Errorf("Read %q: %v", name, closeErr)
+		return nil, fmt.Errorf("Read %q: %w", name, closeErr)
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("Read %q: %v", name, err)
+		return nil, fmt.Errorf("Read %q: %w", name, err)
 	}
 
 	return buf.Bytes(), nil
