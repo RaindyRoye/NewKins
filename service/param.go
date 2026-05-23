@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/gokins/gokins/comm"
@@ -41,7 +42,7 @@ func SetsParam(key string, data interface{}, tit ...string) error {
 	}
 	bts, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal param data: %w", err)
 	}
 	return SetParam(key, bts, tit...)
 }
@@ -61,7 +62,10 @@ func GetsParam(key string, data interface{}) error {
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(bts, data)
+	if err := json.Unmarshal(bts, data); err != nil {
+		return fmt.Errorf("unmarshal param data: %w", err)
+	}
+	return nil
 }
 
 func GetsParamCache(key string, data interface{}, outm ...time.Duration) error {

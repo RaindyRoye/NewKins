@@ -28,7 +28,7 @@ func Run(uid, pipeId, sha, event string) (*model.TPipelineVersion, *runtime.Buil
 	pipe := &bean.Pipeline{}
 	err := yaml.Unmarshal([]byte(tpipe.YmlContent), pipe)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("parse pipeline yaml: %w", err)
 	}
 	return preBuild(uid, pipe, tpipe, sha, event)
 }
@@ -45,7 +45,7 @@ func ReBuild(uid string, tvp *model.TPipelineVersion) (*model.TPipelineVersion, 
 	pipe := &bean.Pipeline{}
 	err := yaml.Unmarshal([]byte(tvp.Content), pipe)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("parse pipeline version yaml: %w", err)
 	}
 	return preBuild(uid, pipe, tpipe, tvp.Sha, "rebuild", tvp)
 }

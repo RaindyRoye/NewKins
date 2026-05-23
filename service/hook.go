@@ -50,7 +50,7 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 	m := map[string]string{}
 	err = json.Unmarshal([]byte(tt.Params), &m)
 	if err != nil {
-		err = errors.New("触发器配置参数错误")
+		err = fmt.Errorf("触发器配置参数错误: %w", err)
 		return nil, err
 	}
 	hookType, ok := m["hookType"]
@@ -135,7 +135,7 @@ func TriggerWeb(tt *model.TTrigger, secret string) (rb *runtime.Build, err error
 	m := map[string]string{}
 	err = json.Unmarshal([]byte(tt.Params), &m)
 	if err != nil {
-		err = errors.New("触发器配置参数错误")
+		err = fmt.Errorf("触发器配置参数错误: %w", err)
 		return nil, err
 	}
 	pSecret, ok := m["secret"]
