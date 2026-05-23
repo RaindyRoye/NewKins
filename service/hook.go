@@ -17,6 +17,7 @@ import (
 	"github.com/gokins/gokins/hook/github"
 	"github.com/gokins/gokins/hook/gitlab"
 	"github.com/gokins/gokins/model"
+	"github.com/sirupsen/logrus"
 )
 
 func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err error) {
@@ -35,7 +36,9 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 		if infos != "" {
 			ttr.Infos = infos
 		}
-		_, _ = comm.Db.InsertOne(ttr)
+		if _, err := comm.Db.InsertOne(ttr); err != nil {
+			logrus.Errorf("TriggerHook: failed to save trigger run: %v", err)
+		}
 	}()
 	if tt.Params == "" {
 		return nil, errors.New("触发器没有配置参数")
@@ -118,7 +121,9 @@ func TriggerWeb(tt *model.TTrigger, secret string) (rb *runtime.Build, err error
 		if err != nil {
 			ttr.Error = err.Error()
 		}
-		_, _ = comm.Db.InsertOne(ttr)
+		if _, err := comm.Db.InsertOne(ttr); err != nil {
+			logrus.Errorf("TriggerWeb: failed to save trigger run: %v", err)
+		}
 	}()
 	if tt.Params == "" {
 		return nil, errors.New("触发器没有配置参数")
@@ -164,7 +169,9 @@ func TriggerTimer(tt *model.TTrigger) (rb *runtime.Build, err error) {
 		if err != nil {
 			ttr.Error = err.Error()
 		}
-		_, _ = comm.Db.InsertOne(ttr)
+		if _, err := comm.Db.InsertOne(ttr); err != nil {
+			logrus.Errorf("TriggerTimer: failed to save trigger run: %v", err)
+		}
 	}()
 	err = TriggerPerm(tt)
 	if err != nil {

@@ -53,22 +53,30 @@ func (c *BuildEngine) init() {
 	}*/
 
 	cont := "server restart"
-	_, _ = comm.Db.Exec(
+	if _, err := comm.Db.Exec(
 		"update `t_build` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
-	)
-	_, _ = comm.Db.Exec(
+	); err != nil {
+		logrus.Errorf("BuildEngine init: failed to cancel pending builds: %v", err)
+	}
+	if _, err := comm.Db.Exec(
 		"update `t_stage` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
-	)
-	_, _ = comm.Db.Exec(
+	); err != nil {
+		logrus.Errorf("BuildEngine init: failed to cancel pending stages: %v", err)
+	}
+	if _, err := comm.Db.Exec(
 		"update `t_step` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
-	)
-	_, _ = comm.Db.Exec(
+	); err != nil {
+		logrus.Errorf("BuildEngine init: failed to cancel pending steps: %v", err)
+	}
+	if _, err := comm.Db.Exec(
 		"update `t_cmd_line` set `status`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
-	)
+	); err != nil {
+		logrus.Errorf("BuildEngine init: failed to cancel pending cmd lines: %v", err)
+	}
 }
 
 func (c *BuildEngine) run() {

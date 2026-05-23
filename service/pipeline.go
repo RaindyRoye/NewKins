@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -62,7 +63,10 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 	}
 	pipe.ConvertCmd()
 
-	m := convertVar(tpipe.PipelineId, pipe.Vars)
+	m, err := convertVar(tpipe.PipelineId, pipe.Vars)
+	if err != nil {
+		return nil, nil, fmt.Errorf("convertVar: %w", err)
+	}
 	m["GOKINSV_GIT_SHA"] = &runtime.Variables{
 		Name:   "GOKINSV_GIT_SHA",
 		Value:  sha,
@@ -235,24 +239,31 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 	return tpv, rb, nil
 }
 
-func getOrgVars(pipelineId string) []*model.TOrgVar {
+func getOrgVars(pipelineId string) ([]*model.TOrgVar, error) {
 	var rts []*model.TOrgVar
 	var orgs []*model.TOrgPipe
-	_ = comm.Db.Where("pipe_id = ? ", pipelineId).Find(&orgs)
+	if err := comm.Db.Where("pipe_id = ? ", pipelineId).Find(&orgs); err != nil {
+		return nil, fmt.Errorf("query org pipes: %w", err)
+	}
 	for _, v := range orgs {
 		var ls []*model.TOrgVar
-		_ = comm.Db.Where("org_id = ? ", v.OrgId).Find(&ls)
+		if err := comm.Db.Where("org_id = ? ", v.OrgId).Find(&ls); err != nil {
+			return nil, fmt.Errorf("query org vars (org_id=%s): %w", v.OrgId, err)
+		}
 		if len(ls) > 0 {
 			rts = append(rts, ls...)
 		}
 	}
-	return rts
+	return rts, nil
 }
 
-func convertVar(pipelineId string, vm map[string]string) map[string]*runtime.Variables {
+func convertVar(pipelineId string, vm map[string]string) (map[string]*runtime.Variables, error) {
 	vms := make(map[string]*runtime.Variables, 0)
 
-	oVars := getOrgVars(pipelineId)
+	oVars, err := getOrgVars(pipelineId)
+	if err != nil {
+		return nil, fmt.Errorf("getOrgVars: %w", err)
+	}
 	for _, v := range oVars {
 		vms[v.Name] = &runtime.Variables{
 			Name:   v.Name,
@@ -262,7 +273,9 @@ func convertVar(pipelineId string, vm map[string]string) map[string]*runtime.Var
 	}
 
 	var tVars []*model.TPipelineVar
-	_ = comm.Db.Where("pipeline_id = ? ", pipelineId).Find(&tVars)
+	if err := comm.Db.Where("pipeline_id = ? ", pipelineId).Find(&tVars); err != nil {
+		return nil, fmt.Errorf("query pipeline vars: %w", err)
+	}
 	for _, v := range tVars {
 		vms[v.Name] = &runtime.Variables{
 			Name:   v.Name,
@@ -284,7 +297,7 @@ func convertVar(pipelineId string, vm map[string]string) map[string]*runtime.Var
 		s, _ := replace(v.Value, vms, true)
 		vms[k].Value = s
 	}
-	return vms
+	return vms, nil
 }
 
 func replaceStages(stages []*bean.Stage, mVars map[string]*runtime.Variables) {

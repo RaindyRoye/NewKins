@@ -46,7 +46,9 @@ func ClearUserCache(uid string) {
 		return
 	}
 	uids := fmt.Sprintf("user:%s", uid)
-	_ = comm.CacheSet(uids, nil)
+	if err := comm.CacheSet(uids, nil); err != nil {
+		logrus.Warnf("ClearUserCache: failed to clear cache for uid %s: %v", uid, err)
+	}
 }
 func GetUserCache(uid string) (*model.TUser, bool) {
 	var ok bool

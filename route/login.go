@@ -13,6 +13,7 @@ import (
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/sirupsen/logrus"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 )
 
@@ -85,5 +86,7 @@ func (LoginController) login(c *gin.Context, m *bean.LoginReq) {
 	c.JSON(200, rt)
 
 	usr.LoginTime = time.Now()
-	_, _ = comm.Db.Cols("login_time").Where("id=?", usr.Id).Update(usr)
+	if _, err := comm.Db.Cols("login_time").Where("id=?", usr.Id).Update(usr); err != nil {
+		logrus.Errorf("login: failed to update login time for user %s: %v", usr.Id, err)
+	}
 }
