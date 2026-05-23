@@ -106,11 +106,11 @@ func (c *BuildTask) clears() {
 	}()
 
 	if c.isClone {
-		os.RemoveAll(c.repoPaths)
+		_ = os.RemoveAll(c.repoPaths)
 	}
 	for _, v := range c.jobs {
 		pth := filepath.Join(c.buildPath, common.PathJobs, v.step.Id, common.PathArts)
-		os.RemoveAll(pth)
+		_ = os.RemoveAll(pth)
 	}
 }
 func (c *BuildTask) run() {

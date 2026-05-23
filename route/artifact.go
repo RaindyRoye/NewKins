@@ -411,6 +411,6 @@ func (ArtifactController) versionRm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	fls := filepath.Join(comm.WorkPath, common.PathArtifacts, artv.Id)
-	os.RemoveAll(fls)
+	_ = os.RemoveAll(fls)
 	c.String(200, artv.Id)
 }

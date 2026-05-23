@@ -123,7 +123,7 @@ func (ArtPublicController) downFile(c *gin.Context, fls string) {
 			c.String(511, "Zip err1:"+err.Error())
 			return
 		}
-		defer os.RemoveAll(zipth)
+		defer func() { _ = os.RemoveAll(zipth) }()
 		stat, err = os.Stat(zipth)
 		if err != nil {
 			c.String(511, "Zip err2:"+err.Error())
@@ -139,7 +139,7 @@ func (ArtPublicController) downFile(c *gin.Context, fls string) {
 		c.String(404, "Not Found File")
 		return
 	}
-	defer fl.Close()
+	defer func() { _ = fl.Close() }()
 	rdr = fl
 	contsz = stat.Size()
 

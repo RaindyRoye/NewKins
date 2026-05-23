@@ -141,7 +141,7 @@ func TestPostResult_ErrorWrapping(t *testing.T) {
 			t.Skip("hijack failed")
 		}
 		// Close connection abruptly to cause read error
-		conn.Close()
+		_ = conn.Close()
 	}))
 	defer server.Close()
 

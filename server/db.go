@@ -45,7 +45,7 @@ func initDb() error {
 
 func initCache() error {
 	pth := filepath.Join(comm.WorkPath, "cache.dat")
-	os.Remove(pth)
+	_ = os.Remove(pth)
 	db, err := bolt.Open(pth, 0640, nil)
 	if err != nil {
 		logrus.Errorf("InitCache err:%v", err)

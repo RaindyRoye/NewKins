@@ -119,12 +119,12 @@ func (HbtpRunner) ReadDir(c *hbtp.Context) {
 	pth := c.ReqHeader().GetString("pth")
 	fs, err := c.ReqHeader().GetInt("fs")
 	if err != nil {
-		c.ResString(hbtp.ResStatusErr, err.Error())
+		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return
 	}
 	rts, err := Mgr.brun.ReadDir(int(fs), buildID, pth)
 	if err != nil {
-		c.ResString(hbtp.ResStatusErr, err.Error())
+		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return
 	}
 	_ = c.ResJson(hbtp.ResStatusOk, rts)
@@ -135,16 +135,16 @@ func (HbtpRunner) ReadFile(c *hbtp.Context) {
 	fs, err := c.ReqHeader().GetInt("fs")
 	start, _ := c.ReqHeader().GetInt("start")
 	if err != nil {
-		c.ResString(hbtp.ResStatusErr, err.Error())
+		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return
 	}
 	flsz, flr, err := Mgr.brun.ReadFile(int(fs), buildID, pth, start)
 	if err != nil {
-		c.ResString(hbtp.ResStatusErr, err.Error())
+		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return
 	}
-	defer flr.Close()
-	c.ResString(hbtp.ResStatusOk, fmt.Sprintf("%d", flsz))
+	defer func() { _ = flr.Close() }()
+	_ = c.ResString(hbtp.ResStatusOk, fmt.Sprintf("%d", flsz))
 	bts := make([]byte, 10240)
 	for !hbtp.EndContext(comm.Ctx) {
 		n, readErr := flr.Read(bts)
@@ -166,20 +166,20 @@ func (HbtpRunner) GetEnv(c *hbtp.Context) {
 	key := c.ReqHeader().GetString("key")
 	rts, ok := Mgr.brun.GetEnv(buildID, jobID, key)
 	if !ok {
-		c.ResString(hbtp.ResStatusNotFound, "")
+		_ = c.ResString(hbtp.ResStatusNotFound, "")
 		return
 	}
-	c.ResString(hbtp.ResStatusOk, rts)
+	_ = c.ResString(hbtp.ResStatusOk, rts)
 }
 func (HbtpRunner) GenEnv(c *hbtp.Context, env utils.EnvVal) {
 	buildID := c.ReqHeader().GetString("buildID")
 	jobID := c.ReqHeader().GetString("jobID")
 	err := Mgr.brun.GenEnv(buildID, jobID, env)
 	if err != nil {
-		c.ResString(hbtp.ResStatusErr, err.Error())
+		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return
 	}
-	c.ResString(hbtp.ResStatusOk, "ok")
+	_ = c.ResString(hbtp.ResStatusOk, "ok")
 }
 func (HbtpRunner) StatFile(c *hbtp.Context) {
 	buildID := c.ReqHeader().GetString("buildID")
@@ -188,12 +188,12 @@ func (HbtpRunner) StatFile(c *hbtp.Context) {
 	pth := c.ReqHeader().GetString("pth")
 	fs, err := c.ReqHeader().GetInt("fs")
 	if err != nil {
-		c.ResString(hbtp.ResStatusErr, err.Error())
+		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return
 	}
 	stat, err := Mgr.brun.StatFile(int(fs), buildID, jobID, dir, pth)
 	if err != nil {
-		c.ResString(hbtp.ResStatusErr, err.Error())
+		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return
 	}
 	_ = c.ResJson(hbtp.ResStatusOk, stat)
@@ -206,16 +206,16 @@ func (HbtpRunner) UploadFile(c *hbtp.Context) {
 	start, _ := c.ReqHeader().GetInt("start")
 	fs, err := c.ReqHeader().GetInt("fs")
 	if err != nil {
-		c.ResString(hbtp.ResStatusErr, err.Error())
+		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return
 	}
 	flw, err := Mgr.brun.UploadFile(int(fs), buildID, jobID, dir, pth, start)
 	if err != nil {
-		c.ResString(hbtp.ResStatusErr, err.Error())
+		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return
 	}
-	defer flw.Close()
-	c.ResString(hbtp.ResStatusOk, "ok")
+	defer func() { _ = flw.Close() }()
+	_ = c.ResString(hbtp.ResStatusOk, "ok")
 
 	bts := make([]byte, 10240)
 	for !hbtp.EndContext(comm.Ctx) {
@@ -238,10 +238,10 @@ func (HbtpRunner) FindArtVersionId(c *hbtp.Context) {
 	name := c.ReqHeader().GetString("name")
 	rts, err := Mgr.brun.FindArtVersionId(buildID, idnt, name)
 	if err != nil {
-		c.ResString(hbtp.ResStatusErr, err.Error())
+		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return
 	}
-	c.ResString(hbtp.ResStatusOk, rts)
+	_ = c.ResString(hbtp.ResStatusOk, rts)
 }
 func (HbtpRunner) NewArtVersionId(c *hbtp.Context) {
 	buildID := c.ReqHeader().GetString("buildID")
@@ -249,8 +249,8 @@ func (HbtpRunner) NewArtVersionId(c *hbtp.Context) {
 	name := c.ReqHeader().GetString("name")
 	rts, err := Mgr.brun.NewArtVersionId(buildID, idnt, name)
 	if err != nil {
-		c.ResString(hbtp.ResStatusErr, err.Error())
+		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return
 	}
-	c.ResString(hbtp.ResStatusOk, rts)
+	_ = c.ResString(hbtp.ResStatusOk, rts)
 }

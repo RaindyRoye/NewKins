@@ -54,7 +54,7 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 		return nil, errors.New("GiteePremium Api GetRepos failed ")
 	}
 	repos, err := io.ReadAll(resp.Body)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if err != nil {
 		logrus.Errorf("GiteePremium Api GetRepos ReadAll err : %v", err)
 		return nil, err
@@ -98,7 +98,7 @@ func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string)
 		logrus.Errorf("GiteePremium Api DeleteHooks url :%v Get err : %v", parse, err)
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Errorf("GiteePremium Api DeleteHooks url :%v ReadAll err : %v", parse, err)
@@ -143,7 +143,7 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 		logrus.Errorf("GiteePremium Api CreateWebHooks url :%v Get err : %v", parse, err)
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Errorf("GiteePremium Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
@@ -180,7 +180,7 @@ func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]
 		logrus.Errorf("GiteePremium Api GetRepoBranches url :%v Get err : %v", parse, err)
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Errorf("GiteePremium Api GetRepoBranches url :%v ReadAll err : %v", parse, err)
@@ -218,7 +218,7 @@ func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, p
 		logrus.Errorf("GiteePremium Api CreateWebHooks url :%v Get err : %v", parse, err)
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Errorf("GiteePremium Api CreateWebHooks url :%v ReadAll err : %v", parse, err)

@@ -162,7 +162,7 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "Not Found File")
 		return
 	}
-	defer fl.Close()
+	defer func() { _ = fl.Close() }()
 	off := offset
 	if offset > 0 {
 		off, err = fl.Seek(offset, 0)

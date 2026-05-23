@@ -67,7 +67,7 @@ func checkUrl(host string) bool {
 	if err != nil {
 		return false
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 	return res.StatusCode == 200
 }
 func (InstallController) install(c *gin.Context, m *installConfig) {

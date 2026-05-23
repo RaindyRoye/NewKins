@@ -246,7 +246,7 @@ func convertPullRequestURL(u string) (*githubPullRequestURL, error) {
 		return nil, err
 	}
 	all, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 	if err != nil {
 		logrus.Errorf("github convertPullRequestURL ReadAll err %v", err)
 		return nil, err

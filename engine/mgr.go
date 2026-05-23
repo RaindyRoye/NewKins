@@ -48,7 +48,7 @@ func Start() error {
 	// }
 
 	go func() {
-		os.RemoveAll(filepath.Join(comm.WorkPath, common.PathTmp))
+		_ = os.RemoveAll(filepath.Join(comm.WorkPath, common.PathTmp))
 		for !hbtp.EndContext(comm.Ctx) {
 			//Mgr.run()
 			time.Sleep(time.Millisecond * 100)

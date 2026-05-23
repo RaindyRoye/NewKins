@@ -92,7 +92,7 @@ func midUiHandle(c *gin.Context) {
 		httpex.ResMsgUrl(c, "内容有误,跳转中...", "/")
 		return
 	}
-	defer rd.Close()
+	defer func() { _ = rd.Close() }()
 	c.Writer.Header().Set("Cache-Control", "max-age=360000000")
 
 	ext := filepath.Ext(r.Name)

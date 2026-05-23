@@ -108,7 +108,7 @@ func (c *baseRunner) PushOutLine(buildID, jobId, cmdId, bs string, iserr bool) e
 	if err != nil {
 		return err
 	}
-	defer logfl.Close()
+	defer func() { _ = logfl.Close() }()
 	if _, err := logfl.Write(bts); err != nil {
 		return err
 	}
