@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"net/http/pprof"
 	"path/filepath"
 	"strings"
 	"time"
@@ -41,6 +42,22 @@ func runWeb() {
 func regApi() {
 	if core.Debug {
 		comm.WebEgn.Use(util.MidAccessAllowFun)
+		// pprof profiling endpoints (debug mode only)
+		pprofGroup := comm.WebEgn.Group("/debug/pprof")
+		{
+			pprofGroup.GET("/", gin.WrapF(pprof.Index))
+			pprofGroup.GET("/cmdline", gin.WrapF(pprof.Cmdline))
+			pprofGroup.GET("/profile", gin.WrapF(pprof.Profile))
+			pprofGroup.GET("/symbol", gin.WrapF(pprof.Symbol))
+			pprofGroup.GET("/trace", gin.WrapF(pprof.Trace))
+			pprofGroup.GET("/allocs", gin.WrapH(pprof.Handler("allocs")))
+			pprofGroup.GET("/block", gin.WrapH(pprof.Handler("block")))
+			pprofGroup.GET("/goroutine", gin.WrapH(pprof.Handler("goroutine")))
+			pprofGroup.GET("/heap", gin.WrapH(pprof.Handler("heap")))
+			pprofGroup.GET("/mutex", gin.WrapH(pprof.Handler("mutex")))
+			pprofGroup.GET("/threadcreate", gin.WrapH(pprof.Handler("threadcreate")))
+		}
+		logrus.Info("pprof profiling endpoints enabled at /debug/pprof")
 	}
 	// Health check endpoints
 	comm.WebEgn.GET("/healthz", func(c *gin.Context) {
