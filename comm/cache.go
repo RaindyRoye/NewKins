@@ -72,8 +72,8 @@ func parseCacheData(bts []byte) []byte {
 	return nil
 }
 
-var KeyNotFoundErr = errors.New("key not found")
-var KeyOutTimeErr = errors.New("key is timeout")
+var ErrKeyNotFound = errors.New("key not found")
+var ErrKeyTimeout = errors.New("key is timeout")
 
 func CacheGet(key string) ([]byte, error) {
 	if BCache == nil {
@@ -83,16 +83,16 @@ func CacheGet(key string) ([]byte, error) {
 	err := BCache.View(func(tx *bolt.Tx) error {
 		bk := tx.Bucket(mainCacheBucket)
 		if bk == nil {
-			return KeyNotFoundErr
+			return ErrKeyNotFound
 		}
 		bts := bk.Get([]byte(key))
 		if bts == nil {
-			return KeyNotFoundErr
+			return ErrKeyNotFound
 		}
 		rt = parseCacheData(bts)
 		if rt == nil {
 			_ = bk.Delete([]byte(key))
-			return KeyOutTimeErr
+			return ErrKeyTimeout
 		}
 		return nil
 	})

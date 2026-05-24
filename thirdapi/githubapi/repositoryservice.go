@@ -53,7 +53,7 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 	}
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Github Api GetRepos url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New("Github Api GetRepos failed ")
+		return nil, errors.New("github api GetRepos failed")
 	}
 	repos, err := io.ReadAll(resp.Body)
 	defer func() { _ = resp.Body.Close() }()
@@ -73,7 +73,7 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 		splits := strings.Split(lk, ", ")
 		for _, v := range splits {
 			if strings.Contains(v, `rel="last"`) {
-				replace := strings.Replace(strings.Replace(v, "<", "", -1), ">;", "", -1)
+				replace := strings.ReplaceAll(strings.ReplaceAll(v, "<", ""), ">;", "")
 				p, errs := url.Parse(replace)
 				if errs != nil {
 					logrus.Errorf("Github Api GetRepos url Parse err : %v", errs)

@@ -13,8 +13,8 @@ import (
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/sirupsen/logrus"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
+	"github.com/sirupsen/logrus"
 )
 
 type LoginController struct{}

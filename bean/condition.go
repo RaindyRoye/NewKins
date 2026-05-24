@@ -39,7 +39,7 @@ func (c *Condition) Excludes(v string) bool {
 		if err != nil {
 			return false
 		}
-		match := reg.Match([]byte(strings.Replace(v, "\n", "", -1)))
+		match := reg.Match([]byte(strings.ReplaceAll(v, "\n", "")))
 		if match {
 			return true
 		}
@@ -62,7 +62,7 @@ func (c *Condition) Includes(v string) bool {
 		if err != nil {
 			return false
 		}
-		match := reg.Match([]byte(strings.Replace(v, "\n", "", -1)))
+		match := reg.Match([]byte(strings.ReplaceAll(v, "\n", "")))
 		if match {
 			return true
 		}

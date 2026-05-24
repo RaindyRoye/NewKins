@@ -96,20 +96,21 @@ func midUiHandle(c *gin.Context) {
 	c.Writer.Header().Set("Cache-Control", "max-age=360000000")
 
 	ext := filepath.Ext(r.Name)
-	if ext == ".html" {
+	switch ext {
+	case ".html":
 		c.Writer.Header().Set("Cache-Control", "no-cache")
 		c.Writer.Header().Set("Pragma", "no-cache")
 		c.Writer.Header().Set("Expires", "0")
 		c.Writer.Header().Set("Content-Type", "text/html")
-	} else if ext == ".css" {
+	case ".css":
 		c.Writer.Header().Set("Content-Type", "text/css")
-	} else if ext == ".js" {
+	case ".js":
 		c.Writer.Header().Set("Content-Type", "application/javascript")
-	} else if ext == ".svg" {
+	case ".svg":
 		c.Writer.Header().Set("Content-Type", "image/svg+xml")
-	} else if ext == ".woff2" {
+	case ".woff2":
 		//c.Writer.Header().Set("Content-Type", "image/svg+xml")
-	} else if ext == ".ttf" || ext == ".ttc" {
+	case ".ttf", ".ttc":
 		c.Writer.Header().Set("Content-Type", "application/x-font-ttf")
 	}
 	c.Status(200)

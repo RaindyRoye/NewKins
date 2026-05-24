@@ -356,10 +356,7 @@ func replace(s string, mVars map[string]*runtime.Variables, mustShow ...bool) (s
 		return "", false
 	}
 	conts := s
-	ms := false
-	if len(mustShow) == 1 && mustShow[0] {
-		ms = true
-	}
+	ms := len(mustShow) == 1 && mustShow[0]
 	secret := false
 	if common.RegVar.MatchString(s) {
 		all := common.RegVar.FindAllStringSubmatch(s, -1)

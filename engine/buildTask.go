@@ -277,12 +277,13 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 				v.Lock()
 				vStats := v.step.Status
 				v.Unlock()
-				if vStats == common.BuildStatusOk {
+				switch vStats {
+				case common.BuildStatusOk:
 					waitln--
-				} else if vStats == common.BuildStatusCancel {
+				case common.BuildStatusCancel:
 					job.status(common.BuildStatusCancel, "")
 					return
-				} else if vStats == common.BuildStatusError {
+				case common.BuildStatusError:
 					if v.step.ErrIgnore {
 						waitln--
 					} else {

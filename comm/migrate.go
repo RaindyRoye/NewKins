@@ -11,17 +11,17 @@ import (
 func bindata_read(data []byte, name string) ([]byte, error) {
 	gz, err := gzip.NewReader(bytes.NewBuffer(data))
 	if err != nil {
-		return nil, fmt.Errorf("Read %q: %w", name, err)
+		return nil, fmt.Errorf("read %q: %w", name, err)
 	}
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, gz)
 	if closeErr := gz.Close(); closeErr != nil && err == nil {
-		return nil, fmt.Errorf("Read %q: %w", name, closeErr)
+		return nil, fmt.Errorf("read %q: %w", name, closeErr)
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("Read %q: %w", name, err)
+		return nil, fmt.Errorf("read %q: %w", name, err)
 	}
 
 	return buf.Bytes(), nil
@@ -103,7 +103,7 @@ func sqlite_000001_gokins_up_sql() ([]byte, error) {
 // It returns an error if the asset could not be found or
 // could not be loaded.
 func Asset(name string) ([]byte, error) {
-	cannonicalName := strings.Replace(name, "\\", "/", -1)
+	cannonicalName := strings.ReplaceAll(name, "\\", "/")
 	if f, ok := _bindata[cannonicalName]; ok {
 		return f()
 	}
@@ -149,7 +149,7 @@ var _bindata = map[string]func() ([]byte, error){
 func AssetDir(name string) ([]string, error) {
 	node := _bintree
 	if len(name) != 0 {
-		cannonicalName := strings.Replace(name, "\\", "/", -1)
+		cannonicalName := strings.ReplaceAll(name, "\\", "/")
 		pathList := strings.Split(cannonicalName, "/")
 		for _, p := range pathList {
 			node = node.Children[p]

@@ -150,11 +150,12 @@ func (c *baseRunner) ReadDir(fs int, buildID string, pth string) ([]*runners.Dir
 		return nil, errors.New("not found build")
 	}
 	pths := ""
-	if fs == 1 {
+	switch fs {
+	case 1:
 		pths = filepath.Join(build.repoPaths, pth)
-	} else if fs == 2 {
+	case 2:
 		pths = filepath.Join(comm.WorkPath, common.PathArtifacts, pth)
-	} else if fs == 3 {
+	case 3:
 		pths = filepath.Join(build.buildPath, common.PathJobs, pth)
 	}
 	fls, err := os.ReadDir(pths)
@@ -187,11 +188,12 @@ func (c *baseRunner) ReadFile(fs int, buildID string, pth string, start int64) (
 		return 0, nil, errors.New("not found build")
 	}
 	pths := ""
-	if fs == 1 {
+	switch fs {
+	case 1:
 		pths = filepath.Join(build.repoPaths, pth)
-	} else if fs == 2 {
+	case 2:
 		pths = filepath.Join(comm.WorkPath, common.PathArtifacts, pth)
-	} else if fs == 3 {
+	case 3:
 		pths = filepath.Join(build.buildPath, common.PathJobs, pth)
 	}
 	if pths == "" {
@@ -275,11 +277,12 @@ func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*
 		return nil, errors.New("not found job")
 	}
 	pths := ""
-	if fs == 1 {
+	switch fs {
+	case 1:
 		pths = filepath.Join(comm.WorkPath, common.PathArtifacts, dir, pth)
-	} else if fs == 2 {
+	case 2:
 		pths = filepath.Join(job.task.buildPath, common.PathJobs, job.step.Id, common.PathArts, dir, pth)
-	} else if fs == 3 {
+	case 3:
 		pths = filepath.Join(build.repoPaths, dir, pth)
 	}
 	if pths == "" {
@@ -308,11 +311,12 @@ func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, 
 		return nil, errors.New("not found job")
 	}
 	pths := ""
-	if fs == 1 {
+	switch fs {
+	case 1:
 		pths = filepath.Join(comm.WorkPath, common.PathArtifacts, dir, pth)
-	} else if fs == 2 {
+	case 2:
 		pths = filepath.Join(job.task.buildPath, common.PathJobs, job.step.Id, common.PathArts, dir, pth)
-	} else if fs == 3 {
+	case 3:
 		pths = filepath.Join(build.repoPaths, dir, pth)
 	}
 	if pths == "" {

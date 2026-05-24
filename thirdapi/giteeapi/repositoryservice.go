@@ -51,7 +51,7 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 	}
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Gitee Api GetRepos url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New("Gitee Api GetRepos failed ")
+		return nil, errors.New("gitee api GetRepos failed")
 	}
 	repos, err := io.ReadAll(resp.Body)
 	defer func() { _ = resp.Body.Close() }()

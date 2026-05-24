@@ -106,11 +106,12 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 
 	dataul := ""
 	var err error
-	if m.Datasource.Driver == "mysql" {
+	switch m.Datasource.Driver {
+	case "mysql":
 		_, dataul, err = migrates.InitMysqlMigrate(m.Datasource.Host, m.Datasource.Name, m.Datasource.User, m.Datasource.Pass)
-	} else if m.Datasource.Driver == "postgres" {
+	case "postgres":
 		_, dataul, err = migrates.InitPostgresMigrate(m.Datasource.Host, m.Datasource.Name, m.Datasource.User, m.Datasource.Pass)
-	} else {
+	default:
 		dataul, err = migrates.InitSqliteMigrate()
 	}
 	if err != nil {

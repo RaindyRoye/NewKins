@@ -100,11 +100,12 @@ func parsePullRequestHook(data []byte) (*hook.PullRequestHook, error) {
 		return nil, err
 	}
 	if gp.Action != "" {
-		if gp.Action == hook.ActionSynchronize {
+		switch gp.Action {
+		case hook.ActionSynchronize:
 			gp.Action = hook.ActionUpdate
-		} else if gp.Action == hook.ActionOpened {
+		case hook.ActionOpened:
 			gp.Action = hook.ActionOpen
-		} else {
+		default:
 			return nil, fmt.Errorf("action is %v", gp.Action)
 		}
 	}

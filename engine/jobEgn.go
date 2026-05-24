@@ -128,7 +128,7 @@ func (c *JobEngine) Put(job *jobSync) error {
 	e, ok := c.execs[job.step.Step]
 	c.exelk.RUnlock()
 	if !ok {
-		return fmt.Errorf("Not Found Plugin:%s", job.step.Step)
+		return fmt.Errorf("not found plugin:%s", job.step.Step)
 	}
 	e.Lock()
 	defer e.Unlock()

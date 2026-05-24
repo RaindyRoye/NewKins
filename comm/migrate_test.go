@@ -115,7 +115,7 @@ func TestBindataRead_InvalidData(t *testing.T) {
 		t.Fatal("bindata_read with invalid data expected error, got nil")
 	}
 	// Verify error is wrapped (can be unwrapped)
-	var unwrapped error = errors.Unwrap(err)
+	unwrapped := errors.Unwrap(err)
 	if unwrapped == nil {
 		t.Fatal("bindata_read error should be wrapped to allow unwrapping")
 	}

@@ -39,7 +39,7 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 	}
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Gitlab Api GetRepos url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New("Gitlab Api GetRepos failed ")
+		return nil, errors.New("gitlab api GetRepos failed")
 	}
 	repos, err := io.ReadAll(resp.Body)
 	defer func() { _ = resp.Body.Close() }()
