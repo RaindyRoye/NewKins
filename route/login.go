@@ -19,12 +19,15 @@ import (
 
 type LoginController struct{}
 
+// loginRateLimiter limits login attempts to 10 per minute per IP.
+var loginRateLimiter = util.NewRateLimiter(10, time.Minute)
+
 func (LoginController) GetPath() string {
 	return "/api/lg"
 }
 func (c *LoginController) Routes(g gin.IRoutes) {
 	g.POST("/info", c.info)
-	g.POST("/login", util.GinReqParseJson(c.login))
+	g.POST("/login", util.MidRateLimit(loginRateLimiter), util.GinReqParseJson(c.login))
 }
 func (LoginController) info(c *gin.Context) {
 	rt := hbtp.Map{}

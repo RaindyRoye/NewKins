@@ -1,0 +1,43 @@
+# NewKins CI/CD 配置文件示例
+# 复制此文件为 config.yml 并根据实际环境修改
+
+server:
+  # 外网访问地址（用于生成链接和 webhook 回调）
+  host: "http://localhost:8080"
+
+  # JWT 登录密钥（请修改为随机字符串，至少 32 位）
+  # 可使用: openssl rand -hex 32 生成
+  loginKey: "your-secret-login-key-change-me"
+
+  # 并发运行限制（同时运行的流水线数量，默认 0 表示不限制）
+  runLimit: 10
+
+  # HyperByte 传输协议监听地址
+  hbtpHost: "0.0.0.0:8082"
+
+  # 服务密钥（用于 runner 与 server 之间的通信认证）
+  secret: "your-server-secret-change-me"
+
+  # 支持的 shell 类型
+  shells:
+    - "bash"
+    - "sh"
+
+  # 制品下载 token（用于认证制品下载请求）
+  DownToken: ""
+
+datasource:
+  # 数据库驱动: sqlite | mysql | postgres
+  driver: "sqlite"
+
+  # 数据库连接地址
+  # SQLite 示例:
+  url: "gokins.db"
+
+  # MySQL 示例:
+  # driver: "mysql"
+  # url: "user:password@tcp(127.0.0.1:3306)/gokins?charset=utf8mb4&parseTime=true&loc=Local"
+
+  # PostgreSQL 示例:
+  # driver: "postgres"
+  # url: "host=127.0.0.1 user=gokins password=secret dbname=gokins port=5432 sslmode=disable"
