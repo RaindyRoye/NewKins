@@ -113,10 +113,14 @@ func (c *TimerEngine) refresh() {
 }
 func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("TimerEngine resetOne recover:%v", err)
+		if r := recover(); r != nil {
+			logrus.Warnf("TimerEngine resetOne recover:%v", r)
 			logrus.Warnf("TimerEngine stack:%s", string(debug.Stack()))
-			rterr = fmt.Errorf("panic in resetOne: %v", err)
+			if err, ok := r.(error); ok {
+				rterr = fmt.Errorf("panic in resetOne: %w", err)
+			} else {
+				rterr = fmt.Errorf("panic in resetOne: %v", r)
+			}
 		}
 	}()
 	if tmr.Types != "timer" {

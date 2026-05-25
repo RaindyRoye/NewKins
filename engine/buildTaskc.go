@@ -136,10 +136,14 @@ func (c *BuildTask) check() bool {
 
 func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) {
 	defer func() {
-		if err := recover(); err != nil {
-			rterr = fmt.Errorf("recover:%v", err)
-			logrus.Warnf("BuildTask genRunjob recover:%v", err)
+		if r := recover(); r != nil {
+			logrus.Warnf("BuildTask genRunjob recover:%v", r)
 			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
+			if err, ok := r.(error); ok {
+				rterr = fmt.Errorf("recover: %w", err)
+			} else {
+				rterr = fmt.Errorf("recover: %v", r)
+			}
 		}
 	}()
 	runjb := &runners.RunJob{
@@ -243,10 +247,14 @@ func (c *BuildTask) appendcmds(runjb *runners.RunJob, conts string) {
 }
 func (c *BuildTask) gencmds(runjb *runners.RunJob, cmds []interface{}) (rterr error) {
 	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask gencmds recover:%v", err)
+		if r := recover(); r != nil {
+			logrus.Warnf("BuildTask gencmds recover:%v", r)
 			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
-			rterr = fmt.Errorf("%v", err)
+			if err, ok := r.(error); ok {
+				rterr = fmt.Errorf("gencmds panic: %w", err)
+			} else {
+				rterr = fmt.Errorf("gencmds panic: %v", r)
+			}
 		}
 	}()
 	for _, v := range cmds {
