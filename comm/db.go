@@ -18,13 +18,13 @@ func findCount(cds builder.Cond, data interface{}) (int64, error) {
 		return 0, errors.New("needs a pointer to a slice")
 	}
 	of := reflect.TypeOf(data)
-	if of.Kind() == reflect.Ptr {
+	if of.Kind() == reflect.Pointer {
 		of = of.Elem()
 	}
 
 	if of.Kind() == reflect.Slice {
 		sty := of.Elem()
-		if sty.Kind() == reflect.Ptr {
+		if sty.Kind() == reflect.Pointer {
 			sty = sty.Elem()
 		}
 		pv := reflect.New(sty)

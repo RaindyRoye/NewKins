@@ -41,7 +41,7 @@ func GinReqParseJson(fn interface{}) gin.HandlerFunc {
 		for i := 1; i < nmIn; i++ {
 			argt := fnt.In(i)
 			argtr := argt
-			if argt.Kind() == reflect.Ptr {
+			if argt.Kind() == reflect.Pointer {
 				argtr = argt.Elem()
 			}
 			inls[i] = reflect.Zero(argt)
@@ -52,7 +52,7 @@ func GinReqParseJson(fn interface{}) gin.HandlerFunc {
 						c.String(500, fmt.Sprintf("params err[%d]:%+v", i, err))
 						return
 					}
-					if argt.Kind() == reflect.Ptr {
+					if argt.Kind() == reflect.Pointer {
 						inls[i] = argv
 					} else {
 						inls[i] = argv.Elem()
