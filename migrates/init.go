@@ -14,6 +14,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
+	"github.com/sirupsen/logrus"
 )
 
 func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, errs error) {
@@ -30,7 +31,7 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 		dbs)
 	db, err := sql.Open("mysql", ul)
 	if err != nil {
-		errs = err
+		errs = fmt.Errorf("open mysql database: %w", err)
 		return
 	}
 	err = db.Ping()
@@ -42,15 +43,15 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 			host)
 		db, err = sql.Open("mysql", uls)
 		if err != nil {
-			println("open dbs err:" + err.Error())
-			errs = err
+			logrus.Errorf("InitMysqlMigrate: open dbs err: %v", err)
+			errs = fmt.Errorf("open database: %w", err)
 			return
 		}
 		defer func() { _ = db.Close() }()
 		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE `%s` DEFAULT CHARACTER SET utf8mb4;", dbs))
 		if err != nil {
-			println("create dbs err:" + err.Error())
-			errs = err
+			logrus.Errorf("InitMysqlMigrate: create dbs err: %v", err)
+			errs = fmt.Errorf("create database %q: %w", dbs, err)
 			return
 		}
 		_, _ = db.Exec(fmt.Sprintf("USE `%s`;", dbs))
@@ -59,15 +60,15 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 	defer func() { _ = db.Close() }()
 	wait = false
 	if err != nil {
-		errs = err
+		errs = fmt.Errorf("ping mysql database: %w", err)
 		return
 	}
 
 	// Run migrations
 	driver, err := mysql.WithInstance(db, &mysql.Config{})
 	if err != nil {
-		println("could not start sql migration... ", err.Error())
-		errs = err
+		logrus.Errorf("InitMysqlMigrate: could not start sql migration: %v", err)
+		errs = fmt.Errorf("init mysql migration driver: %w", err)
 		return
 	}
 	defer func() { _ = driver.Close() }()
@@ -83,7 +84,7 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 	})
 	sc, err := bindata.WithInstance(s)
 	if err != nil {
-		errs = err
+		errs = fmt.Errorf("init mysql bindata source: %w", err)
 		return
 	}
 	defer func() { _ = sc.Close() }()
@@ -91,14 +92,14 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 		"bindata", sc,
 		"mysql", driver)
 	if err != nil {
-		errs = err
+		errs = fmt.Errorf("create mysql migrate instance: %w", err)
 		return
 	}
 	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
 	if err != nil && err != migrate.ErrNoChange {
 		_ = mgt.Down()
-		errs = err
+		errs = fmt.Errorf("run mysql migration: %w", err)
 		return
 	}
 
@@ -109,7 +110,7 @@ func InitSqliteMigrate() (rtul string, errs error) {
 	ul := filepath.Join(comm.WorkPath, "db.dat")
 	db, err := sql.Open("sqlite3", ul)
 	if err != nil {
-		errs = err
+		errs = fmt.Errorf("open sqlite database: %w", err)
 		return
 	}
 	defer func() { _ = db.Close() }()
@@ -117,8 +118,8 @@ func InitSqliteMigrate() (rtul string, errs error) {
 	// Run migrations
 	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
 	if err != nil {
-		println("could not start sql migration... ", err.Error())
-		errs = err
+		logrus.Errorf("InitSqliteMigrate: could not start sql migration: %v", err)
+		errs = fmt.Errorf("init sqlite migration driver: %w", err)
 		return
 	}
 	defer func() { _ = driver.Close() }()
@@ -134,7 +135,7 @@ func InitSqliteMigrate() (rtul string, errs error) {
 	})
 	sc, err := bindata.WithInstance(s)
 	if err != nil {
-		errs = err
+		errs = fmt.Errorf("init sqlite bindata source: %w", err)
 		return
 	}
 	defer func() { _ = sc.Close() }()
@@ -142,14 +143,14 @@ func InitSqliteMigrate() (rtul string, errs error) {
 		"bindata", sc,
 		"sqlite3", driver)
 	if err != nil {
-		errs = err
+		errs = fmt.Errorf("create sqlite migrate instance: %w", err)
 		return
 	}
 	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
 	if err != nil && err != migrate.ErrNoChange {
 		_ = mgt.Down()
-		errs = err
+		errs = fmt.Errorf("run sqlite migration: %w", err)
 		return
 	}
 
@@ -166,13 +167,13 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 	ul := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, pass, host, dbs)
 	db, err := sql.Open("postgres", ul)
 	if err != nil {
-		errs = err
+		errs = fmt.Errorf("open postgres database: %w", err)
 		return
 	}
 	err = db.Ping()
 	if err != nil {
 		_ = db.Close()
-		errs = err
+		errs = fmt.Errorf("ping postgres database: %w", err)
 		return
 	}
 	defer func() { _ = db.Close() }()
@@ -185,8 +186,8 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 	// Run migrations
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		println("could not start sql migration... ", err.Error())
-		errs = err
+		logrus.Errorf("InitPostgresMigrate: could not start sql migration: %v", err)
+		errs = fmt.Errorf("init postgres migration driver: %w", err)
 		return
 	}
 	defer func() { _ = driver.Close() }()
@@ -202,7 +203,7 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 	})
 	sc, err := bindata.WithInstance(s)
 	if err != nil {
-		errs = err
+		errs = fmt.Errorf("init postgres bindata source: %w", err)
 		return
 	}
 	defer func() { _ = sc.Close() }()
@@ -210,14 +211,14 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 		"bindata", sc,
 		"postgres", driver)
 	if err != nil {
-		errs = err
+		errs = fmt.Errorf("create postgres migrate instance: %w", err)
 		return
 	}
 	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
 	if err != nil && err != migrate.ErrNoChange {
 		_ = mgt.Down()
-		errs = err
+		errs = fmt.Errorf("run postgres migration: %w", err)
 		return
 	}
 

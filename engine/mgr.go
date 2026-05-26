@@ -3,7 +3,6 @@ package engine
 import (
 	"os"
 	"path/filepath"
-	"runtime/debug"
 	"time"
 
 	"github.com/gokins/core/common"
@@ -59,17 +58,6 @@ func Start() error {
 		}
 	}()
 	return nil
-}
-
-//nolint:unused // Reserved for future use
-func (c *Manager) run() {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("Manager run recover:%v", err)
-			logrus.Warnf("Manager stack:%s", string(debug.Stack()))
-		}
-	}()
-
 }
 
 func (c *Manager) BuildEgn() *BuildEngine {
