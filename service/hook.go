@@ -196,6 +196,6 @@ func parseHook(hookType string, req *http.Request, secret string) (hook.WebHook,
 	case "gitea":
 		return gitea.Parse(req, secret)
 	default:
-		return nil, fmt.Errorf("未知的webhook类型")
+		return nil, fmt.Errorf("unknown webhook type: %q", hookType)
 	}
 }

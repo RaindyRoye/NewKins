@@ -29,12 +29,18 @@ func SetParam(key string, data []byte, tit ...string) error {
 	e.Data = string(data)
 	if ok && e.Aid > 0 {
 		_, err = db.Cols("title", "data").Where("aid=?", e.Aid).Update(e)
+		if err != nil {
+			return fmt.Errorf("update param %q: %w", key, err)
+		}
 	} else {
 		e.Name = key
 		e.Times = time.Now()
 		_, err = db.Insert(e)
+		if err != nil {
+			return fmt.Errorf("insert param %q: %w", key, err)
+		}
 	}
-	return err
+	return nil
 }
 func SetsParam(key string, data interface{}, tit ...string) error {
 	if data == nil {
@@ -60,10 +66,10 @@ func GetsParam(key string, data interface{}) error {
 	}
 	bts, err := GetParam(key)
 	if err != nil {
-		return err
+		return fmt.Errorf("get param %q: %w", key, err)
 	}
 	if err := json.Unmarshal(bts, data); err != nil {
-		return fmt.Errorf("unmarshal param data: %w", err)
+		return fmt.Errorf("unmarshal param %q data: %w", key, err)
 	}
 	return nil
 }

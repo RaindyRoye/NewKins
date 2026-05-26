@@ -59,7 +59,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 	}
 	err := pipe.Check()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("pipeline config check: %w", err)
 	}
 	pipe.ConvertCmd()
 
@@ -84,7 +84,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 		SQL("SELECT max(number) FROM t_pipeline_version WHERE pipeline_id = ?", tpipe.PipelineId).
 		Get(&number)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("query max pipeline version number: %w", err)
 	}
 	tpv := &model.TPipelineVersion{
 		Id:                  utils.NewXid(),
@@ -107,7 +107,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 	}
 	_, err = comm.Db.InsertOne(tpv)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("insert pipeline version: %w", err)
 	}
 
 	tb := &model.TBuild{
@@ -120,7 +120,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 	}
 	_, err = comm.Db.InsertOne(tb)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("insert build: %w", err)
 	}
 
 	rb := &runtime.Build{
@@ -161,7 +161,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 		}
 		_, err = comm.Db.InsertOne(ts)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("insert stage %q: %w", stage.Name, err)
 		}
 		for j, step := range stage.Steps {
 			if step.Disable {
@@ -169,11 +169,11 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 			}
 			cmds, err := json.Marshal(step.Commands)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, fmt.Errorf("marshal step %q commands: %w", step.Name, err)
 			}
 			djs, err := json.Marshal(step.Waits)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, fmt.Errorf("marshal step %q waits: %w", step.Name, err)
 			}
 			tsp := &model.TStep{
 				Id:                utils.NewXid(),
@@ -230,7 +230,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 			}
 			_, err = comm.Db.InsertOne(tsp)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, fmt.Errorf("insert step %q: %w", step.Name, err)
 			}
 			rt.Steps = append(rt.Steps, rtp)
 		}
