@@ -40,7 +40,7 @@ func (UserController) page(c *gin.Context, m *hbtp.Map) {
 
 	page, err := comm.FindPage(ses, &ls, pg, 20)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "user page query", err)
 		return
 	}
 	c.JSON(200, page)
@@ -89,7 +89,7 @@ func (UserController) new(c *gin.Context, m *hbtp.Map) {
 	}*/
 	_, err := comm.Db.InsertOne(ne)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "create user", err)
 		return
 	}
 	c.String(200, ne.Id)
@@ -138,7 +138,7 @@ func (UserController) upinfo(c *gin.Context, m *hbtp.Map) {
 	usr.Nick = nick
 	_, err := comm.Db.Cols("nick").Where("id=?", usr.Id).Update(usr)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "update user nick", err)
 		return
 	}
 	uinfo.Phone = phone
@@ -152,7 +152,7 @@ func (UserController) upinfo(c *gin.Context, m *hbtp.Map) {
 		_, err = comm.Db.InsertOne(uinfo)
 	}
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "update user info", err)
 		return
 	}
 	service.ClearUserCache(usr.Id)
@@ -199,7 +199,7 @@ func (UserController) upass(c *gin.Context, m *hbtp.Map) {
 	usr.Pass = utils.Md5String(pass)
 	_, err := comm.Db.Cols("pass").Where("id=?", usr.Id).Update(usr)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "update user password", err)
 		return
 	}
 	service.ClearUserCache(usr.Id)
@@ -230,7 +230,7 @@ func (UserController) active(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err := comm.Db.Cols("active").Where("id=?", usr.Id).Update(usr)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "update user active status", err)
 		return
 	}
 	service.ClearUserCache(usr.Id)
@@ -284,7 +284,7 @@ func (UserController) perm(c *gin.Context, m *hbtp.Map) {
 		_, err = comm.Db.InsertOne(uinfo)
 	}
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "update user permissions", err)
 		return
 	}
 	service.ClearUserCache(usr.Id)

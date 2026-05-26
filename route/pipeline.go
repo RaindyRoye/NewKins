@@ -80,7 +80,7 @@ func (PipelineController) orgPipelines(c *gin.Context, m *hbtp.Map) {
 	gen.SQL += "\nORDER BY pipe.id DESC"
 	page, err = comm.FindPages(gen, &ls, pg, 10)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	//}
@@ -126,7 +126,7 @@ func (PipelineController) getPipelines(c *gin.Context, m *hbtp.Map) {
 	gen.SQL += "\nORDER BY pipe.id DESC"
 	page, err = comm.FindPages(gen, &ls, pg, 10)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	//}
@@ -168,12 +168,12 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 	}
 	y := &bean.Pipeline{}
 	if err := yaml.Unmarshal([]byte(content), y); err != nil {
-		c.String(500, "yaml parse err:"+err.Error())
+		util.RespErr(c, 400, "yaml parse error", err)
 		return
 	}
 	err := y.Check()
 	if err != nil {
-		c.String(500, "yaml Check err:"+err.Error())
+		util.RespErr(c, 400, "yaml validation error", err)
 		return
 	}
 	pipeline := &model.TPipeline{
@@ -182,7 +182,7 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err = comm.Db.Cols("name,display_name").Where("id = ?", pipelineId).Update(pipeline)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	tpc := &model.TPipelineConf{
@@ -193,7 +193,7 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err = comm.Db.Cols("yml_content,url,username,access_token").Where("pipeline_id = ?", pipelineId).Update(tpc)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(http.StatusOK, "ok")
@@ -220,7 +220,7 @@ func (PipelineController) delete(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err := comm.Db.Cols("deleted").Where("id = ?", id).Update(tp)
 	if err != nil {
-		c.String(500, "TPipeline Update db err:"+err.Error())
+		util.RespInternalErr(c, "pipeline delete", err)
 		return
 	}
 	version := &model.TPipelineVersion{
@@ -228,7 +228,7 @@ func (PipelineController) delete(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err = comm.Db.Cols("deleted").Where("pipeline_id = ?", id).Update(version)
 	if err != nil {
-		c.String(500, "TPipeline Update db err:"+err.Error())
+		util.RespInternalErr(c, "pipeline delete", err)
 		return
 	}
 	c.String(http.StatusOK, "ok")
@@ -241,12 +241,12 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 	y := &bean.Pipeline{}
 	err := yaml.Unmarshal([]byte(npipe.Content), y)
 	if err != nil {
-		c.String(500, "yaml Unmarshal err:"+err.Error())
+		util.RespErr(c, 400, "yaml parse error", err)
 		return
 	}
 	err = y.Check()
 	if err != nil {
-		c.String(500, "yaml Check err:"+err.Error())
+		util.RespErr(c, 400, "yaml validation error", err)
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
@@ -275,7 +275,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 	}
 	_, err = comm.Db.InsertOne(pipeline)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	tpc := &model.TPipelineConf{
@@ -287,7 +287,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 	}
 	_, err = comm.Db.InsertOne(tpc)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	if len(npipe.Vars) > 0 {
@@ -295,7 +295,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 			pipelineVar := &model.TPipelineVar{}
 			err = utils.Struct2Struct(pipelineVar, v)
 			if err != nil {
-				c.String(500, "model err:"+err.Error())
+				util.RespInternalErr(c, "struct conversion", err)
 				return
 			}
 			pipelineVar.Uid = lgusr.Id
@@ -305,7 +305,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 			}
 			_, err = comm.Db.InsertOne(pipelineVar)
 			if err != nil {
-				c.String(500, "db err:"+err.Error())
+				util.RespInternalErr(c, "db operation", err)
 				return
 			}
 		}
@@ -319,7 +319,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 		}
 		_, err = comm.Db.InsertOne(top)
 		if err != nil {
-			c.String(500, "db err:"+err.Error())
+			util.RespInternalErr(c, "db operation", err)
 			return
 		}
 
@@ -352,7 +352,7 @@ func (PipelineController) info(c *gin.Context, m *hbtp.Map) {
 	tpc := &model.TPipelineConf{}
 	_, err := comm.Db.Where("pipeline_id=?", pipe.Id).Get(tpc)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	pipe.YmlContent = tpc.YmlContent
@@ -394,7 +394,7 @@ func (PipelineController) run(c *gin.Context, m *hbtp.Map) {
 	}
 	tvp, rb, err := service.Run(lgusr.Id, pipelineId, sha, "run")
 	if err != nil {
-		c.String(500, err.Error())
+		util.RespInternalErr(c, "pipeline run", err)
 		return
 	}
 	engine.Mgr.BuildEgn().Put(rb)
@@ -433,14 +433,14 @@ func (PipelineController) copy(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err := comm.Db.InsertOne(pipe)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 
 	tpc := &model.TPipelineConf{}
 	_, err = comm.Db.Where("pipeline_id=?", perm.Pipeline().Id).Get(tpc)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	ne := &model.TPipelineConf{
@@ -452,7 +452,7 @@ func (PipelineController) copy(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err = comm.Db.InsertOne(ne)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.JSON(200, pipe)
@@ -481,7 +481,7 @@ func (PipelineController) rebuild(c *gin.Context, m *hbtp.Map) {
 	}
 	tvp, rb, err := service.ReBuild(lgusr.Id, tvp)
 	if err != nil {
-		c.String(500, err.Error())
+		util.RespInternalErr(c, "pipeline rebuild", err)
 		return
 	}
 	engine.Mgr.BuildEgn().Put(rb)
@@ -508,7 +508,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 		where := comm.Db.Where("pipeline_id = ? and deleted != 1", pipelineId).Desc("id")
 		page, err = comm.FindPage(where, &ls, pg)
 		if err != nil {
-			c.String(500, "db err:"+err.Error())
+			util.RespInternalErr(c, "db operation", err)
 			return
 		}
 	} else {
@@ -516,14 +516,14 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 			where := comm.Db.Where(" deleted != 1").Desc("id")
 			page, err = comm.FindPage(where, &ls, pg)
 			if err != nil {
-				c.String(500, "db err:"+err.Error())
+				util.RespInternalErr(c, "db operation", err)
 				return
 			}
 		} else {
 			tpipeIds := []string{}
 			err = comm.Db.Table(&model.TPipeline{}).Cols("id").Where("uid = ? and deleted != 1", usr.Id).Find(&tpipeIds)
 			if err != nil {
-				c.String(500, "db err:"+err.Error())
+				util.RespInternalErr(c, "db operation", err)
 				return
 			}
 			if len(tpipeIds) <= 0 {
@@ -533,7 +533,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 			where := comm.Db.In("pipeline_id", tpipeIds).Where("deleted != 1").Desc("id")
 			page, err = comm.FindPage(where, &ls, pg, 20)
 			if err != nil {
-				c.String(500, "db err:"+err.Error())
+				util.RespInternalErr(c, "db operation", err)
 				return
 			}
 		}
@@ -628,7 +628,7 @@ func (PipelineController) searchSha(c *gin.Context, m *hbtp.Map) {
 	}
 	err := session.Find(&shas)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	res := make([]map[string]string, 0)
@@ -668,7 +668,7 @@ func (PipelineController) vars(c *gin.Context, m *hbtp.Map) {
 	}
 	page, err = comm.FindPage(session, &ls, pg)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	if !perm.CanWrite() {
@@ -697,7 +697,7 @@ func (PipelineController) varSave(c *gin.Context, pv *bean.PipelineVar) {
 	pipelineVar := &model.TPipelineVar{}
 	err := utils.Struct2Struct(pipelineVar, pv)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	if pv.Public {
@@ -706,7 +706,7 @@ func (PipelineController) varSave(c *gin.Context, pv *bean.PipelineVar) {
 	tpv := &model.TPipelineVar{}
 	ok, err := comm.Db.Where("pipeline_id = ? and name = ?", pv.PipelineId, pv.Name).Get(tpv)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	if pv.Aid > 0 {
@@ -716,7 +716,7 @@ func (PipelineController) varSave(c *gin.Context, pv *bean.PipelineVar) {
 		}
 		_, err = comm.Db.Cols("name,value,remarks,public").Where("aid = ?", pv.Aid).Update(pipelineVar)
 		if err != nil {
-			c.String(500, "db err:"+err.Error())
+			util.RespInternalErr(c, "db operation", err)
 			return
 		}
 		c.String(200, "ok")
@@ -728,7 +728,7 @@ func (PipelineController) varSave(c *gin.Context, pv *bean.PipelineVar) {
 	}
 	_, err = comm.Db.InsertOne(pipelineVar)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, "ok")
@@ -756,7 +756,7 @@ func (PipelineController) varDel(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err = comm.Db.Where("aid = ?", aId).Delete(pipelineVar)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, "ok")

@@ -82,7 +82,7 @@ func (OrgController) list(c *gin.Context, m *hbtp.Map) {
 	page, err = comm.FindPages(gen, &ls, pg, 10)
 	//}
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	for _, v := range ls {
@@ -126,7 +126,7 @@ func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err := comm.Db.InsertOne(ne)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.JSON(200, &bean.IdsRes{
@@ -196,7 +196,7 @@ func (OrgController) users(c *gin.Context, m *hbtp.Map) {
 		`, perm.Org().Id)
 	err := ses.Find(&usrs)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	//}
@@ -243,7 +243,7 @@ func (OrgController) save(c *gin.Context, m *hbtp.Map) {
 	_, err := comm.Db.Cols("name", "desc", "public", "updated").
 		Where("id=?", perm.Org().Id).Update(ne)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.JSON(200, &bean.IdsRes{
@@ -270,7 +270,7 @@ func (OrgController) rm(c *gin.Context, m *hbtp.Map) {
 	_, err := comm.Db.Cols("deleted", "deleted_time", "updated").
 		Where("id=?", perm.Org().Id).Update(ne)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, "ok")
@@ -346,7 +346,7 @@ func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 		_, err = comm.Db.InsertOne(ne)
 	}
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, fmt.Sprintf("%d", ne.Aid))
@@ -382,7 +382,7 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err := comm.Db.Where("aid=?", ne.Aid).Delete(ne)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, fmt.Sprintf("%d", ne.Aid))
@@ -411,7 +411,7 @@ func (OrgController) pipeAdd(c *gin.Context, m *hbtp.Map) {
 	ne.Created = time.Now()
 	_, err := comm.Db.InsertOne(ne)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, fmt.Sprintf("%d", ne.Aid))
@@ -432,7 +432,7 @@ func (OrgController) pipeRm(c *gin.Context, m *hbtp.Map) {
 	ne := &model.TOrgPipe{}
 	_, err := comm.Db.Where("org_id=? and pipe_id=?", perm.Org().Id, pipeId).Delete(ne)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, fmt.Sprintf("%d", ne.Aid))
@@ -464,7 +464,7 @@ func (OrgController) vars(c *gin.Context, m *hbtp.Map) {
 	}
 	page, err = comm.FindPage(session, &ls, pg)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	if !perm.CanWrite() {
@@ -493,7 +493,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 	orgVar := &model.TOrgVar{}
 	err := utils.Struct2Struct(orgVar, pv)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	if pv.Public {
@@ -502,7 +502,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 	tpv := &model.TOrgVar{}
 	ok, err := comm.Db.Where("org_id = ? and name = ?", pv.OrgId, pv.Name).Get(tpv)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	if pv.Aid > 0 {
@@ -512,7 +512,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 		}
 		_, err = comm.Db.Cols("name,value,remarks,public").Where("aid = ?", pv.Aid).Update(orgVar)
 		if err != nil {
-			c.String(500, "db err:"+err.Error())
+			util.RespInternalErr(c, "db operation", err)
 			return
 		}
 		c.String(200, "ok")
@@ -524,7 +524,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 	}
 	_, err = comm.Db.InsertOne(orgVar)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, "ok")
@@ -552,7 +552,7 @@ func (OrgController) varDel(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err = comm.Db.Where("aid = ?", aId).Delete(orgVar)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, "ok")

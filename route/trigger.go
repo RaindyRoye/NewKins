@@ -62,7 +62,7 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 	}
 	page, err := comm.FindPage(session, &ls, pg)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	for _, v := range ls {
@@ -81,7 +81,7 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 
 func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
 	if err := tp.Check(); err != nil {
-		c.String(500, err.Error())
+		util.RespErr(c, 400, "validation error", err)
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
@@ -97,7 +97,7 @@ func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
 	tt := &model.TTrigger{}
 	err := utils.Struct2Struct(tt, tp)
 	if err != nil {
-		c.String(500, "Struct2Struct err:"+err.Error())
+		util.RespInternalErr(c, "struct conversion", err)
 		return
 	}
 	if tp.Enabled {
@@ -109,20 +109,20 @@ func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
 		tt.Uid = lgusr.Id
 		_, err = comm.Db.InsertOne(tt)
 		if err != nil {
-			c.String(500, "db err:"+err.Error())
+			util.RespInternalErr(c, "db operation", err)
 			return
 		}
 	} else {
 		tt.Updated = time.Now()
 		_, err = comm.Db.Cols("name,desc,params,types,enabled,updated").Where("id =?", tt.Id).Update(tt)
 		if err != nil {
-			c.String(500, "db err:"+err.Error())
+			util.RespInternalErr(c, "db operation", err)
 			return
 		}
 	}
 	if tt.Types == "timer" {
 		if err := engine.Mgr.TimerEng().Refresh(tt.Id); err != nil {
-			c.String(500, "timer refresh err:"+err.Error())
+			util.RespInternalErr(c, "timer refresh", err)
 			return
 		}
 	}
@@ -149,13 +149,13 @@ func (TriggerController) delete(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err := comm.Db.Where("id = ?", tt.Id).Delete(tt)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	tr := model.TTriggerRun{}
 	_, err = comm.Db.Where("tid = ?", tt.Id).Delete(tr)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 
@@ -188,7 +188,7 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 	session := comm.Db.Where("tid = ?", tt.Id).Desc("created")
 	page, err := comm.FindPage(session, &ls, pg)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	for _, v := range ls {

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 type GinController interface {
@@ -67,6 +68,23 @@ func GinReqParseJson(fn interface{}) gin.HandlerFunc {
 		}()
 		fnv.Call(inls)
 	}
+}
+
+// RespInternalErr logs the detailed error server-side and returns a generic
+// "internal server error" message to the client. An optional context message
+// can be provided to give more information in the server logs.
+// This prevents leaking internal details (DB schemas, SQL queries, etc.) to clients.
+func RespInternalErr(c *gin.Context, msg string, err error) {
+	logrus.Errorf("[route] %s: %v", msg, err)
+	c.String(http.StatusInternalServerError, "internal server error")
+}
+
+// RespErr sends a custom error message to the client while also logging the
+// full error details server-side. Use this when the error message is safe to
+// show to the client (e.g., validation errors, business logic errors).
+func RespErr(c *gin.Context, statusCode int, msg string, err error) {
+	logrus.Errorf("[route] %s: %v", msg, err)
+	c.String(statusCode, msg)
 }
 
 func MidAccessAllowFun(c *gin.Context) {

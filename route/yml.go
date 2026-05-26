@@ -22,7 +22,7 @@ func (c *YmlController) Routes(g gin.IRoutes) {
 func (YmlController) templates(c *gin.Context) {
 	ls := make([]*model.TYmlTemplate, 0)
 	if err := comm.Db.Where("deleted != 1").Find(&ls); err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		util.RespInternalErr(c, "query yml templates", err)
 		return
 	}
 	c.JSON(200, ls)
@@ -37,7 +37,7 @@ func (YmlController) plugins(c *gin.Context) {
       - echo hello world`
 	ls := make([]*model.TYmlPlugin, 0)
 	if err := comm.Db.Where("deleted != 1").Find(&ls); err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		util.RespInternalErr(c, "query yml plugins", err)
 		return
 	}
 	plugs := engine.Mgr.Plugins()

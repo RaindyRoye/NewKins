@@ -34,7 +34,7 @@ func (HookController) hooks(c *gin.Context) {
 	}
 	rb, err := service.TriggerHook(tt, c.Request)
 	if err != nil {
-		c.String(500, err.Error())
+		util.RespInternalErr(c, "trigger hook", err)
 		return
 	}
 	engine.Mgr.BuildEgn().Put(rb)
@@ -58,7 +58,7 @@ func (HookController) web(c *gin.Context, m *hbtp.Map) {
 	}
 	rb, err := service.TriggerWeb(tt, secret)
 	if err != nil {
-		c.String(500, err.Error())
+		util.RespInternalErr(c, "trigger web", err)
 		return
 	}
 	engine.Mgr.BuildEgn().Put(rb)

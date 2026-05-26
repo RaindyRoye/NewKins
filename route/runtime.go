@@ -39,7 +39,7 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 	var ls []*model.RunStage
 	err := comm.Db.Where("pipeline_version_id=?", pvId).OrderBy("sort ASC").Find(&ls)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	ids := make([]string, 0)
@@ -76,7 +76,7 @@ func (RuntimeController) cmds(c *gin.Context, m *hbtp.Map) {
 	var ls []*model.TCmdLine
 	err := comm.Db.Where("step_id=?", stepId).OrderBy("num ASC").Find(&ls)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.JSON(200, hbtp.Map{

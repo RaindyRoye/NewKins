@@ -78,7 +78,7 @@ func (ArtifactController) orgList(c *gin.Context, m *hbtp.Map) {
 	gen.SQL += "\nORDER BY art.aid DESC"
 	page, err = comm.FindPages(gen, &ls, pg, 20)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	//}
@@ -188,7 +188,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 		_, err = comm.Db.InsertOne(ne)
 	}
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, ne.Id)
@@ -216,7 +216,7 @@ func (ArtifactController) rm(c *gin.Context, m *hbtp.Map) {
 	art.Updated = time.Now()
 	_, err := comm.Db.Cols("deleted", "deleted_time", "updated").Where("id=?", art.Id).Update(art)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, art.Id)
@@ -237,7 +237,7 @@ func (ArtifactController) packageList(c *gin.Context, m *hbtp.Map) {
 	}
 	page, err := comm.FindPage(ses, &ls, pg, 20)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	for _, v := range ls {
@@ -267,7 +267,7 @@ func (ArtifactController) versionList(c *gin.Context, m *hbtp.Map) {
 	}
 	page, err := comm.FindPage(ses, &ls, pg, 10)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	/*for _, v := range ls {
@@ -380,7 +380,7 @@ func (ArtifactController) versionSave(c *gin.Context, m *hbtp.Map) {
 	artv.Updated = time.Now()
 	_, err := comm.Db.Cols("version", "desc", "preview", "updated").Where("id=?", artv.Id).Update(artv)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, artv.Id)
@@ -407,7 +407,7 @@ func (ArtifactController) versionRm(c *gin.Context, m *hbtp.Map) {
 	}
 	_, err := comm.Db.Where("id=?", artv.Id).Delete(artv)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	fls := filepath.Join(comm.WorkPath, common.PathArtifacts, artv.Id)

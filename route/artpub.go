@@ -13,6 +13,7 @@ import (
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
+	"github.com/gokins/gokins/util"
 	"github.com/gokins/gokins/service"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 )
@@ -120,13 +121,13 @@ func (ArtPublicController) downFile(c *gin.Context, fls string) {
 		zipth := filepath.Join(comm.WorkPath, common.PathTmp, utils.NewXid())
 		err = utils.Zip(fls, zipth)
 		if err != nil {
-			c.String(511, "Zip err1:"+err.Error())
+			util.RespInternalErr(c, "zip artifacts", err)
 			return
 		}
 		defer func() { _ = os.RemoveAll(zipth) }()
 		stat, err = os.Stat(zipth)
 		if err != nil {
-			c.String(511, "Zip err2:"+err.Error())
+			util.RespInternalErr(c, "stat zip file", err)
 			return
 		}
 		fls = zipth

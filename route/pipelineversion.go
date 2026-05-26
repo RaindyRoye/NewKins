@@ -43,7 +43,7 @@ func (PipelineVersionController) delete(c *gin.Context, m *hbtp.Map) {
 	tpv.Deleted = 1
 	_, err := comm.Db.Cols("deleted").Where("id = ?", tpv.Id).Update(tpv)
 	if err != nil {
-		c.String(500, "db err:"+err.Error())
+		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	c.String(200, "ok")
