@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -41,7 +40,7 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 		}
 	}()
 	if tt.Params == "" {
-		return nil, errors.New("触发器没有配置参数")
+		return nil, ErrTriggerNoParams
 	}
 	err = TriggerPerm(tt)
 	if err != nil {
@@ -55,7 +54,7 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 	}
 	hookType, ok := m["hookType"]
 	if !ok {
-		err = errors.New("hookType为空")
+		err = ErrHookTypeEmpty
 		return nil, err
 	}
 	secret := ""
@@ -88,16 +87,16 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 		events = "push"
 		sha = c.After
 	default:
-		return nil, errors.New("webhook解析失败")
+		return nil, ErrWebhookParseFailed
 	}
 	branchs = h.Repository().Branch
 	bts, _ := json.Marshal(h)
 	infos = string(bts)
 	if event != "" && event != events {
-		return nil, errors.New("webhook事件不匹配")
+		return nil, ErrWebhookEventMismatch
 	}
 	if branch != "" && branch != branchs {
-		return nil, errors.New("分支不匹配")
+		return nil, ErrBranchMismatch
 	}
 
 	tvp, rb, err := Run(tt.Uid, tt.PipelineId, sha, "webHook")
@@ -126,7 +125,7 @@ func TriggerWeb(tt *model.TTrigger, secret string) (rb *runtime.Build, err error
 		}
 	}()
 	if tt.Params == "" {
-		return nil, errors.New("触发器没有配置参数")
+		return nil, ErrTriggerNoParams
 	}
 	err = TriggerPerm(tt)
 	if err != nil {
@@ -140,11 +139,11 @@ func TriggerWeb(tt *model.TTrigger, secret string) (rb *runtime.Build, err error
 	}
 	pSecret, ok := m["secret"]
 	if !ok {
-		err = errors.New("触发器没有配置密钥")
+		err = ErrTriggerNoSecret
 		return nil, err
 	}
 	if secret != pSecret {
-		err = errors.New("密钥不正确")
+		err = ErrTriggerSecretMismatch
 		return nil, err
 	}
 	branch := ""

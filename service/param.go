@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -44,7 +43,7 @@ func SetParam(key string, data []byte, tit ...string) error {
 }
 func SetsParam(key string, data interface{}, tit ...string) error {
 	if data == nil {
-		return errors.New("data is nil")
+		return ErrParamDataNil
 	}
 	bts, err := json.Marshal(data)
 	if err != nil {
@@ -58,11 +57,11 @@ func GetParam(key string) ([]byte, error) {
 	if ok {
 		return []byte(e.Data), nil
 	}
-	return nil, errors.New("not found param")
+	return nil, ErrParamNotFound
 }
 func GetsParam(key string, data interface{}) error {
 	if data == nil {
-		return errors.New("data is nil")
+		return ErrParamDataNil
 	}
 	bts, err := GetParam(key)
 	if err != nil {

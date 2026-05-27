@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -20,10 +19,10 @@ func Run(uid, pipeId, sha, event string) (*model.TPipelineVersion, *runtime.Buil
 	tpipe := &model.TPipelineConf{}
 	ok, _ := comm.Db.Where("pipeline_id=?", pipeId).Get(tpipe)
 	if !ok {
-		return nil, nil, errors.New("流水线不存在")
+		return nil, nil, ErrPipelineNotFound
 	}
 	if tpipe.YmlContent == "" {
-		return nil, nil, errors.New("流水线Yaml为空")
+		return nil, nil, ErrPipelineYmlEmpty
 	}
 	pipe := &bean.Pipeline{}
 	err := yaml.Unmarshal([]byte(tpipe.YmlContent), pipe)
@@ -37,10 +36,10 @@ func ReBuild(uid string, tvp *model.TPipelineVersion) (*model.TPipelineVersion, 
 	tpipe := &model.TPipelineConf{}
 	ok, _ := comm.Db.Where("pipeline_id=?", tvp.PipelineId).Get(tpipe)
 	if !ok {
-		return nil, nil, errors.New("流水线不存在")
+		return nil, nil, ErrPipelineNotFound
 	}
 	if tvp.Content == "" {
-		return nil, nil, errors.New("流水线Yaml为空")
+		return nil, nil, ErrPipelineYmlEmpty
 	}
 	pipe := &bean.Pipeline{}
 	err := yaml.Unmarshal([]byte(tvp.Content), pipe)
@@ -55,7 +54,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 	tp := &model.TPipeline{}
 	ok, _ := comm.Db.Where("id=? and deleted != 1", tpipe.PipelineId).Get(tp)
 	if !ok {
-		return nil, nil, errors.New("流水线不存在")
+		return nil, nil, ErrPipelineNotFound
 	}
 	err := pipe.Check()
 	if err != nil {
