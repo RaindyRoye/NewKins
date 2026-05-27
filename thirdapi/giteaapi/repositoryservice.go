@@ -3,7 +3,6 @@ package giteaapi
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -51,7 +50,7 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 	}
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Gitea Api GetRepos url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New("gitea api GetRepos failed")
+		return nil, fmt.Errorf("gitea api GetRepos failed (status %d)", resp.StatusCode)
 	}
 	repos, err := io.ReadAll(resp.Body)
 	defer func() { _ = resp.Body.Close() }()
@@ -113,7 +112,7 @@ func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string)
 
 	if resp.StatusCode != http.StatusNoContent {
 		logrus.Errorf("Gitea Api DeleteHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return errors.New(string(all))
+		return fmt.Errorf("gitea api DeleteHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	return nil
 }
@@ -166,7 +165,7 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 	}
 	if resp.StatusCode != http.StatusCreated {
 		logrus.Errorf("Gitea Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(all))
+		return nil, fmt.Errorf("gitea api CreateWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	k := &thirdbean.ResultGetGiteaHook{}
 	err = json.Unmarshal(all, k)
@@ -204,7 +203,7 @@ func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]
 
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Gitea Api GetRepoBranches url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(all))
+		return nil, fmt.Errorf("gitea api GetRepoBranches failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	var branchList []*thirdbean.ResultGiteaRepoBranch
 	err = json.Unmarshal(all, &branchList)
@@ -242,7 +241,7 @@ func (s *RepositoryService) GetPullQuest(accessToken, owner, repo string, index 
 
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Gitea Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(bys))
+		return nil, fmt.Errorf("gitea api GetPullQuest failed (status %d): %s", resp.StatusCode, string(bys))
 	}
 	return bys, nil
 }
@@ -274,7 +273,7 @@ func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, p
 
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Gitea Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(all))
+		return nil, fmt.Errorf("gitea api GetWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 
 	hs := make([]*thirdbean.ResultGetGiteaHook, 0)

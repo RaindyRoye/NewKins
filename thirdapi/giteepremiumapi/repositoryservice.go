@@ -2,7 +2,6 @@ package giteepremiumapi
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -51,7 +50,7 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 	}
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("GiteePremium Api GetRepos url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New("GiteePremium Api GetRepos failed ")
+		return nil, fmt.Errorf("gitee premium api GetRepos failed (status %d)", resp.StatusCode)
 	}
 	repos, err := io.ReadAll(resp.Body)
 	defer func() { _ = resp.Body.Close() }()
@@ -107,7 +106,7 @@ func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string)
 
 	if resp.StatusCode != http.StatusNoContent {
 		logrus.Errorf("GiteePremium Api DeleteHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return errors.New(string(all))
+		return fmt.Errorf("gitee premium api DeleteHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	return nil
 }
@@ -152,7 +151,7 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 
 	if resp.StatusCode != http.StatusCreated {
 		logrus.Errorf("GiteePremium Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(all))
+		return nil, fmt.Errorf("gitee premium api CreateWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	k := &thirdbean.ResultGetGiteePremiumHook{}
 	err = json.Unmarshal(all, k)
@@ -189,7 +188,7 @@ func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]
 
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("GiteePremium Api GetRepoBranches url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(all))
+		return nil, fmt.Errorf("gitee premium api GetRepoBranches failed (status %d): %s", resp.StatusCode, string(all))
 	}
 
 	var branchList []*thirdbean.ResultGiteePremiumRepoBranch
@@ -227,7 +226,7 @@ func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, p
 
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("GiteePremium Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(all))
+		return nil, fmt.Errorf("gitee premium api GetWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	hs := make([]*thirdbean.ResultGetGiteePremiumHook, 0)
 	err = json.Unmarshal(all, &hs)

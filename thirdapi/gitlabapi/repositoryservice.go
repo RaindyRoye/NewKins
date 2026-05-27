@@ -3,7 +3,6 @@ package gitlabapi
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -39,7 +38,7 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 	}
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Gitlab Api GetRepos url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New("gitlab api GetRepos failed")
+		return nil, fmt.Errorf("gitlab api GetRepos failed (status %d)", resp.StatusCode)
 	}
 	repos, err := io.ReadAll(resp.Body)
 	defer func() { _ = resp.Body.Close() }()
@@ -97,7 +96,7 @@ func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string)
 
 	if resp.StatusCode != http.StatusNoContent {
 		logrus.Errorf("Gitlab Api DeleteHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return errors.New(string(all))
+		return fmt.Errorf("gitlab api DeleteHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	return nil
 }
@@ -148,7 +147,7 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 
 	if resp.StatusCode != http.StatusCreated {
 		logrus.Errorf("Gitlab Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(all))
+		return nil, fmt.Errorf("gitlab api CreateWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	k := &thirdbean.ResultGetGitlabHook{}
 	err = json.Unmarshal(all, k)
@@ -187,7 +186,7 @@ func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]
 
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Gitlab Api GetRepoBranches url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(all))
+		return nil, fmt.Errorf("gitlab api GetRepoBranches failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	var branchList []*thirdbean.ResultGitlabRepoBranch
 	err = json.Unmarshal(all, &branchList)
@@ -226,7 +225,7 @@ func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, p
 
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Gitlab Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(all))
+		return nil, fmt.Errorf("gitlab api GetWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 
 	hs := make([]*thirdbean.ResultGetGitlabHook, 0)

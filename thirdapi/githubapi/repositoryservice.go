@@ -3,7 +3,6 @@ package githubapi
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -53,7 +52,7 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 	}
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Github Api GetRepos url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New("github api GetRepos failed")
+		return nil, fmt.Errorf("github api GetRepos failed (status %d)", resp.StatusCode)
 	}
 	repos, err := io.ReadAll(resp.Body)
 	defer func() { _ = resp.Body.Close() }()
@@ -121,7 +120,7 @@ func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string)
 
 	if resp.StatusCode != http.StatusNoContent {
 		logrus.Errorf("Github Api DeleteHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return errors.New(string(all))
+		return fmt.Errorf("github api DeleteHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	return nil
 }
@@ -173,7 +172,7 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 	}
 	if resp.StatusCode != http.StatusCreated {
 		logrus.Errorf("Github Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(all))
+		return nil, fmt.Errorf("github api CreateWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	k := &thirdbean.ResultGetGithubHook{}
 	err = json.Unmarshal(all, k)
@@ -211,7 +210,7 @@ func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]
 
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Github Api GetRepoBranches url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(all))
+		return nil, fmt.Errorf("github api GetRepoBranches failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	var branchList []*thirdbean.ResultGithubRepoBranch
 	err = json.Unmarshal(all, &branchList)
@@ -249,7 +248,7 @@ func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, p
 
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Github Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
-		return nil, errors.New(string(all))
+		return nil, fmt.Errorf("github api GetWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 
 	hs := make([]*thirdbean.ResultGetGithubHook, 0)
