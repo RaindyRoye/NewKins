@@ -66,13 +66,13 @@ func (c *BuildTask) updateBuild(build *runtime.Build) {
 		Where("build_id=? and `status`!=? and `status`!=? and `status`!=?",
 			build.Id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).Update(cmde)
 	if err != nil {
-		logrus.Errorf("BuildTask.updateStage step err:%v", err)
+		logrus.Errorf("BuildTask.updateBuild cmd err:%v", err)
 	}
 }
 func (c *BuildTask) updateStage(stage *runtime.Stage) {
 	defer func() {
 		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask updateBuild recover:%v", err)
+			logrus.Warnf("BuildTask updateStage recover:%v", err)
 			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
 		}
 	}()
@@ -108,7 +108,7 @@ func (c *BuildTask) updateStage(stage *runtime.Stage) {
 func (c *BuildTask) updateStep(job *jobSync) {
 	defer func() {
 		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask updateBuild recover:%v", err)
+			logrus.Warnf("BuildTask updateStep recover:%v", err)
 			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
 		}
 	}()
@@ -141,13 +141,13 @@ func (c *BuildTask) updateStep(job *jobSync) {
 		Where("step_id=? and `status`!=? and `status`!=? and `status`!=?",
 			job.step.Id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).Update(cmde)
 	if err != nil {
-		logrus.Errorf("BuildTask.updateStage step err:%v", err)
+		logrus.Errorf("BuildTask.updateStep cmd err:%v", err)
 	}
 }
 func (c *BuildTask) updateStepCmd(cmd *cmdSync) {
 	defer func() {
 		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask updateBuild recover:%v", err)
+			logrus.Warnf("BuildTask updateStepCmd recover:%v", err)
 			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
 		}
 	}()
@@ -169,6 +169,6 @@ func (c *BuildTask) updateStepCmd(cmd *cmdSync) {
 	}
 	_, err := comm.Db.Cols(cols...).Where("id=?", cmd.cmd.Id).Update(cmde)
 	if err != nil {
-		logrus.Errorf("BuildTask.updateStep db err:%v", err)
+		logrus.Errorf("BuildTask.updateStepCmd db err:%v", err)
 	}
 }

@@ -57,11 +57,14 @@ func CacheSets(key string, data interface{}, outm ...time.Duration) error {
 	return CacheSet(key, bts, outm...)
 }
 func parseCacheData(bts []byte) []byte {
-	if bts == nil {
+	if bts == nil || len(bts) < 4 {
 		return nil
 	}
 	ln := int(hbtp.BigByteToInt(bts[:4]))
-	tms := string(bts[4 : ln+4])
+	if len(bts) < 4+ln {
+		return nil
+	}
+	tms := string(bts[4 : 4+ln])
 	outm, err := time.Parse(time.RFC3339Nano, tms)
 	if err != nil {
 		return nil
