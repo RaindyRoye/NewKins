@@ -624,7 +624,7 @@ func (PipelineController) searchSha(c *gin.Context, m *hbtp.Map) {
 		Distinct("sha").Cols("sha").
 		Where("pipeline_id = ?", id).Desc("sha")
 	if q != "" {
-		session.And("sha like '%" + q + "%'")
+		session.And("sha like ?", "%"+q+"%")
 	}
 	err := session.Find(&shas)
 	if err != nil {
@@ -664,7 +664,7 @@ func (PipelineController) vars(c *gin.Context, m *hbtp.Map) {
 	var err error
 	session := comm.Db.Where("pipeline_id = ?", pipelineId)
 	if q != "" {
-		session.And("(name like '%" + q + "%' or value like '%" + q + "'%)")
+		session.And("(name like ? or value like ?)", "%"+q+"%", "%"+q+"%")
 	}
 	page, err = comm.FindPage(session, &ls, pg)
 	if err != nil {

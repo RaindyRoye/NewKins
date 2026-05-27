@@ -58,7 +58,7 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 		session.And("types = ?", types)
 	}
 	if q != "" {
-		session.And("name like '%" + q + "%'")
+		session.And("name like ?", "%"+q+"%")
 	}
 	page, err := comm.FindPage(session, &ls, pg)
 	if err != nil {

@@ -460,7 +460,7 @@ func (OrgController) vars(c *gin.Context, m *hbtp.Map) {
 	var err error
 	session := comm.Db.Where("org_id = ?", orgId)
 	if q != "" {
-		session.And("(name like '%" + q + "%' or value like '%" + q + "'%)")
+		session.And("(name like ? or value like ?)", "%"+q+"%", "%"+q+"%")
 	}
 	page, err = comm.FindPage(session, &ls, pg)
 	if err != nil {
