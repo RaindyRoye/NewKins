@@ -339,12 +339,12 @@ func (c *BuildTask) getRepo() error {
 		return nil
 	}
 	if err := os.MkdirAll(c.repoPaths, 0750); err != nil {
-		return err
+		return fmt.Errorf("create repo path %s: %w", c.repoPaths, err)
 	}
 	if c.repoPath != "" {
 		err := c.gitClone(c.ctx, c.repoPaths, c.build.Repo)
 		if err != nil {
-			return err
+			return fmt.Errorf("clone repo: %w", err)
 		}
 	}
 	return nil

@@ -1,6 +1,7 @@
 package route
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -149,9 +150,12 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 func initConfig() error {
 	bts, err := yaml.Marshal(&comm.Cfg)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal config yaml: %w", err)
 	}
-	return os.WriteFile(filepath.Join(comm.WorkPath, "app.yml"), bts, 0600)
+	if err := os.WriteFile(filepath.Join(comm.WorkPath, "app.yml"), bts, 0600); err != nil {
+		return fmt.Errorf("write config file: %w", err)
+	}
+	return nil
 }
 
 func Install(c *gin.Context) {

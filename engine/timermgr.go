@@ -129,16 +129,16 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 	mp := hbtp.Map{}
 	err := json.Unmarshal([]byte(tmr.Params), &mp)
 	if err != nil {
-		return err
+		return fmt.Errorf("unmarshal trigger params: %w", err)
 	}
 	typ, err := mp.GetInt("timerType")
 	if err != nil {
-		return err
+		return fmt.Errorf("get timerType: %w", err)
 	}
 	dates := mp.GetString("dates")
 	tms, err := time.ParseInLocation(time.RFC3339Nano, dates, time.Local)
 	if err != nil {
-		return err
+		return fmt.Errorf("parse dates %q: %w", dates, err)
 	}
 	switch typ {
 	case 0:

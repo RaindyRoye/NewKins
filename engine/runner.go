@@ -96,24 +96,24 @@ func (c *baseRunner) PushOutLine(buildID, jobId, cmdId, bs string, iserr bool) e
 		Errs:    iserr,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal log json: %w", err)
 	}
 
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, job.step.BuildId, common.PathJobs, job.step.Id)
 	logpth := filepath.Join(dir, "build.log")
 	if err = os.MkdirAll(dir, 0755); err != nil {
-		return err
+		return fmt.Errorf("create log dir %s: %w", dir, err)
 	}
 	logfl, err := os.OpenFile(logpth, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
 	if err != nil {
-		return err
+		return fmt.Errorf("open log file %s: %w", logpth, err)
 	}
 	defer func() { _ = logfl.Close() }()
 	if _, err := logfl.Write(bts); err != nil {
-		return err
+		return fmt.Errorf("write log entry: %w", err)
 	}
 	if _, err := logfl.WriteString("\n"); err != nil {
-		return err
+		return fmt.Errorf("write log newline: %w", err)
 	}
 	return nil
 }
@@ -163,7 +163,7 @@ func (c *baseRunner) ReadDir(fs int, buildID string, pth string) ([]*runners.Dir
 		if build.repoPath == "" {
 			return nil, nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("read dir %s: %w", pths, err)
 	}
 	var ls []*runners.DirEntry
 	for _, v := range fls {
@@ -201,15 +201,15 @@ func (c *baseRunner) ReadFile(fs int, buildID string, pth string, start int64) (
 	}
 	stat, err := os.Stat(pths)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("stat file %s: %w", pths, err)
 	}
 	fl, err := os.Open(pths)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("open file %s: %w", pths, err)
 	}
 	if start > 0 {
 		if _, err := fl.Seek(start, io.SeekStart); err != nil {
-			return 0, nil, err
+			return 0, nil, fmt.Errorf("seek file to %d: %w", start, err)
 		}
 	}
 	return stat.Size(), fl, nil
@@ -257,11 +257,14 @@ func (c *baseRunner) GenEnv(buildID, jobId string, env utils.EnvVal) error {
 	}
 	bts, err := json.Marshal(env)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal env json: %w", err)
 	}
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, job.step.BuildId, common.PathJobs, job.step.Id)
 	err = os.WriteFile(filepath.Join(dir, "build.env"), bts, 0640)
-	return err
+	if err != nil {
+		return fmt.Errorf("write env file: %w", err)
+	}
+	return nil
 }
 
 func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*runners.FileStat, error) {
@@ -290,7 +293,7 @@ func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*
 	}
 	stat, err := os.Stat(pths)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("stat file %s: %w", pths, err)
 	}
 	return &runners.FileStat{
 		Name:  stat.Name(),
@@ -324,16 +327,16 @@ func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, 
 	}
 	dirs := filepath.Dir(pths)
 	if err := os.MkdirAll(dirs, 0750); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create upload dirs %s: %w", dirs, err)
 	}
 	fl, err := os.OpenFile(pths, os.O_CREATE|os.O_RDWR, 0640)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open upload file %s: %w", pths, err)
 	}
 	if start > 0 {
 		if _, err := fl.Seek(start, io.SeekStart); err != nil {
 			_ = fl.Close()
-			return nil, err
+			return nil, fmt.Errorf("seek upload file to %d: %w", start, err)
 		}
 	}
 	return fl, nil
@@ -421,7 +424,7 @@ func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string,
 		artp.Updated = time.Now()
 		_, err := comm.Db.InsertOne(artp)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("insert artifact package: %w", err)
 		}
 	}
 	artv := &model.TArtifactVersion{
@@ -436,7 +439,7 @@ func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string,
 	artv.Sha = artv.Id
 	_, err := comm.Db.InsertOne(artv)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("insert artifact version: %w", err)
 	}
 	return artv.Id, nil
 }

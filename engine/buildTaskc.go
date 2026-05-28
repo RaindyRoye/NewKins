@@ -185,7 +185,7 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 		// err = errors.New("commands format err")
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("generate commands: %w", err)
 	}
 	/* if len(runjb.Commands) <= 0 {
 		return errors.New("command format empty")
@@ -231,7 +231,7 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 			if _, delErr := comm.Db.Where("build_id=? and step_id=?", cmd.BuildId, cmd.StepId).Delete(cmd); delErr != nil {
 				logrus.Errorf("appendcmds: failed to cleanup cmd after insert error: %v", delErr)
 			}
-			return err
+			return fmt.Errorf("insert cmd %s: %w", cmd.Id, err)
 		}
 	}
 	return nil

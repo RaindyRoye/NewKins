@@ -31,11 +31,11 @@ func CheckOutHash(repository *git.Repository, hash string) error {
 func CheckOut(repository *git.Repository, option *git.CheckoutOptions) error {
 	worktree, err := repository.Worktree()
 	if err != nil {
-		return err
+		return fmt.Errorf("get worktree: %w", err)
 	}
 	err = worktree.Checkout(option)
 	if err != nil {
-		return err
+		return fmt.Errorf("checkout: %w", err)
 	}
 	return nil
 }
