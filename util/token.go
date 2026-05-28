@@ -34,7 +34,10 @@ func SetToken(c *gin.Context, p jwt.MapClaims, key string, rem bool, doman ...st
 	cke := http.Cookie{
 		Name:     "gokinstk",
 		Value:    tokens,
+		Path:     "/",
 		HttpOnly: true,
+		Secure:   c.Request.TLS != nil,
+		SameSite: http.SameSiteLaxMode,
 	}
 	if len(doman) > 0 {
 		cke.Domain = doman[0]
@@ -51,7 +54,10 @@ func SetToken(c *gin.Context, p jwt.MapClaims, key string, rem bool, doman ...st
 func ClearToken(c *gin.Context, doman ...string) error {
 	cke := http.Cookie{
 		Name:     "gokinstk",
+		Path:     "/",
 		HttpOnly: true,
+		Secure:   c.Request.TLS != nil,
+		SameSite: http.SameSiteLaxMode,
 	}
 	if len(doman) > 0 {
 		cke.Domain = doman[0]

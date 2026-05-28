@@ -72,8 +72,7 @@ func checkUrl(host string) bool {
 }
 func (InstallController) install(c *gin.Context, m *installConfig) {
 	if strings.HasSuffix(m.Server.Host, "/") {
-		ln := len(m.Server.Host)
-		m.Server.Host = m.Server.Host[:ln-2]
+		m.Server.Host = strings.TrimRight(m.Server.Host, "/")
 	}
 	if !common.RegUrl.MatchString(m.Server.Host) {
 		c.String(500, "host err:%s", m.Server.Host)
@@ -152,7 +151,7 @@ func initConfig() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(comm.WorkPath, "app.yml"), bts, 0644)
+	return os.WriteFile(filepath.Join(comm.WorkPath, "app.yml"), bts, 0600)
 }
 
 func Install(c *gin.Context) {
