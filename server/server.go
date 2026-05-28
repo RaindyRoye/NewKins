@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -49,11 +50,11 @@ func Run() error {
 
 	err = initDb()
 	if err != nil {
-		return err
+		return fmt.Errorf("initDb: %w", err)
 	}
 	err = initCache()
 	if err != nil {
-		return err
+		return fmt.Errorf("initCache: %w", err)
 	}
 	defer func() { _ = comm.BCache.Close() }()
 
@@ -61,7 +62,7 @@ func Run() error {
 	comm.Installed = true
 	err = engine.Start()
 	if err != nil {
-		return err
+		return fmt.Errorf("engine.Start: %w", err)
 	}
 
 	go runHbtp()
@@ -78,7 +79,10 @@ func parseConfig() error {
 		bts, err = os.ReadFile(filepath.Join(comm.WorkPath, "app.yaml"))
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("read config file: %w", err)
 	}
-	return yaml.Unmarshal(bts, &comm.Cfg)
+	if err := yaml.Unmarshal(bts, &comm.Cfg); err != nil {
+		return fmt.Errorf("parse config yaml: %w", err)
+	}
+	return nil
 }

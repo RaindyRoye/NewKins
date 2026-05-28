@@ -57,7 +57,7 @@ func CacheSets(key string, data interface{}, outm ...time.Duration) error {
 	return CacheSet(key, bts, outm...)
 }
 func parseCacheData(bts []byte) []byte {
-	if bts == nil || len(bts) < 4 {
+	if len(bts) < 4 {
 		return nil
 	}
 	ln := int(hbtp.BigByteToInt(bts[:4]))
