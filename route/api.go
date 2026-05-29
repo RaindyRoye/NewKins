@@ -2,7 +2,9 @@ package route
 
 import (
 	"errors"
+	"fmt"
 	"io"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gokins/core/runtime"
@@ -31,39 +33,45 @@ func (ApiController) version(c *gin.Context) {
 	c.String(200, comm.Version)
 }
 func (ApiController) test(c *gin.Context) {
-	all, _ := io.ReadAll(c.Request.Body)
-	y := &bean.Pipeline{}
-	err := yaml.Unmarshal(all, y)
+	all, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(200, gin.H{
-			"err": err,
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err": fmt.Errorf("read request body: %w", err),
+		})
+		return
+	}
+	y := &bean.Pipeline{}
+	err = yaml.Unmarshal(all, y)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err": fmt.Errorf("parse pipeline yaml: %w", err),
 		})
 		return
 	}
 	marshal, err := yaml.Marshal(y)
 	if err != nil {
-		c.JSON(200, gin.H{
-			"err": err,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"err": fmt.Errorf("marshal pipeline yaml: %w", err),
 		})
 		return
 	}
 	b := &runtime.Build{}
 	err = yaml.Unmarshal(marshal, b)
 	if err != nil {
-		c.JSON(200, gin.H{
-			"err": err,
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err": fmt.Errorf("convert pipeline to build: %w", err),
 		})
 		return
 	}
 	err = prebuild(b)
 	if err != nil {
-		c.JSON(200, gin.H{
-			"err": err,
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err": fmt.Errorf("prebuild: %w", err),
 		})
 		return
 	}
 	engine.Mgr.BuildEgn().Put(b)
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"msg": b,
 	})
 }
