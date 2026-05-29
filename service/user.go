@@ -65,11 +65,9 @@ func GetUserCache(uid string) (*model.TUser, bool) {
 	return e, ok
 }
 func CurrUserCache(c *gin.Context) (*model.TUser, bool) {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Errorf("CurrUserCache recover:%v", err)
-		}
-	}()
+	if c == nil {
+		return nil, false
+	}
 	tk := util.GetToken(c, comm.Cfg.Server.LoginKey)
 	if tk == nil {
 		return nil, false
@@ -79,7 +77,7 @@ func CurrUserCache(c *gin.Context) (*model.TUser, bool) {
 		return nil, false
 	}
 	uids, ok := uid.(string)
-	if !ok {
+	if !ok || uids == "" {
 		return nil, false
 	}
 	return GetUserCache(uids)
