@@ -1,6 +1,6 @@
 package hook
 
-type Action int
+type Action string
 
 const (
 	ActionOpen        = "open"
