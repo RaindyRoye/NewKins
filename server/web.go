@@ -166,7 +166,7 @@ func getRdr() (*zip.Reader, error) {
 }
 func getFile(pth string) (*zip.File, error) {
 	if pth == "" {
-		return nil, errors.New("param err")
+		return nil, errors.New("getFile: path parameter is empty")
 	}
 	//println("getFile:" + pth)
 	r, err := getRdr()

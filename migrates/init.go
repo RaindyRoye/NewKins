@@ -178,10 +178,6 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 	}
 	defer func() { _ = db.Close() }()
 	wait = false
-	if err != nil {
-		errs = err
-		return
-	}
 
 	// Run migrations
 	driver, err := postgres.WithInstance(db, &postgres.Config{})

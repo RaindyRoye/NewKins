@@ -39,7 +39,7 @@ func (c *baseRunner) PullJob(name string, plugs []string) (*runners.RunJob, erro
 		}
 		time.Sleep(time.Millisecond * 100)
 	}
-	return nil, errors.New("not found")
+	return nil, fmt.Errorf("no job found for runner %q with plugins %v after 5s", name, plugs)
 }
 func (c *baseRunner) CheckCancel(buildID string) bool {
 	v, ok := Mgr.buildEgn.Get(buildID)
@@ -51,11 +51,11 @@ func (c *baseRunner) CheckCancel(buildID string) bool {
 func (c *baseRunner) Update(m *runners.UpdateJobInfo) error {
 	tsk, ok := Mgr.buildEgn.Get(m.BuildId)
 	if !ok {
-		return errors.New("not found build")
+		return fmt.Errorf("update: build %q not found", m.BuildId)
 	}
 	job, ok := tsk.GetJob(m.JobId)
 	if !ok {
-		return errors.New("not found job")
+		return fmt.Errorf("update: job %q not found in build %q", m.JobId, m.BuildId)
 	}
 	tsk.UpJob(job, m.Status, m.Error, m.ExitCode)
 	return nil
@@ -64,17 +64,17 @@ func (c *baseRunner) Update(m *runners.UpdateJobInfo) error {
 func (c *baseRunner) UpdateCmd(buildID, jobId, cmdId string, fs, code int) error {
 	tsk, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return errors.New("not found build")
+		return fmt.Errorf("updateCmd: build %q not found", buildID)
 	}
 	job, ok := tsk.GetJob(jobId)
 	if !ok {
-		return errors.New("not found job")
+		return fmt.Errorf("updateCmd: job %q not found in build %q", jobId, buildID)
 	}
 	job.RLock()
 	cmd, ok := job.cmdmp[cmdId]
 	job.RUnlock()
 	if !ok {
-		return errors.New("not found cmd")
+		return fmt.Errorf("updateCmd: cmd %q not found in job %q", cmdId, jobId)
 	}
 	tsk.UpJobCmd(cmd, fs, code)
 	return nil
@@ -82,11 +82,11 @@ func (c *baseRunner) UpdateCmd(buildID, jobId, cmdId string, fs, code int) error
 func (c *baseRunner) PushOutLine(buildID, jobId, cmdId, bs string, iserr bool) error {
 	tsk, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return errors.New("not found build")
+		return fmt.Errorf("pushOutLine: build %q not found", buildID)
 	}
 	job, ok := tsk.GetJob(jobId)
 	if !ok {
-		return errors.New("not found job")
+		return fmt.Errorf("pushOutLine: job %q not found in build %q", jobId, buildID)
 	}
 
 	bts, err := json.Marshal(&bean.LogOutJson{
@@ -143,11 +143,11 @@ func (c *baseRunner) FindJobId(buildID, stgNm, stpNm string) (string, bool) {
 
 func (c *baseRunner) ReadDir(fs int, buildID string, pth string) ([]*runners.DirEntry, error) {
 	if buildID == "" || pth == "" {
-		return nil, errors.New("param err")
+		return nil, fmt.Errorf("readDir: buildID=%q and path=%q must not be empty", buildID, pth)
 	}
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return nil, errors.New("not found build")
+		return nil, fmt.Errorf("readDir: build %q not found", buildID)
 	}
 	pths := ""
 	switch fs {
@@ -181,11 +181,11 @@ func (c *baseRunner) ReadDir(fs int, buildID string, pth string) ([]*runners.Dir
 }
 func (c *baseRunner) ReadFile(fs int, buildID string, pth string, start int64) (int64, io.ReadCloser, error) {
 	if buildID == "" || pth == "" {
-		return 0, nil, errors.New("param err")
+		return 0, nil, fmt.Errorf("readFile: buildID=%q and path=%q must not be empty", buildID, pth)
 	}
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return 0, nil, errors.New("not found build")
+		return 0, nil, fmt.Errorf("readFile: build %q not found", buildID)
 	}
 	pths := ""
 	switch fs {
@@ -197,7 +197,7 @@ func (c *baseRunner) ReadFile(fs int, buildID string, pth string, start int64) (
 		pths = filepath.Join(build.buildPath, common.PathJobs, pth)
 	}
 	if pths == "" {
-		return 0, nil, errors.New("path param err")
+		return 0, nil, errors.New("readFile: invalid filesystem type, no path resolved")
 	}
 	stat, err := os.Stat(pths)
 	if err != nil {
@@ -245,15 +245,15 @@ func (c *baseRunner) GetEnv(buildID, jobId, key string) (string, bool) {
 }
 func (c *baseRunner) GenEnv(buildID, jobId string, env utils.EnvVal) error {
 	if jobId == "" || env == nil {
-		return errors.New("param err")
+		return fmt.Errorf("genEnv: jobId=%q must not be empty and env must not be nil", jobId)
 	}
 	tsk, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return errors.New("not found build")
+		return fmt.Errorf("genEnv: build %q not found", buildID)
 	}
 	job, ok := tsk.GetJob(jobId)
 	if !ok {
-		return errors.New("not found job")
+		return fmt.Errorf("genEnv: job %q not found in build %q", jobId, buildID)
 	}
 	bts, err := json.Marshal(env)
 	if err != nil {
@@ -269,15 +269,15 @@ func (c *baseRunner) GenEnv(buildID, jobId string, env utils.EnvVal) error {
 
 func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*runners.FileStat, error) {
 	if jobId == "" || pth == "" {
-		return nil, errors.New("param err")
+		return nil, fmt.Errorf("statFile: jobId=%q and path=%q must not be empty", jobId, pth)
 	}
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return nil, errors.New("not found build")
+		return nil, fmt.Errorf("statFile: build %q not found", buildID)
 	}
 	job, ok := build.GetJob(jobId)
 	if !ok {
-		return nil, errors.New("not found job")
+		return nil, fmt.Errorf("statFile: job %q not found in build %q", jobId, buildID)
 	}
 	pths := ""
 	switch fs {
@@ -289,7 +289,7 @@ func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*
 		pths = filepath.Join(build.repoPaths, dir, pth)
 	}
 	if pths == "" {
-		return nil, errors.New("path param err")
+		return nil, errors.New("statFile: invalid filesystem type, no path resolved")
 	}
 	stat, err := os.Stat(pths)
 	if err != nil {
@@ -303,15 +303,15 @@ func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*
 }
 func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, start int64) (io.WriteCloser, error) {
 	if jobId == "" || pth == "" {
-		return nil, errors.New("param err")
+		return nil, fmt.Errorf("uploadFile: jobId=%q and path=%q must not be empty", jobId, pth)
 	}
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return nil, errors.New("not found build")
+		return nil, fmt.Errorf("uploadFile: build %q not found", buildID)
 	}
 	job, ok := build.GetJob(jobId)
 	if !ok {
-		return nil, errors.New("not found job")
+		return nil, fmt.Errorf("uploadFile: job %q not found in build %q", jobId, buildID)
 	}
 	pths := ""
 	switch fs {
@@ -323,7 +323,7 @@ func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, 
 		pths = filepath.Join(build.repoPaths, dir, pth)
 	}
 	if pths == "" {
-		return nil, errors.New("path param err")
+		return nil, errors.New("uploadFile: invalid filesystem type, no path resolved")
 	}
 	dirs := filepath.Dir(pths)
 	if err := os.MkdirAll(dirs, 0750); err != nil {
@@ -349,29 +349,29 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 		vers = tnms[1]
 	}
 	if buildID == "" || idnt == "" || name == "" {
-		return "", errors.New("param err")
+		return "", fmt.Errorf("findArtVersionId: buildID=%q, identifier=%q, name=%q must not be empty", buildID, idnt, name)
 	}
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return "", errors.New("not found build")
+		return "", fmt.Errorf("findArtVersionId: build %q not found", buildID)
 	}
 
 	arty := &model.TArtifactory{}
 	ok, _ = comm.Db.Where("deleted!=1 and identifier=? and org_id in (select org_id from t_org_pipe where pipe_id=?)",
 		idnt, build.build.PipelineId).Get(arty)
 	if !ok {
-		return "", errors.New("not found artifactory")
+		return "", fmt.Errorf("findArtVersionId: artifactory %q not found", idnt)
 	}
 
 	pv := &model.TPipelineVersion{}
 	ok = service.GetIdOrAid(build.build.PipelineVersionId, pv)
 	if !ok {
-		return "", errors.New("not found pv")
+		return "", fmt.Errorf("findArtVersionId: pipeline version %q not found", build.build.PipelineVersionId)
 	}
 	usr := &model.TUser{}
 	ok = service.GetIdOrAid(pv.Uid, usr)
 	if !ok {
-		return "", errors.New("not found user")
+		return "", fmt.Errorf("findArtVersionId: user %q not found", pv.Uid)
 	}
 	perm := service.NewOrgPerm(usr, arty.OrgId)
 	if !perm.CanExec() {
@@ -397,21 +397,21 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string, error) {
 	name = strings.Split(strings.TrimSpace(name), "@")[0]
 	if buildID == "" || idnt == "" || name == "" {
-		return "", errors.New("param err")
+		return "", fmt.Errorf("newArtVersionId: buildID=%q, identifier=%q, name=%q must not be empty", buildID, idnt, name)
 	}
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return "", errors.New("not found build")
+		return "", fmt.Errorf("newArtVersionId: build %q not found", buildID)
 	}
 
 	arty := &model.TArtifactory{}
 	ok, _ = comm.Db.Where("deleted!=1 and identifier=? and org_id in (select org_id from t_org_pipe where pipe_id=?)",
 		idnt, build.build.PipelineId).Get(arty)
 	if !ok {
-		return "", errors.New("not found artifactory")
+		return "", fmt.Errorf("newArtVersionId: artifactory %q not found", idnt)
 	}
 	if arty.Disabled == 1 {
-		return "", errors.New("artifactory already disabled")
+		return "", fmt.Errorf("newArtVersionId: artifactory %q is disabled", idnt)
 	}
 
 	artp := &model.TArtifactPackage{}
