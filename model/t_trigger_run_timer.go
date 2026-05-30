@@ -12,6 +12,6 @@ type TimerTriggerRun struct {
 	Name       string `xorm:"VARCHAR(100)" json:"name"`
 	Params     string `xorm:"JSON" json:"params"`
 	Enabled    int    `xorm:"INT(1)" json:"enabled"`
-	//run
+	// run
 	RunCreated time.Time `xorm:"DATETIME" json:"created"`
 }

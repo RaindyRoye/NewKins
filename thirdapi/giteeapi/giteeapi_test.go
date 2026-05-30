@@ -6,7 +6,7 @@ import (
 )
 
 //
-//func TestGiteeContents(t *testing.T) {
+// func TestGiteeContents(t *testing.T) {
 //
 //	u := fmt.Sprintf(ApiGiteeGetRepositoryContent, "SuperHeroJim", "gokins-test", ".gokins", "1065cd3f8791b97224a823c954a0ec98")
 //	resp, err := http.Get(u)

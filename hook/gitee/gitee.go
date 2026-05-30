@@ -1185,8 +1185,8 @@ type giteeCommentHook struct {
 	} `json:"sender"`
 	Url           string      `json:"url"`
 	Note          string      `json:"note"`
-	NoteableType  string      `json:"noteable_type"` //nolint:misspell // Gitee/GitLab API field name
-	NoteableId    int         `json:"noteable_id"`   //nolint:misspell // Gitee/GitLab API field name
+	NoteableType  string      `json:"noteable_type"` // nolint:misspell // Gitee/GitLab API field name
+	NoteableId    int         `json:"noteable_id"`   // nolint:misspell // Gitee/GitLab API field name
 	Title         string      `json:"title"`
 	PerIid        string      `json:"per_iid"`
 	ShortCommitId interface{} `json:"short_commit_id"`

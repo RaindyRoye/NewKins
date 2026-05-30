@@ -54,10 +54,10 @@ type BuildTask struct {
 	staglk sync.RWMutex
 	stages map[string]*taskStage // key:name
 	joblk  sync.RWMutex
-	jobs   map[string]*jobSync //key:id
+	jobs   map[string]*jobSync // key:id
 
 	buildPath string
-	repoPaths string //fs
+	repoPaths string // fs
 	workpgss  int
 
 	isClone  bool
@@ -185,7 +185,7 @@ func (c *BuildTask) runStage(stage *runtime.Stage) {
 	}()
 	stage.Started = time.Now()
 	stage.Status = common.BuildStatusRunning
-	//c.logfile.WriteString(fmt.Sprintf("\n****************Stage+ %s\n", stage.Name))
+	// c.logfile.WriteString(fmt.Sprintf("\n****************Stage+ %s\n", stage.Name))
 	c.updateStage(stage)
 	c.staglk.RLock()
 	stg, ok := c.stages[stage.Name]
@@ -255,7 +255,7 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 			stage.RLock()
 			e, ok := stage.jobs[v]
 			stage.RUnlock()
-			//core.Log.Debugf("job(%s) depend %s(ok:%t)",job.step.Name,v,ok)
+			// core.Log.Debugf("job(%s) depend %s(ok:%t)",job.step.Name,v,ok)
 			if !ok {
 				job.status(common.BuildStatusError, fmt.Sprintf("wait on %s not found", v))
 				return

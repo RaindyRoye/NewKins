@@ -44,7 +44,7 @@ func (OrgController) list(c *gin.Context, m *hbtp.Map) {
 	var err error
 	var page *bean.Page
 	lgusr := service.GetMidLgUser(c)
-	//if comm.IsMySQL {
+	// if comm.IsMySQL {
 	gen := &bean.PageGen{
 		CountCols: "org.id",
 		FindCols:  "org.*",
@@ -187,7 +187,7 @@ func (OrgController) users(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	var usrs []*model.TUserOrgInfo
-	//if comm.IsMySQL {
+	// if comm.IsMySQL {
 	ses := comm.Db.SQL(`
 		select usr.*,urg.perm_adm,urg.perm_rw,urg.perm_exec,urg.perm_down,urg.created as join_time from t_user usr
 		JOIN t_user_org urg ON urg.org_id=?

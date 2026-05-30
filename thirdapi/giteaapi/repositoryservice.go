@@ -74,7 +74,7 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 		}
 		totalPages = totalCount / int64(perPage)
 		if totalCount%int64(perPage) > 0 {
-			totalPages = totalPages + 1
+			totalPages++
 		}
 	}
 	list := convertRepositoryList(repoList)

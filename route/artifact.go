@@ -61,7 +61,7 @@ func (ArtifactController) orgList(c *gin.Context, m *hbtp.Map) {
 	ls := make([]*model.TArtifactory, 0)
 	var err error
 	var page *bean.Page
-	//if comm.IsMySQL {
+	// if comm.IsMySQL {
 	gen := &bean.PageGen{
 		CountCols: "art.aid",
 		FindCols:  "art.*",
@@ -176,11 +176,12 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 				break
 			}
 			i := 8
-			if ln >= 9 {
+			switch {
+			case ln >= 9:
 				i = 11
-			} else if ln >= 6 {
+			case ln >= 6:
 				i = 10
-			} else if ln >= 3 {
+			case ln >= 3:
 				i = 9
 			}
 			ne.Identifier = strings.ToLower(utils.RandomString(i))
@@ -303,8 +304,8 @@ func (ArtifactController) versionInfos(c *gin.Context, m *hbtp.Map) {
 	}
 	err := artv.ReadFiles()
 	if err != nil {
-		//c.String(511, "Files is err")
-		//return
+		// c.String(511, "Files is err")
+		// return
 		logrus.Debugf("files err:%v", err)
 	}
 	c.JSON(200, hbtp.Map{

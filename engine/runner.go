@@ -237,8 +237,7 @@ func (c *baseRunner) GetEnv(buildID, jobId, key string) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	switch val := v.(type) {
-	case string:
+	if val, ok := v.(string); ok {
 		return val, true
 	}
 	return fmt.Sprintf("%v", v), true

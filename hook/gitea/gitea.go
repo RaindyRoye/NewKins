@@ -233,23 +233,23 @@ func convertPullRequestURL(gc *giteaCommentHook) (*giteaPullRequestURL, error) {
 			logrus.Warnf("%s", string(debug.Stack()))
 		}
 	}()
-	//TODO 请求gitea api 获取pr 详情
-	//client := cl.Repositories.(*giteaapi.RepositoryService)
-	//tk := &pipeline.TUserToken{}
-	//ok, _ := comm.DBMain.GetDB().Where("openid=?", gc.Sender.Id).Get(tk)
-	//if !ok {
+	// TODO 请求gitea api 获取pr 详情
+	// client := cl.Repositories.(*giteaapi.RepositoryService)
+	// tk := &pipeline.TUserToken{}
+	// ok, _ := comm.DBMain.GetDB().Where("openid=?", gc.Sender.Id).Get(tk)
+	// if !ok {
 	//	logrus.Error("convertPullRequestURL not found user token")
 	//	return nil, errors.New("convertPullRequestURL not found user token")
 	//}
 	//
-	//quest, err := client.GetPullQuest(tk.AccessToken, gc.Repository.Owner.Login, gc.Repository.Name, gc.Issue.Number)
-	//if err != nil {
+	// quest, err := client.GetPullQuest(tk.AccessToken, gc.Repository.Owner.Login, gc.Repository.Name, gc.Issue.Number)
+	// if err != nil {
 	//	logrus.Errorf("convertPullRequestURL.GetPullQuest err : %v", err)
 	//	return nil, err
 	//}
-	//requestURL := &giteaPullRequestURL{}
-	//err = json.Unmarshal(quest, requestURL)
-	//if err != nil {
+	// requestURL := &giteaPullRequestURL{}
+	// err = json.Unmarshal(quest, requestURL)
+	// if err != nil {
 	//	logrus.Errorf("gitea convertPullRequestURL Unmarshal err %v", err)
 	//	return nil, err
 	//}

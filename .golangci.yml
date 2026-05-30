@@ -3,8 +3,15 @@ version: "2"
 run:
   timeout: 5m
 
-linters-settings:
-  errcheck:
-    exclude-functions:
-      - "(*github.com/mgr9525/HyperByte-Transfer-Protocol.Context).ResString"
-      - "(*github.com/mgr9525/HyperByte-Transfer-Protocol.Context).ResJson"
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+    - gocritic
+  settings:
+    errcheck:
+      exclude-functions:
+        - "(*github.com/mgr9525/HyperByte-Transfer-Protocol.Context).ResString"
+        - "(*github.com/mgr9525/HyperByte-Transfer-Protocol.Context).ResJson"

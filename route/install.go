@@ -23,7 +23,7 @@ import (
 
 type installConfig struct {
 	Server struct {
-		Host     string `json:"host"` //外网访问地址
+		Host     string `json:"host"` // 外网访问地址
 		RunLimit int    `json:"runLimit"`
 		HbtpHost string `json:"hbtpHost"`
 		Secret   string `json:"secret"`
@@ -312,7 +312,7 @@ func Install(c *gin.Context) {
 			var service = axios.create({
 				baseURL: "/api", // api base_url
 				// baseURL: 'http://n.1ydt.com:8072', // api base_url
-				//timeout: 5000, // 请求超时时间
+				// timeout: 5000, // 请求超时时间
 				withCredentials: true
 			});
 	

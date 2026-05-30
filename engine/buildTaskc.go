@@ -39,7 +39,7 @@ func (c *BuildTask) check() bool {
 			}
 		} */
 	}
-	if len(c.build.Stages) <= 0 {
+	if len(c.build.Stages) == 0 {
 		c.build.Event = common.BuildEventCheckParam
 		c.build.Error = "build Stages is empty"
 		return false
@@ -56,7 +56,7 @@ func (c *BuildTask) check() bool {
 			c.build.Error = "build Stage name is empty"
 			return false
 		}
-		if len(v.Steps) <= 0 {
+		if len(v.Steps) == 0 {
 			c.build.Event = common.BuildEventCheckParam
 			c.build.Error = "build Stages is empty"
 			return false
@@ -169,15 +169,14 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 		runjb.OriginRepo = c.repoPaths
 		job.step.Commands = []string{"git works"}
 	}
-	switch job.step.Commands.(type) {
+	switch cmd := job.step.Commands.(type) {
 	case string:
-		c.appendcmds(runjb, job.step.Commands.(string))
+		c.appendcmds(runjb, cmd)
 	case []interface{}:
-		err = c.gencmds(runjb, job.step.Commands.([]interface{}))
+		err = c.gencmds(runjb, cmd)
 	case []string:
 		var ls []interface{}
-		ts := job.step.Commands.([]string)
-		for _, v := range ts {
+		for _, v := range cmd {
 			ls = append(ls, v)
 		}
 		err = c.gencmds(runjb, ls)
@@ -198,7 +197,7 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 		}
 		cmd := &model.TCmdLine{
 			Id: v.Id,
-			//GroupId: v.Gid,
+			// GroupId: v.Gid,
 			BuildId: job.step.BuildId,
 			StepId:  job.step.Id,
 			Status:  common.BuildStatusPending,
@@ -242,7 +241,7 @@ func (c *BuildTask) appendcmds(runjb *runners.RunJob, conts string) {
 		Conts: conts,
 	}
 	logrus.Debugf("append cmd(%d)-%s", len(runjb.Commands), m.Conts)
-	//job.Commands[m.Id] = m
+	// job.Commands[m.Id] = m
 	runjb.Commands = append(runjb.Commands, m)
 }
 func (c *BuildTask) gencmds(runjb *runners.RunJob, cmds []interface{}) (rterr error) {

@@ -6,11 +6,8 @@ func GetIdOrAid(id interface{}, e interface{}) bool {
 	if id == nil || e == nil {
 		return false
 	}
-	switch v := id.(type) {
-	case string:
-		if v == "" {
-			return false
-		}
+	if v, ok := id.(string); ok && v == "" {
+		return false
 	}
 	ok, _ := comm.Db.Where("id=?", id).Get(e)
 	if !ok {

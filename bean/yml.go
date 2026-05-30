@@ -67,16 +67,16 @@ type Artifact struct {
 }
 
 type UseArtifacts struct {
-	Scope      string `yaml:"scope" json:"scope"`           //archive,pipeline,env
+	Scope      string `yaml:"scope" json:"scope"`           // archive,pipeline,env
 	Repository string `yaml:"repository" json:"repository"` // archive,制品库ID
-	Name       string `yaml:"name" json:"name"`             //archive,pipeline,env
-	//IsForce    bool   `yaml:"isForce" json:"isForce"`
+	Name       string `yaml:"name" json:"name"`             // archive,pipeline,env
+	// IsForce    bool   `yaml:"isForce" json:"isForce"`
 	IsUrl bool   `yaml:"isUrl" json:"isUrl"`
 	Alias string `yaml:"alias" json:"alias"`
-	Path  string `yaml:"path" json:"path"` //archive,pipeline
+	Path  string `yaml:"path" json:"path"` // archive,pipeline
 
-	FromStage string `yaml:"fromStage" json:"sourceStage"` //pipeline
-	FromStep  string `yaml:"fromStep" json:"sourceStep"`   //pipeline
+	FromStage string `yaml:"fromStage" json:"sourceStage"` // pipeline
+	FromStep  string `yaml:"fromStep" json:"sourceStep"`   // pipeline
 }
 
 func (c *Pipeline) ToJson() ([]byte, error) {
@@ -106,14 +106,14 @@ func (c *Pipeline) ConvertCmd() {
 
 func (c *Pipeline) Check() error {
 	stages := make(map[string]map[string]*Step)
-	if len(c.Stages) <= 0 {
+	if len(c.Stages) == 0 {
 		return errors.New("stages 为空")
 	}
 	for _, v := range c.Stages {
 		if v.Name == "" {
 			return errors.New("stages name 为空")
 		}
-		if len(v.Steps) <= 0 {
+		if len(v.Steps) == 0 {
 			return errors.New("step 为空")
 		}
 		if _, ok := stages[v.Name]; ok {
@@ -137,7 +137,7 @@ func (c *Pipeline) Check() error {
 	return nil
 }
 
-//func (c *Pipeline) SkipTriggerRules(events string) bool {
+// func (c *Pipeline) SkipTriggerRules(events string) bool {
 //	if events != "manual" {
 //		return true
 //	}

@@ -30,7 +30,7 @@ func Start() error {
 
 	Mgr.brun = &baseRunner{}
 	Mgr.hrun = &HbtpRunner{}
-	//runners
+	// runners
 	comm.Cfg.Server.Shells = append(comm.Cfg.Server.Shells, "shell@ssh", "gokins@git")
 	// if len(comm.Cfg.Server.Shells) > 0 {
 	Mgr.shellRun = runners.NewEngine(runners.Config{
@@ -49,7 +49,7 @@ func Start() error {
 	go func() {
 		_ = os.RemoveAll(filepath.Join(comm.WorkPath, common.PathTmp))
 		for !hbtp.EndContext(comm.Ctx) {
-			//Mgr.run()
+			// Mgr.run()
 			time.Sleep(time.Millisecond * 100)
 		}
 		Mgr.buildEgn.Stop()

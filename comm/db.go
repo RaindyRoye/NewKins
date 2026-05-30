@@ -47,7 +47,7 @@ func findPages(ses *xorm.Session, ls interface{}, count, page int64, size ...int
 	var pageno int64 = 1
 	var sizeno int64 = 10
 	var pagesno int64
-	//var count=c.FindCount(pars)
+	// var count=c.FindCount(pars)
 	if page > 0 {
 		pageno = page
 	}
@@ -89,7 +89,7 @@ func FindPages(gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*b
 	var pageno int64 = 1
 	var sizeno int64 = 10
 	var pagesno int64
-	//var count=c.FindCount(pars)
+	// var count=c.FindCount(pars)
 	if page > 0 {
 		pageno = page
 	}

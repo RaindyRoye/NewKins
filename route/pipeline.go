@@ -62,7 +62,7 @@ func (PipelineController) orgPipelines(c *gin.Context, m *hbtp.Map) {
 	ls := make([]*model.TPipeline, 0)
 	var err error
 	var page *bean.Page
-	//if comm.IsMySQL {
+	// if comm.IsMySQL {
 	gen := &bean.PageGen{
 		CountCols: "DISTINCT(pipe.id)",
 		FindCols:  "DISTINCT(pipe.id),pipe.*",
@@ -108,7 +108,7 @@ func (PipelineController) getPipelines(c *gin.Context, m *hbtp.Map) {
 	ls := make([]*model.TPipeline, 0)
 	var err error
 	var page *bean.Page
-	//if comm.IsMySQL {
+	// if comm.IsMySQL {
 	gen := &bean.PageGen{
 		CountCols: "pipe.id",
 		FindCols:  "pipe.*",
@@ -116,7 +116,7 @@ func (PipelineController) getPipelines(c *gin.Context, m *hbtp.Map) {
 	gen.SQL = `
 			select {{select}} from t_pipeline pipe where pipe.deleted != 1 `
 	if !service.IsAdmin(lgusr) {
-		gen.SQL = gen.SQL + ` and pipe.uid = ? `
+		gen.SQL += ` and pipe.uid = ? `
 		gen.Args = append(gen.Args, lgusr.Id)
 	}
 	if q != "" {
@@ -526,7 +526,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 				util.RespInternalErr(c, "db operation", err)
 				return
 			}
-			if len(tpipeIds) <= 0 {
+			if len(tpipeIds) == 0 {
 				c.JSON(200, page)
 				return
 			}

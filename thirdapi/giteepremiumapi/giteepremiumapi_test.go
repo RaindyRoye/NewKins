@@ -1,7 +1,7 @@
 package giteepremiumapi
 
 //
-//func TestGiteePremiumContents(t *testing.T) {
+// func TestGiteePremiumContents(t *testing.T) {
 //
 //	u := fmt.Sprintf(ApiGiteePremiumGetRepositoryContent, "SuperHeroJim", "gokins-test", ".gokins", "1065cd3f8791b97224a823c954a0ec98")
 //	resp, err := http.Get(u)

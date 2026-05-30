@@ -26,7 +26,7 @@ var (
 	NotUpPass = false
 	WorkPath  = ""
 	WebHost   = ""
-	//HbtpHost = ""
+	// HbtpHost = ""
 )
 
 func init() {

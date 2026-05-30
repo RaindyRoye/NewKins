@@ -49,9 +49,9 @@ func (UserController) new(c *gin.Context, m *hbtp.Map) {
 	name := strings.TrimSpace(m.GetString("name"))
 	nick := strings.TrimSpace(m.GetString("nick"))
 	pass := m.GetString("pass")
-	//pmUser:=m.GetBool("pmUser")
-	//pmOrg:=m.GetBool("pmOrg")
-	//pmPipe:=m.GetBool("pmPipe")
+	// pmUser:=m.GetBool("pmUser")
+	// pmOrg:=m.GetBool("pmOrg")
+	// pmPipe:=m.GetBool("pmPipe")
 	if name == "" || nick == "" || pass == "" {
 		c.String(500, "param err")
 		return

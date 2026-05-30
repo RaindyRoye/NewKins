@@ -33,7 +33,7 @@ func runWeb() {
 	err := comm.WebEgn.Run(comm.WebHost)
 	if err != nil {
 		logrus.Errorf("Web err:%v", err)
-		//comm.HbtpEgn.Stop()
+		// comm.HbtpEgn.Stop()
 	}
 	comm.Cancel()
 	time.Sleep(time.Millisecond * 100)
@@ -99,13 +99,13 @@ func midUiHandle(c *gin.Context) {
 		r, err = getFile("index.html")
 	}
 	if err != nil {
-		//c.String(404, "rdr err:"+err.Error())
+		// c.String(404, "rdr err:"+err.Error())
 		httpex.ResMsgUrl(c, "未找到内容,跳转中...", "/")
 		return
 	}
 	rd, err := r.Open()
 	if err != nil {
-		//c.String(500, "open err:"+err.Error())
+		// c.String(500, "open err:"+err.Error())
 		httpex.ResMsgUrl(c, "内容有误,跳转中...", "/")
 		return
 	}
@@ -126,7 +126,7 @@ func midUiHandle(c *gin.Context) {
 	case ".svg":
 		c.Writer.Header().Set("Content-Type", "image/svg+xml")
 	case ".woff2":
-		//c.Writer.Header().Set("Content-Type", "image/svg+xml")
+		// c.Writer.Header().Set("Content-Type", "image/svg+xml")
 	case ".ttf", ".ttc":
 		c.Writer.Header().Set("Content-Type", "application/x-font-ttf")
 	}
@@ -168,14 +168,14 @@ func getFile(pth string) (*zip.File, error) {
 	if pth == "" {
 		return nil, errors.New("getFile: path parameter is empty")
 	}
-	//println("getFile:" + pth)
+	// println("getFile:" + pth)
 	r, err := getRdr()
 	if err != nil {
 		return nil, err
 	}
 	for _, f := range r.File {
 		nm := strings.ReplaceAll(f.Name, "\\", "/")
-		//println(fmt.Sprintf("find zip file:%s, %s",pth, nm))
+		// println(fmt.Sprintf("find zip file:%s, %s",pth, nm))
 		if pth == nm {
 			return f, nil
 		}

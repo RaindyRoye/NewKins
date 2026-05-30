@@ -95,8 +95,9 @@ func TestSentinelErrors_ErrorMessages(t *testing.T) {
 
 func TestSentinelErrors_DirectComparison(t *testing.T) {
 	// Verify that sentinel errors can be compared directly with ==
-	if ErrPipelineNotFound != ErrPipelineNotFound {
-		t.Error("ErrPipelineNotFound should equal itself")
+	// Verify self-comparison with Errors.Is (gocritic: dupSubExpr)
+	if !errors.Is(ErrPipelineNotFound, ErrPipelineNotFound) {
+		t.Error("ErrPipelineNotFound should equal itself via errors.Is")
 	}
 	if ErrTriggerNoParams == ErrPipelineNotFound {
 		t.Error("different sentinel errors should not be equal with ==")
