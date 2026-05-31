@@ -371,7 +371,7 @@ func replace(s string, mVars map[string]*runtime.Variables, mustShow ...bool) (s
 				}
 			}
 			if !ms && st {
-				conts = strings.ReplaceAll(conts, v2[0], "***")
+				conts = strings.ReplaceAll(conts, v2[0], comm.MaskedValue)
 			} else {
 				conts = strings.ReplaceAll(conts, v2[0], va)
 			}

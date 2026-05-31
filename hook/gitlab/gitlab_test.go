@@ -10,6 +10,11 @@ import (
 	"github.com/gokins/gokins/hook"
 )
 
+const (
+	testSecret = "testsecret"
+	testUser   = "testuser"
+)
+
 func newGitlabRequest(event string, body []byte, secret string) *http.Request {
 	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -58,7 +63,7 @@ func TestParsePushHook(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(payload)
-	secret := "testsecret"
+	secret := testSecret
 	req := newGitlabRequest(hook.GitlabEventPush, body, secret)
 
 	wh, err := Parse(req, secret)
@@ -89,10 +94,10 @@ func TestParsePushHook(t *testing.T) {
 	if pushHook.Repo.RepoType != "gitlab" {
 		t.Errorf("expected repoType 'gitlab', got '%s'", pushHook.Repo.RepoType)
 	}
-	if pushHook.Repo.Owner != "testuser" {
+	if pushHook.Repo.Owner != testUser {
 		t.Errorf("expected owner 'testuser', got '%s'", pushHook.Repo.Owner)
 	}
-	if pushHook.Sender.UserName != "testuser" {
+	if pushHook.Sender.UserName != testUser {
 		t.Errorf("expected sender 'testuser', got '%s'", pushHook.Sender.UserName)
 	}
 }
@@ -156,7 +161,7 @@ func TestParsePullRequestHook(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(payload)
-	secret := "testsecret"
+	secret := testSecret
 	req := newGitlabRequest(hook.GitlabEventPR, body, secret)
 
 	wh, err := Parse(req, secret)
@@ -175,14 +180,14 @@ func TestParsePullRequestHook(t *testing.T) {
 	if prHook.Repo.RepoType != "gitlab" {
 		t.Errorf("expected repoType 'gitlab', got '%s'", prHook.Repo.RepoType)
 	}
-	if prHook.Sender.UserName != "testuser" {
+	if prHook.Sender.UserName != testUser {
 		t.Errorf("expected sender 'testuser', got '%s'", prHook.Sender.UserName)
 	}
 }
 
 func TestParseUnknownEvent(t *testing.T) {
 	body := []byte(`{}`)
-	secret := "testsecret"
+	secret := testSecret
 	req := newGitlabRequest("Unknown Hook", body, secret)
 
 	_, err := Parse(req, secret)
@@ -231,7 +236,7 @@ func TestParsePRUnsupportedAction(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(payload)
-	secret := "testsecret"
+	secret := testSecret
 	req := newGitlabEventPR(body, secret)
 
 	_, err := Parse(req, secret)

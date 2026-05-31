@@ -12,13 +12,18 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const (
+	testSecretKey = "test-secret-key"
+	testCookieName = "gokinstk"
+)
+
 func TestSetToken_CookieSecurityAttributes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/", nil)
 
-	key := "test-secret-key"
+	key := testSecretKey
 	claims := jwt.MapClaims{"uid": "user1"}
 
 	_, err := SetToken(c, claims, key, false)
@@ -33,7 +38,7 @@ func TestSetToken_CookieSecurityAttributes(t *testing.T) {
 
 	var found bool
 	for _, cke := range cookies {
-		if cke.Name == "gokinstk" {
+		if cke.Name == testCookieName {
 			found = true
 			// Check HttpOnly
 			if !cke.HttpOnly {
@@ -67,7 +72,7 @@ func TestSetToken_SecureFlagForTLS(t *testing.T) {
 	req.TLS = &tls.ConnectionState{}
 	c.Request = req
 
-	key := "test-secret-key"
+	key := testSecretKey
 	claims := jwt.MapClaims{"uid": "user1"}
 
 	_, err := SetToken(c, claims, key, false)
@@ -77,7 +82,7 @@ func TestSetToken_SecureFlagForTLS(t *testing.T) {
 
 	cookies := w.Result().Cookies()
 	for _, cke := range cookies {
-		if cke.Name == "gokinstk" {
+		if cke.Name == testCookieName {
 			if !cke.Secure {
 				t.Error("cookie should have Secure flag for TLS requests")
 			}
@@ -91,7 +96,7 @@ func TestSetToken_RememberMeMaxAge(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/", nil)
 
-	key := "test-secret-key"
+	key := testSecretKey
 	claims := jwt.MapClaims{"uid": "user1"}
 
 	_, err := SetToken(c, claims, key, true) // remember me = true
@@ -101,7 +106,7 @@ func TestSetToken_RememberMeMaxAge(t *testing.T) {
 
 	cookies := w.Result().Cookies()
 	for _, cke := range cookies {
-		if cke.Name == "gokinstk" {
+		if cke.Name == testCookieName {
 			// 5 days = 432000 seconds
 			expectedMaxAge := 60 * 60 * 24 * 5
 			if cke.MaxAge != expectedMaxAge {
@@ -117,7 +122,7 @@ func TestSetToken_NormalMaxAge(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/", nil)
 
-	key := "test-secret-key"
+	key := testSecretKey
 	claims := jwt.MapClaims{"uid": "user1"}
 
 	_, err := SetToken(c, claims, key, false) // remember me = false
@@ -127,7 +132,7 @@ func TestSetToken_NormalMaxAge(t *testing.T) {
 
 	cookies := w.Result().Cookies()
 	for _, cke := range cookies {
-		if cke.Name == "gokinstk" {
+		if cke.Name == testCookieName {
 			expectedMaxAge := 60 * 60 * 5
 			if cke.MaxAge != expectedMaxAge {
 				t.Errorf("expected MaxAge %d for normal session, got %d", expectedMaxAge, cke.MaxAge)
@@ -149,7 +154,7 @@ func TestClearToken_SecurityAttributes(t *testing.T) {
 
 	cookies := w.Result().Cookies()
 	for _, cke := range cookies {
-		if cke.Name == "gokinstk" {
+		if cke.Name == testCookieName {
 			if cke.MaxAge != -1 {
 				t.Errorf("expected MaxAge -1 for cleared cookie, got %d", cke.MaxAge)
 			}
@@ -172,7 +177,7 @@ func TestSetToken_WithDomain(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/", nil)
 
-	key := "test-secret-key"
+	key := testSecretKey
 	claims := jwt.MapClaims{"uid": "user1"}
 
 	_, err := SetToken(c, claims, key, false, "example.com")
@@ -182,7 +187,7 @@ func TestSetToken_WithDomain(t *testing.T) {
 
 	cookies := w.Result().Cookies()
 	for _, cke := range cookies {
-		if cke.Name == "gokinstk" {
+		if cke.Name == testCookieName {
 			if cke.Domain != "example.com" {
 				t.Errorf("expected domain 'example.com', got %q", cke.Domain)
 			}
@@ -205,7 +210,7 @@ func TestSetToken_CookieRoundtrip(t *testing.T) {
 
 	cookies := w.Result().Cookies()
 	for _, cke := range cookies {
-		if cke.Name == "gokinstk" {
+		if cke.Name == testCookieName {
 			parsed := GetTokens(cke.Value, key)
 			if parsed == nil {
 				t.Fatal("failed to parse cookie token")
@@ -221,7 +226,7 @@ func TestSetToken_CookieRoundtrip(t *testing.T) {
 
 func TestGetTokenAuth_UrlEncodedToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	key := "test-secret-key"
+	key := testSecretKey
 	claims := jwt.MapClaims{"uid": "encoded-user"}
 	token, _ := CreateToken(claims, key, time.Hour)
 
@@ -256,7 +261,7 @@ func TestClearToken_WithDomain(t *testing.T) {
 
 	cookies := w.Result().Cookies()
 	for _, cke := range cookies {
-		if cke.Name == "gokinstk" {
+		if cke.Name == testCookieName {
 			if cke.Domain != "example.com" {
 				t.Errorf("expected domain 'example.com', got %q", cke.Domain)
 			}

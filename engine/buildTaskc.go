@@ -220,7 +220,7 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 			}
 			v.Conts = strings.ReplaceAll(v.Conts, zs[0], vas)
 			if secret {
-				cmd.Content = strings.ReplaceAll(cmd.Content, zs[0], "***")
+				cmd.Content = strings.ReplaceAll(cmd.Content, zs[0], comm.MaskedValue)
 			} else {
 				cmd.Content = strings.ReplaceAll(cmd.Content, zs[0], vas)
 			}

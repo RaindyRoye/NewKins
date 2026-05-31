@@ -5,6 +5,15 @@ import (
 	"github.com/gokins/gokins/model"
 )
 
+// Permission level constants used across the application for access control checks.
+const (
+	PermCommon = "common"
+	PermAdmin  = "admin"
+)
+
+// AdminUserName is the reserved name for the super-admin account.
+const AdminUserName = "admin"
+
 func CheckPermission(uid string, perms string) bool {
 	usr, ok := GetUser(uid)
 	if !ok {
@@ -16,9 +25,9 @@ func CheckUPermission(usr *model.TUser, perms string) bool {
 	if usr == nil {
 		return false
 	}
-	if perms == "common" {
+	if perms == PermCommon {
 		return true
-	} else if perms == "admin" && usr.Name == "admin" {
+	} else if perms == PermAdmin && usr.Name == AdminUserName {
 		return true
 	}
 	return false

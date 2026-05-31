@@ -13,6 +13,7 @@ import (
 	"github.com/gokins/gokins/hook"
 )
 
+const testSecret = "testsecret"
 func computeSignature(secret, body []byte) string {
 	mac := hmac.New(sha256.New, secret)
 	mac.Write(body)
@@ -108,7 +109,7 @@ func TestParsePushHook(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(payload)
-	secret := "testsecret"
+	secret := testSecret
 	req := newGithubRequest(hook.GithubEventPush, body, secret)
 
 	wh, err := Parse(req, secret)
@@ -212,7 +213,7 @@ func TestParsePullRequestHook(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(payload)
-	secret := "testsecret"
+	secret := testSecret
 	req := newGithubRequest(hook.GithubEventPR, body, secret)
 
 	wh, err := Parse(req, secret)
@@ -236,7 +237,7 @@ func TestParsePullRequestHook(t *testing.T) {
 
 func TestParseUnknownEvent(t *testing.T) {
 	body := []byte(`{}`)
-	secret := "testsecret"
+	secret := testSecret
 	req := newGithubRequest("unknown_event", body, secret)
 
 	_, err := Parse(req, secret)
@@ -280,7 +281,7 @@ func TestParsePRUnsupportedAction(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(payload)
-	secret := "testsecret"
+	secret := testSecret
 	req := newGithubRequest(hook.GithubEventPR, body, secret)
 
 	_, err := Parse(req, secret)

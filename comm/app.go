@@ -11,6 +11,9 @@ import (
 
 const Version = "1.3.7"
 
+// MaskedValue is used to redact sensitive data in API responses and logs.
+const MaskedValue = "***"
+
 var (
 	Ctx  context.Context
 	cncl context.CancelFunc

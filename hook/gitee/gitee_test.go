@@ -10,6 +10,8 @@ import (
 	"github.com/gokins/gokins/hook"
 )
 
+const testSecret = "testsecret"
+
 func newGiteeRequest(event string, body []byte, secret string) *http.Request {
 	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -46,7 +48,7 @@ func TestParsePushHook(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(payload)
-	secret := "testsecret"
+	secret := testSecret
 	req := newGiteeRequest(hook.GiteeEventPush, body, secret)
 
 	wh, err := Parse(req, secret)
@@ -113,7 +115,7 @@ func TestParsePullRequestHook(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(payload)
-	secret := "testsecret"
+	secret := testSecret
 	req := newGiteeRequest(hook.GiteeEventPR, body, secret)
 
 	wh, err := Parse(req, secret)
@@ -136,7 +138,7 @@ func TestParsePullRequestHook(t *testing.T) {
 
 func TestParseUnknownEvent(t *testing.T) {
 	body := []byte(`{}`)
-	secret := "testsecret"
+	secret := testSecret
 	req := newGiteeRequest("Unknown Hook", body, secret)
 
 	_, err := Parse(req, secret)
@@ -180,7 +182,7 @@ func TestParsePRUnsupportedAction(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(payload)
-	secret := "testsecret"
+	secret := testSecret
 	req := newGiteeRequest(hook.GiteeEventPR, body, secret)
 
 	_, err := Parse(req, secret)

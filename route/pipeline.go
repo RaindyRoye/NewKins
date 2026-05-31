@@ -357,7 +357,7 @@ func (PipelineController) info(c *gin.Context, m *hbtp.Map) {
 	}
 	pipe.YmlContent = tpc.YmlContent
 	pipe.Url = tpc.Url
-	s := "***"
+	s := comm.MaskedValue
 	if perm.CanWrite() {
 		pipe.Username = tpc.Username
 		pipe.AccessToken = tpc.AccessToken
@@ -674,7 +674,7 @@ func (PipelineController) vars(c *gin.Context, m *hbtp.Map) {
 	if !perm.CanWrite() {
 		for _, v := range ls {
 			if v.Public != 0 {
-				v.Value = "***"
+				v.Value = comm.MaskedValue
 			}
 		}
 	}

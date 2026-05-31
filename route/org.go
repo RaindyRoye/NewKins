@@ -470,7 +470,7 @@ func (OrgController) vars(c *gin.Context, m *hbtp.Map) {
 	if !perm.CanWrite() {
 		for _, v := range ls {
 			if v.Public != 0 {
-				v.Value = "***"
+				v.Value = comm.MaskedValue
 			}
 		}
 	}
