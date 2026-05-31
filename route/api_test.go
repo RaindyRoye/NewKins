@@ -177,3 +177,97 @@ func TestLoginController_GetPath(t *testing.T) {
 		t.Errorf("GetPath() = %q, want %q", got, "/api/lg")
 	}
 }
+
+func TestPipelineController_GetPath(t *testing.T) {
+	c := &PipelineController{}
+	if got := c.GetPath(); got != "/api/pipeline" {
+		t.Errorf("GetPath() = %q, want %q", got, "/api/pipeline")
+	}
+}
+
+func TestOrgController_GetPath(t *testing.T) {
+	c := &OrgController{}
+	if got := c.GetPath(); got != "/api/org" {
+		t.Errorf("GetPath() = %q, want %q", got, "/api/org")
+	}
+}
+
+func TestTriggerController_GetPath(t *testing.T) {
+	c := &TriggerController{}
+	if got := c.GetPath(); got != "/api/trigger" {
+		t.Errorf("GetPath() = %q, want %q", got, "/api/trigger")
+	}
+}
+
+func TestHookController_GetPath(t *testing.T) {
+	c := &HookController{}
+	if got := c.GetPath(); got != "/trigger" {
+		t.Errorf("GetPath() = %q, want %q", got, "/trigger")
+	}
+}
+
+func TestRuntimeController_GetPath(t *testing.T) {
+	c := &RuntimeController{}
+	if got := c.GetPath(); got != "/api/runtime" {
+		t.Errorf("GetPath() = %q, want %q", got, "/api/runtime")
+	}
+}
+
+func TestPipelineVersionController_GetPath(t *testing.T) {
+	c := &PipelineVersionController{}
+	if got := c.GetPath(); got != "/api/pipelineVersion" {
+		t.Errorf("GetPath() = %q, want %q", got, "/api/pipelineVersion")
+	}
+}
+
+func TestArtifactController_GetPath(t *testing.T) {
+	c := &ArtifactController{}
+	if got := c.GetPath(); got != "/api/art" {
+		t.Errorf("GetPath() = %q, want %q", got, "/api/art")
+	}
+}
+
+func TestYmlController_GetPath(t *testing.T) {
+	c := &YmlController{}
+	if got := c.GetPath(); got != "/api/yml" {
+		t.Errorf("GetPath() = %q, want %q", got, "/api/yml")
+	}
+}
+
+func TestArtPublicController_GetPath(t *testing.T) {
+	c := &ArtPublicController{}
+	if got := c.GetPath(); got != "/api/art/pub" {
+		t.Errorf("GetPath() = %q, want %q", got, "/api/art/pub")
+	}
+}
+
+func TestAllControllers_GetPathUnique(t *testing.T) {
+	// Verify all controller paths are unique
+	type pathController struct {
+		name string
+		path string
+	}
+	controllers := []pathController{
+		{"ApiController", (&ApiController{}).GetPath()},
+		{"InstallController", (&InstallController{}).GetPath()},
+		{"UserController", (&UserController{}).GetPath()},
+		{"LoginController", (&LoginController{}).GetPath()},
+		{"PipelineController", (&PipelineController{}).GetPath()},
+		{"OrgController", (&OrgController{}).GetPath()},
+		{"TriggerController", (&TriggerController{}).GetPath()},
+		{"HookController", (&HookController{}).GetPath()},
+		{"RuntimeController", (&RuntimeController{}).GetPath()},
+		{"PipelineVersionController", (&PipelineVersionController{}).GetPath()},
+		{"ArtifactController", (&ArtifactController{}).GetPath()},
+		{"YmlController", (&YmlController{}).GetPath()},
+		{"ArtPublicController", (&ArtPublicController{}).GetPath()},
+	}
+
+	seen := make(map[string]string)
+	for _, c := range controllers {
+		if other, exists := seen[c.path]; exists {
+			t.Errorf("duplicate path %q: %s and %s", c.path, c.name, other)
+		}
+		seen[c.path] = c.name
+	}
+}
