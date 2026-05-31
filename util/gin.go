@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"runtime/debug"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -50,7 +51,8 @@ func GinReqParseJson(fn interface{}) gin.HandlerFunc {
 				if argtr.Kind() == reflect.Struct || argtr.Kind() == reflect.Map {
 					argv := reflect.New(argtr)
 					if err := c.BindJSON(argv.Interface()); err != nil {
-						c.String(500, fmt.Sprintf("params err[%d]:%+v", i, err))
+						logrus.Warnf("params bind error at arg %d: %v", i, err)
+						c.String(http.StatusBadRequest, fmt.Sprintf("invalid request body for parameter %d", i))
 						return
 					}
 					if argt.Kind() == reflect.Pointer {
@@ -63,7 +65,9 @@ func GinReqParseJson(fn interface{}) gin.HandlerFunc {
 		}
 		defer func() {
 			if err := recover(); err != nil {
-				c.String(500, fmt.Sprintf("router err:%+v", err))
+				logrus.Errorf("router panic:%+v", err)
+				logrus.Errorf("router stack:%s", string(debug.Stack()))
+				c.String(http.StatusInternalServerError, "internal server error")
 			}
 		}()
 		fnv.Call(inls)

@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gokins/gokins/util/httpex"
@@ -25,7 +27,8 @@ import (
 func runWeb() {
 	defer func() {
 		if err := recover(); err != nil {
-			hbtp.Errorf("Web recover:%v", err)
+			logrus.Errorf("Web recover:%v", err)
+			logrus.Errorf("Web stack:%s", string(debug.Stack()))
 		}
 	}()
 	comm.WebEgn = gin.Default()
@@ -146,22 +149,30 @@ func midUiHandle(c *gin.Context) {
 	}
 }
 
-var rder *zip.Reader
+var (
+	rder     *zip.Reader
+	rderOnce sync.Once
+	rderErr  error
+)
 
 func getRdr() (*zip.Reader, error) {
-	if rder != nil {
-		return rder, nil
+	rderOnce.Do(func() {
+		bts, err := base64.StdEncoding.DecodeString(comm.StaticPkg)
+		if err != nil {
+			rderErr = err
+			return
+		}
+		buf := bytes.NewReader(bts)
+		r, err := zip.NewReader(buf, buf.Size())
+		if err != nil {
+			rderErr = err
+			return
+		}
+		rder = r
+	})
+	if rderErr != nil {
+		return nil, rderErr
 	}
-	bts, err := base64.StdEncoding.DecodeString(comm.StaticPkg)
-	if err != nil {
-		return nil, err
-	}
-	buf := bytes.NewReader(bts)
-	r, err := zip.NewReader(buf, buf.Size())
-	if err != nil {
-		return nil, err
-	}
-	rder = r
 	return rder, nil
 }
 func getFile(pth string) (*zip.File, error) {
