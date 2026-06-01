@@ -47,7 +47,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show version",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("gokins version:" + comm.Version)
+		cmd.Println("gokins version:" + comm.Version)
 	},
 }
 
@@ -90,14 +90,14 @@ func runDaemon() error {
 	args := getArgs()
 	fullpth, err := os.Executable()
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve executable path: %w", err)
 	}
-	println("start process")
+	fmt.Println("starting background process...")
 	cmd := exec.Command(fullpth, args...)
-	err = cmd.Start()
-	if err != nil {
-		return err
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("start daemon process: %w", err)
 	}
+	fmt.Printf("daemon started (pid: %d)\n", cmd.Process.Pid)
 	return nil
 }
 
