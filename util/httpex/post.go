@@ -2,6 +2,7 @@ package httpex
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,13 +13,21 @@ import (
 	"time"
 )
 
+// Post sends a POST request with form-encoded parameters.
+// For context-aware usage, prefer PostCtx.
 func Post(ul string, params *url.Values, timeout time.Duration, hds ...http.Header) (*http.Response, error) {
+	return PostCtx(context.Background(), ul, params, timeout, hds...)
+}
+
+// PostCtx sends a POST request with form-encoded parameters and context support.
+// The context is used for request cancellation and deadlines.
+func PostCtx(ctx context.Context, ul string, params *url.Values, timeout time.Duration, hds ...http.Header) (*http.Response, error) {
 	if params == nil {
 		params = &url.Values{}
 	}
-	request, err := http.NewRequest(http.MethodPost, ul, strings.NewReader(params.Encode()))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, ul, strings.NewReader(params.Encode()))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating POST request: %w", err)
 	}
 	header := http.Header{}
 	if len(hds) > 0 {
@@ -30,13 +39,21 @@ func Post(ul string, params *url.Values, timeout time.Duration, hds ...http.Head
 	client.Timeout = time.Second * timeout
 	return client.Do(request)
 }
+
+// Posts sends a POST request and returns the status code and response body.
+// For context-aware usage, prefer PostsCtx.
 func Posts(ul string, params *url.Values, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
+	return PostsCtx(context.Background(), ul, params, timeout, hds...)
+}
+
+// PostsCtx sends a POST request with context support and returns the status code and response body.
+func PostsCtx(ctx context.Context, ul string, params *url.Values, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
 	if params == nil {
 		params = &url.Values{}
 	}
-	request, err := http.NewRequest(http.MethodPost, ul, strings.NewReader(params.Encode()))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, ul, strings.NewReader(params.Encode()))
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("creating POST request: %w", err)
 	}
 	header := http.Header{}
 	if len(hds) > 0 {
@@ -48,7 +65,7 @@ func Posts(ul string, params *url.Values, timeout time.Duration, hds ...http.Hea
 	client.Timeout = time.Second * timeout
 	res, err := client.Do(request)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("executing POST request: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
@@ -58,14 +75,22 @@ func Posts(ul string, params *url.Values, timeout time.Duration, hds ...http.Hea
 	}
 	return res.StatusCode, bts, nil
 }
+
+// PostJSON sends a POST request with a JSON body.
+// For context-aware usage, prefer PostJSONCtx.
 func PostJSON(ul string, params interface{}, timeout time.Duration, hds ...http.Header) (*http.Response, error) {
+	return PostJSONCtx(context.Background(), ul, params, timeout, hds...)
+}
+
+// PostJSONCtx sends a POST request with a JSON body and context support.
+func PostJSONCtx(ctx context.Context, ul string, params interface{}, timeout time.Duration, hds ...http.Header) (*http.Response, error) {
 	js, err := json.Marshal(params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("marshaling JSON body: %w", err)
 	}
-	request, err := http.NewRequest(http.MethodPost, ul, bytes.NewReader(js))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, ul, bytes.NewReader(js))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating POST JSON request: %w", err)
 	}
 	header := http.Header{}
 	if len(hds) > 0 {
@@ -78,29 +103,18 @@ func PostJSON(ul string, params interface{}, timeout time.Duration, hds ...http.
 	return client.Do(request)
 }
 
+// PostResult sends a POST request and unmarshals the JSON response into result.
+// For context-aware usage, prefer PostResultCtx.
 func PostResult(ul string, params *url.Values, result interface{}, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
-	if result == nil {
-		return 0, nil, errors.New("result is nil")
-	}
-	res, err := Post(ul, params, timeout, hds...)
-	if err != nil {
-		return 0, nil, err
-	}
-	defer func() { _ = res.Body.Close() }()
-	bts, err := io.ReadAll(res.Body)
-	if err != nil {
-		return res.StatusCode, nil, fmt.Errorf("reading response body: %w", err)
-	}
-	if res.StatusCode != 200 {
-		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %s", res.StatusCode, string(bts))
-	}
-	return res.StatusCode, bts, json.Unmarshal(bts, result)
+	return PostResultCtx(context.Background(), ul, params, result, timeout, hds...)
 }
-func PostJSONResult(ul string, params interface{}, result interface{}, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
+
+// PostResultCtx sends a POST request with context support and unmarshals the JSON response into result.
+func PostResultCtx(ctx context.Context, ul string, params *url.Values, result interface{}, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
 	if result == nil {
 		return 0, nil, errors.New("result is nil")
 	}
-	res, err := PostJSON(ul, params, timeout, hds...)
+	res, err := PostCtx(ctx, ul, params, timeout, hds...)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -112,5 +126,37 @@ func PostJSONResult(ul string, params interface{}, result interface{}, timeout t
 	if res.StatusCode != 200 {
 		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %s", res.StatusCode, string(bts))
 	}
-	return res.StatusCode, bts, json.Unmarshal(bts, result)
+	if err := json.Unmarshal(bts, result); err != nil {
+		return res.StatusCode, bts, fmt.Errorf("unmarshaling response: %w", err)
+	}
+	return res.StatusCode, bts, nil
+}
+
+// PostJSONResult sends a POST request with a JSON body and unmarshals the response into result.
+// For context-aware usage, prefer PostJSONResultCtx.
+func PostJSONResult(ul string, params interface{}, result interface{}, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
+	return PostJSONResultCtx(context.Background(), ul, params, result, timeout, hds...)
+}
+
+// PostJSONResultCtx sends a POST request with a JSON body, context support, and unmarshals the response into result.
+func PostJSONResultCtx(ctx context.Context, ul string, params interface{}, result interface{}, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
+	if result == nil {
+		return 0, nil, errors.New("result is nil")
+	}
+	res, err := PostJSONCtx(ctx, ul, params, timeout, hds...)
+	if err != nil {
+		return 0, nil, err
+	}
+	defer func() { _ = res.Body.Close() }()
+	bts, err := io.ReadAll(res.Body)
+	if err != nil {
+		return res.StatusCode, nil, fmt.Errorf("reading response body: %w", err)
+	}
+	if res.StatusCode != 200 {
+		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %s", res.StatusCode, string(bts))
+	}
+	if err := json.Unmarshal(bts, result); err != nil {
+		return res.StatusCode, bts, fmt.Errorf("unmarshaling response: %w", err)
+	}
+	return res.StatusCode, bts, nil
 }

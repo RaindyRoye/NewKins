@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
@@ -52,7 +53,7 @@ func CacheSets(key string, data interface{}, outm ...time.Duration) error {
 	}
 	bts, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return fmt.Errorf("cache marshal: %w", err)
 	}
 	return CacheSet(key, bts, outm...)
 }
@@ -83,6 +84,7 @@ func CacheGet(key string) ([]byte, error) {
 		return nil, errors.New("cache not init")
 	}
 	var rt []byte
+	var expired bool
 	err := BCache.View(func(tx *bolt.Tx) error {
 		bk := tx.Bucket(mainCacheBucket)
 		if bk == nil {
@@ -94,11 +96,25 @@ func CacheGet(key string) ([]byte, error) {
 		}
 		rt = parseCacheData(bts)
 		if rt == nil {
-			_ = bk.Delete([]byte(key))
+			expired = true
 			return ErrKeyTimeout
 		}
 		return nil
 	})
+	// Delete expired keys in a separate write transaction (View is read-only).
+	if expired {
+		go func() {
+			if err := BCache.Update(func(tx *bolt.Tx) error {
+				bk := tx.Bucket(mainCacheBucket)
+				if bk == nil {
+					return nil
+				}
+				return bk.Delete([]byte(key))
+			}); err != nil {
+				logrus.Warnf("CacheGet: failed to delete expired key %q: %v", key, err)
+			}
+		}()
+	}
 	if time.Since(mainCacheClearTime).Hours() > 30 {
 		go mainCacheClear()
 	}
@@ -115,7 +131,10 @@ func CacheGets(key string, data interface{}) error {
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(bts, data)
+	if err := json.Unmarshal(bts, data); err != nil {
+		return fmt.Errorf("cache unmarshal: %w", err)
+	}
+	return nil
 }
 
 func CacheFlush() error {
@@ -125,7 +144,10 @@ func CacheFlush() error {
 	err := BCache.Update(func(tx *bolt.Tx) error {
 		return tx.DeleteBucket(mainCacheBucket)
 	})
-	return err
+	if err != nil {
+		return fmt.Errorf("cache flush: %w", err)
+	}
+	return nil
 }
 
 var mainCacheClearTime time.Time

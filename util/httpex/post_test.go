@@ -1,6 +1,7 @@
 package httpex
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -153,5 +154,193 @@ func TestPostResult_ErrorWrapping(t *testing.T) {
 	// Verify the error can be unwrapped (proving %w is used)
 	if !errors.Is(err, err) {
 		t.Fatal("error should be self-referential with errors.Is")
+	}
+}
+
+// --- Context-aware function tests ---
+
+func TestPostCtx_ContextCancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Simulate slow response
+		time.Sleep(2 * time.Second)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	_, err := PostCtx(ctx, server.URL, nil, 10*time.Second)
+	if err == nil {
+		t.Fatal("PostCtx with cancelled context expected error, got nil")
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
+	}
+}
+
+func TestPostsCtx_ContextCancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(2 * time.Second)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	_, _, err := PostsCtx(ctx, server.URL, nil, 10*time.Second)
+	if err == nil {
+		t.Fatal("PostsCtx with cancelled context expected error, got nil")
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
+	}
+}
+
+func TestPostJSONCtx_ContextCancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(2 * time.Second)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	_, err := PostJSONCtx(ctx, server.URL, map[string]string{"k": "v"}, 10*time.Second)
+	if err == nil {
+		t.Fatal("PostJSONCtx with cancelled context expected error, got nil")
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
+	}
+}
+
+func TestPostResultCtx_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]string{"hello": "world"}); err != nil {
+			t.Errorf("encode error: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+	var result map[string]string
+	code, _, err := PostResultCtx(ctx, server.URL, nil, &result, 5*time.Second)
+	if err != nil {
+		t.Fatalf("PostResultCtx returned unexpected error: %v", err)
+	}
+	if code != 200 {
+		t.Fatalf("expected status 200, got %d", code)
+	}
+	if result["hello"] != "world" {
+		t.Fatalf("expected hello=world, got %v", result)
+	}
+}
+
+func TestPostResultCtx_ContextCancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(2 * time.Second)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	var result map[string]string
+	_, _, err := PostResultCtx(ctx, server.URL, nil, &result, 10*time.Second)
+	if err == nil {
+		t.Fatal("PostResultCtx with cancelled context expected error, got nil")
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
+	}
+}
+
+func TestPostJSONResultCtx_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]int{"val": 99}); err != nil {
+			t.Errorf("encode error: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+	var result map[string]int
+	code, _, err := PostJSONResultCtx(ctx, server.URL, map[string]string{"k": "v"}, &result, 5*time.Second)
+	if err != nil {
+		t.Fatalf("PostJSONResultCtx returned unexpected error: %v", err)
+	}
+	if code != 200 {
+		t.Fatalf("expected status 200, got %d", code)
+	}
+	if result["val"] != 99 {
+		t.Fatalf("expected val=99, got %v", result)
+	}
+}
+
+func TestPostJSONResultCtx_ContextCancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(2 * time.Second)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	var result map[string]int
+	_, _, err := PostJSONResultCtx(ctx, server.URL, nil, &result, 10*time.Second)
+	if err == nil {
+		t.Fatal("PostJSONResultCtx with cancelled context expected error, got nil")
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
+	}
+}
+
+func TestPostJSONResultCtx_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write([]byte("not json")); err != nil {
+			t.Errorf("write error: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+	var result map[string]string
+	_, _, err := PostJSONResultCtx(ctx, server.URL, nil, &result, 5*time.Second)
+	if err == nil {
+		t.Fatal("PostJSONResultCtx with invalid JSON expected error, got nil")
+	}
+	// Verify error wrapping - should be unwrappable to json.SyntaxError
+	var syntaxErr *json.SyntaxError
+	if !errors.As(err, &syntaxErr) {
+		t.Fatalf("expected wrapped json.SyntaxError, got: %T: %v", err, err)
+	}
+}
+
+func TestPostResultCtx_NilResult(t *testing.T) {
+	_, _, err := PostResultCtx(context.Background(), "http://example.com", nil, nil, 5*time.Second)
+	if err == nil {
+		t.Fatal("PostResultCtx with nil result expected error, got nil")
+	}
+	if err.Error() != "result is nil" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestPostJSONResultCtx_NilResult(t *testing.T) {
+	_, _, err := PostJSONResultCtx(context.Background(), "http://example.com", nil, nil, 5*time.Second)
+	if err == nil {
+		t.Fatal("PostJSONResultCtx with nil result expected error, got nil")
+	}
+	if err.Error() != "result is nil" {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
