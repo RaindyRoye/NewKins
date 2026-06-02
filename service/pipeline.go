@@ -240,18 +240,13 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 
 func getOrgVars(pipelineId string) ([]*model.TOrgVar, error) {
 	var rts []*model.TOrgVar
-	var orgs []*model.TOrgPipe
-	if err := comm.Db.Where("pipe_id = ? ", pipelineId).Find(&orgs); err != nil {
-		return nil, fmt.Errorf("query org pipes: %w", err)
-	}
-	for _, v := range orgs {
-		var ls []*model.TOrgVar
-		if err := comm.Db.Where("org_id = ? ", v.OrgId).Find(&ls); err != nil {
-			return nil, fmt.Errorf("query org vars (org_id=%s): %w", v.OrgId, err)
-		}
-		if len(ls) > 0 {
-			rts = append(rts, ls...)
-		}
+	// Use a single query with a subquery to avoid N+1 problem
+	err := comm.Db.SQL(
+		"SELECT * FROM t_org_var WHERE org_id IN (SELECT org_id FROM t_org_pipe WHERE pipe_id = ?)",
+		pipelineId,
+	).Find(&rts)
+	if err != nil {
+		return nil, fmt.Errorf("query org vars for pipeline %q: %w", pipelineId, err)
 	}
 	return rts, nil
 }

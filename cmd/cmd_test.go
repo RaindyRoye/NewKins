@@ -190,3 +190,51 @@ func TestHelpOutput(t *testing.T) {
 		t.Error("help output should mention 'version' command")
 	}
 }
+
+func TestRootHelp_ContainsQuickStart(t *testing.T) {
+	if !strings.Contains(rootCmd.Long, "Quick start") {
+		t.Error("rootCmd.Long should contain Quick start section")
+	}
+	if !strings.Contains(rootCmd.Long, "Configuration") {
+		t.Error("rootCmd.Long should contain Configuration section")
+	}
+}
+
+func TestRunCommand_HasExamples(t *testing.T) {
+	if runCmd.Example == "" {
+		t.Error("runCmd should have Example text")
+	}
+	if !strings.Contains(runCmd.Example, "--web") {
+		t.Error("runCmd examples should include --web flag usage")
+	}
+	if !strings.Contains(runCmd.Example, "--debug") {
+		t.Error("runCmd examples should include --debug flag usage")
+	}
+}
+
+func TestDaemonCommand_HasExamples(t *testing.T) {
+	if daemonCmd.Example == "" {
+		t.Error("daemonCmd should have Example text")
+	}
+}
+
+func TestFlagDescriptions_NotEmpty(t *testing.T) {
+	tests := []struct {
+		flag string
+	}{
+		{"web"},
+		{"workdir"},
+		{"nupass"},
+	}
+	flags := rootCmd.PersistentFlags()
+	for _, tt := range tests {
+		f := flags.Lookup(tt.flag)
+		if f == nil {
+			t.Errorf("flag %q not found", tt.flag)
+			continue
+		}
+		if f.Usage == "" {
+			t.Errorf("flag %q should have a description", tt.flag)
+		}
+	}
+}
