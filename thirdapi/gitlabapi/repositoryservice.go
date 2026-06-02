@@ -21,43 +21,37 @@ type RepositoryService struct {
 func (s *RepositoryService) GetRepos(accessToken, username, types, sort, direction string, page, perPage int) (*thirdapi.RepositoryPage, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGitlabGetRepos, username, types, page, perPage))
 	if err != nil {
-		logrus.Errorf("Gitlab Api GetRepos Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetRepos: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitlab Api GetRepos url : %v", parse.String())
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitlab Api GetRepos url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetRepos: create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Gitlab Api GetRepos url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetRepos: HTTP request: %w", err)
 	}
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Gitlab Api GetRepos url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitlab api GetRepos failed (status %d)", resp.StatusCode)
 	}
 	repos, err := io.ReadAll(resp.Body)
-	defer func() { _ = resp.Body.Close() }()
 	if err != nil {
-		logrus.Errorf("Gitlab Api GetRepos ReadAll err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetRepos: read response body: %w", err)
 	}
 	var repoList []*thirdbean.ResultGitlabRepo
 	err = json.Unmarshal(repos, &repoList)
 	if err != nil {
-		logrus.Errorf("Gitlab Api GetRepos Unmarshal err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetRepos: unmarshal response: %w", err)
 	}
 	tp := resp.Header.Get("X-Total-Pages")
 	var totalPages int64 = 0
 	if tp != "" {
 		totalPages, err = strconv.ParseInt(tp, 10, 64)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("gitlab GetRepos: parse total pages: %w", err)
 		}
 	}
 	list := convertRepositoryList(repoList)
@@ -65,37 +59,32 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 		TotalPages: totalPages,
 		Ropes:      list,
 	}
-	return rp, err
+	return rp, nil
 }
 
 func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string) error {
 	escape := url.QueryEscape(owner + "/" + repo)
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGitlabDeleteHooks, escape, hookID))
 	if err != nil {
-		logrus.Errorf("Gitlab Api DeleteHooks Parse err : %v", err)
-		return err
+		return fmt.Errorf("gitlab DeleteHooks: parse URL: %w", err)
 	}
 	request, err := http.NewRequest("DELETE", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitlab Api DeleteHooks url :%v Get err : %v", parse, err)
-		return err
+		return fmt.Errorf("gitlab DeleteHooks: create request: %w", err)
 	}
 	request.Header.Set("Authorization", "Bearer "+accessToken)
 	logrus.Debugf("Gitlab Api DeleteHooks url : %v", parse)
 	resp, err := s.client.HttpClient.Do(request)
 	if err != nil {
-		logrus.Errorf("Gitlab Api DeleteHooks url :%v Get err : %v", parse, err)
-		return err
+		return fmt.Errorf("gitlab DeleteHooks: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitlab Api DeleteHooks url :%v ReadAll err : %v", parse, err)
-		return err
+		return fmt.Errorf("gitlab DeleteHooks: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		logrus.Errorf("Gitlab Api DeleteHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return fmt.Errorf("gitlab api DeleteHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	return nil
@@ -112,8 +101,7 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 	escape := url.QueryEscape(owner + "/" + repo)
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGitlabCreateHooks, escape))
 	if err != nil {
-		logrus.Errorf("Gitlab Api CreateWebHooks Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab CreateWebHooks: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitlab Api CreateWebHooks url : %v", parse)
 	m := map[string]interface{}{}
@@ -122,38 +110,32 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 	logrus.Infof("gitlab CreateWebHooks backURL : %s", backURL)
 	marshal, err := json.Marshal(m)
 	if err != nil {
-		logrus.Errorf("Gitlab Api CreateWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab CreateWebHooks: marshal request body: %w", err)
 	}
 	logrus.Infof("gitlab CreateWebHooks json : %s", string(marshal))
 	request, err := http.NewRequest("POST", parse.String(), bytes.NewBuffer(marshal))
 	if err != nil {
-		logrus.Errorf("Gitlab Api CreateWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab CreateWebHooks: create request: %w", err)
 	}
 	request.Header.Set("Authorization", "Bearer "+accessToken)
 	request.Header.Set("Content-Type", "application/json")
 	resp, err := s.client.HttpClient.Do(request)
 	if err != nil {
-		logrus.Errorf("Gitlab Api CreateWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab CreateWebHooks: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitlab Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab CreateWebHooks: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		logrus.Errorf("Gitlab Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitlab api CreateWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	k := &thirdbean.ResultGetGitlabHook{}
 	err = json.Unmarshal(all, k)
 	if err != nil {
-		logrus.Errorf("Gitee Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab CreateWebHooks: unmarshal response: %w", err)
 	}
 	return convertHook(k), nil
 }
@@ -162,78 +144,67 @@ func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]
 	escape := url.QueryEscape(owner + "/" + repo)
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGitlabGetRepoBranches, escape))
 	if err != nil {
-		logrus.Errorf("Gitlab Api GetRepoBranches Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetRepoBranches: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitlab Api GetRepoBranches url : %v", parse)
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitlab Api GetRepoBranches url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetRepoBranches: create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Gitlab Api GetRepoBranches url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetRepoBranches: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitlab Api GetRepoBranches url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetRepoBranches: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Gitlab Api GetRepoBranches url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitlab api GetRepoBranches failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	var branchList []*thirdbean.ResultGitlabRepoBranch
 	err = json.Unmarshal(all, &branchList)
 	if err != nil {
-		logrus.Errorf("RefreshRepos.GetRepoBranches Unmarshal err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetRepoBranches: unmarshal response: %w", err)
 	}
-	return convertBranchList(branchList), err
+	return convertBranchList(branchList), nil
 }
 
 func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, perPage int) ([]*thirdapi.RepositoryHook, error) {
 	escape := url.QueryEscape(owner + "/" + repo)
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGitlabGetHooks, escape, page, perPage))
 	if err != nil {
-		logrus.Errorf("Gitlab Api GetWebHooks Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetWebHooks: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitlab Api GetWebHooks url : %v", parse)
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitlab Api GetWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetWebHooks: create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Gitlab Api CreateWebHooks url :%vs Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetWebHooks: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitlab Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetWebHooks: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Gitlab Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitlab api GetWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 
 	hs := make([]*thirdbean.ResultGetGitlabHook, 0)
 	err = json.Unmarshal(all, &hs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gitlab GetWebHooks: unmarshal response: %w", err)
 	}
-	return convertHookList(hs), err
+	return convertHookList(hs), nil
 }
 
 func convertRepositoryList(ls []*thirdbean.ResultGitlabRepo) []*thirdapi.Repository {

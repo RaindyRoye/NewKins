@@ -33,44 +33,37 @@ type RepositoryService struct {
 func (s *RepositoryService) GetRepos(accessToken, username, types, sort, direction string, page, perPage int) (*thirdapi.RepositoryPage, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaGetRepos, page, perPage))
 	if err != nil {
-		logrus.Errorf("Gitea Api GetRepos Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetRepos: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitea Api GetRepos url : %v", parse.String())
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitea Api GetRepos url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetRepos: create request: %w", err)
 	}
 	req.Header.Set("Authorization", "token "+accessToken)
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Gitea Api GetRepos url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetRepos: HTTP request: %w", err)
 	}
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Gitea Api GetRepos url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitea api GetRepos failed (status %d)", resp.StatusCode)
 	}
 	repos, err := io.ReadAll(resp.Body)
-	defer func() { _ = resp.Body.Close() }()
 	if err != nil {
-		logrus.Errorf("Gitea Api GetRepos ReadAll err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetRepos: read response body: %w", err)
 	}
 	var repoList []*thirdbean.ResultGiteaRepo
 	err = json.Unmarshal(repos, &repoList)
 	if err != nil {
-		logrus.Errorf("Gitea Api GetRepos Unmarshal err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetRepos: unmarshal response: %w", err)
 	}
 	lk := resp.Header.Get("x-total-count")
 	var totalPages int64 = 1
 	if lk != "" {
 		totalCount, parseErr := strconv.ParseInt(lk, 10, 64)
 		if parseErr != nil {
-			logrus.Errorf("Gitea Api GetRepos ParseInt err : %v", parseErr)
-			return nil, parseErr
+			return nil, fmt.Errorf("gitea GetRepos: parse total count: %w", parseErr)
 		}
 		totalPages = totalCount / int64(perPage)
 		if totalCount%int64(perPage) > 0 {
@@ -82,36 +75,31 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 		TotalPages: totalPages,
 		Ropes:      list,
 	}
-	return rp, err
+	return rp, nil
 }
 
 func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string) error {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaDeleteHooks, owner, repo, hookID))
 	if err != nil {
-		logrus.Errorf("Gitea Api DeleteHooks Parse err : %v", err)
-		return err
+		return fmt.Errorf("gitea DeleteHooks: parse URL: %w", err)
 	}
 	request, err := http.NewRequest("DELETE", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitea Api DeleteHooks url :%v Get err : %v", parse, err)
-		return err
+		return fmt.Errorf("gitea DeleteHooks: create request: %w", err)
 	}
 	request.Header.Set("Authorization", "token "+accessToken)
 	logrus.Debugf("Gitea Api DeleteHooks url : %v", parse)
 	resp, err := s.client.HttpClient.Do(request)
 	if err != nil {
-		logrus.Errorf("Gitea Api DeleteHooks url :%v Get err : %v", parse, err)
-		return err
+		return fmt.Errorf("gitea DeleteHooks: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitea Api DeleteHooks url :%v ReadAll err : %v", parse, err)
-		return err
+		return fmt.Errorf("gitea DeleteHooks: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		logrus.Errorf("Gitea Api DeleteHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return fmt.Errorf("gitea api DeleteHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	return nil
@@ -127,8 +115,7 @@ func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string)
 func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, password string) (*thirdapi.RepositoryHook, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaCreateHooks, owner, repo))
 	if err != nil {
-		logrus.Errorf("Gitea Api CreateWebHooks Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitea CreateWebHooks: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitea Api CreateWebHooks url : %s", parse.String())
 	m := map[string]interface{}{}
@@ -141,37 +128,31 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 	obj["active"] = true
 	marshal, err := json.Marshal(obj)
 	if err != nil {
-		logrus.Errorf("Gitea Api CreateWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea CreateWebHooks: marshal request body: %w", err)
 	}
 	logrus.Debugf("CreateWebHooks json %s", string(marshal))
 	request, err := http.NewRequest("POST", parse.String(), bytes.NewBuffer(marshal))
 	if err != nil {
-		logrus.Errorf("Gitea Api CreateWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea CreateWebHooks: create request: %w", err)
 	}
 	request.Header.Set("Authorization", "token "+accessToken)
 	request.Header.Set("Content-Type", "application/json")
 	resp, err := s.client.HttpClient.Do(request)
 	if err != nil {
-		logrus.Errorf("Gitea Api CreateWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea CreateWebHooks: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitea Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea CreateWebHooks: read response body: %w", err)
 	}
 	if resp.StatusCode != http.StatusCreated {
-		logrus.Errorf("Gitea Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitea api CreateWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	k := &thirdbean.ResultGetGiteaHook{}
 	err = json.Unmarshal(all, k)
 	if err != nil {
-		logrus.Errorf("Gitee Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea CreateWebHooks: unmarshal response: %w", err)
 	}
 	return convertHook(k), nil
 }
@@ -179,68 +160,57 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]*thirdapi.RepositoryBranch, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaGetRepoBranches, owner, repo))
 	if err != nil {
-		logrus.Errorf("Gitea Api GetRepoBranches Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetRepoBranches: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitea Api GetRepoBranches url : %v", parse)
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitea Api GetRepoBranches url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetRepoBranches: create request: %w", err)
 	}
 	req.Header.Set("Authorization", "token "+accessToken)
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Gitea Api GetRepoBranches url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetRepoBranches: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitea Api GetRepoBranches url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetRepoBranches: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Gitea Api GetRepoBranches url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitea api GetRepoBranches failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	var branchList []*thirdbean.ResultGiteaRepoBranch
 	err = json.Unmarshal(all, &branchList)
 	if err != nil {
-		logrus.Errorf("RefreshRepos.GetRepoBranches Unmarshal err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetRepoBranches: unmarshal response: %w", err)
 	}
-	return convertBranchList(branchList), err
+	return convertBranchList(branchList), nil
 }
 
 func (s *RepositoryService) GetPullQuest(accessToken, owner, repo string, index int) ([]byte, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaGetPullRequest, owner, repo, index))
 	if err != nil {
-		logrus.Errorf("Gitea Api GetWebHooks Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetPullQuest: parse URL: %w", err)
 	}
-	logrus.Debugf("Gitea Api GetWebHooks url : %v", parse)
+	logrus.Debugf("Gitea Api GetPullQuest url : %v", parse)
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitea Api GetWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetPullQuest: create request: %w", err)
 	}
 	req.Header.Set("Authorization", "token "+accessToken)
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Gitea Api CreateWebHooks url :%vs Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetPullQuest: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	bys, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitea Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetPullQuest: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Gitea Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitea api GetPullQuest failed (status %d): %s", resp.StatusCode, string(bys))
 	}
 	return bys, nil
@@ -249,39 +219,34 @@ func (s *RepositoryService) GetPullQuest(accessToken, owner, repo string, index 
 func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, perPage int) ([]*thirdapi.RepositoryHook, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteaGetHooks, owner, repo, page, perPage))
 	if err != nil {
-		logrus.Errorf("Gitea Api GetWebHooks Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetWebHooks: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitea Api GetWebHooks url : %v", parse)
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitea Api GetWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetWebHooks: create request: %w", err)
 	}
 	req.Header.Set("Authorization", "token "+accessToken)
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Gitea Api CreateWebHooks url :%vs Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetWebHooks: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitea Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitea GetWebHooks: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Gitea Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitea api GetWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 
 	hs := make([]*thirdbean.ResultGetGiteaHook, 0)
 	err = json.Unmarshal(all, &hs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gitea GetWebHooks: unmarshal response: %w", err)
 	}
-	return convertHookList(hs), err
+	return convertHookList(hs), nil
 }
 
 func convertRepositoryList(ls []*thirdbean.ResultGiteaRepo) []*thirdapi.Repository {

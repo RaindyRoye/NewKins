@@ -34,42 +34,36 @@ type RepositoryService struct {
 func (s *RepositoryService) GetRepos(accessToken, username, types, sort, direction string, page, perPage int) (*thirdapi.RepositoryPage, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteeGetRepos, accessToken, types, sort, direction, page, perPage))
 	if err != nil {
-		logrus.Errorf("Gitee Api GetRepos Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetRepos: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitee Api GetRepos url : %v", parse.String())
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitee Api GetRepos url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetRepos: create request: %w", err)
 	}
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Gitee Api GetRepos url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetRepos: HTTP request: %w", err)
 	}
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Gitee Api GetRepos url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitee api GetRepos failed (status %d)", resp.StatusCode)
 	}
 	repos, err := io.ReadAll(resp.Body)
-	defer func() { _ = resp.Body.Close() }()
 	if err != nil {
-		logrus.Errorf("Gitee Api GetRepos ReadAll err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetRepos: read response body: %w", err)
 	}
 	var repoList []*thirdbean.ResultGiteeRepo
 	err = json.Unmarshal(repos, &repoList)
 	if err != nil {
-		logrus.Errorf("Gitee Api GetRepos Unmarshal err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetRepos: unmarshal response: %w", err)
 	}
 	tp := resp.Header.Get("total_page")
 	var totalPages int64 = 0
 	if tp != "" {
 		totalPages, err = strconv.ParseInt(tp, 10, 64)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("gitee GetRepos: parse total pages: %w", err)
 		}
 	}
 	list := convertRepositoryList(repoList)
@@ -77,35 +71,30 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 		TotalPages: totalPages,
 		Ropes:      list,
 	}
-	return rp, err
+	return rp, nil
 }
 
 func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string) error {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteeDeleteHooks, owner, repo, hookID, accessToken))
 	if err != nil {
-		logrus.Errorf("Gitee Api DeleteHooks Parse err : %v", err)
-		return err
+		return fmt.Errorf("gitee DeleteHooks: parse URL: %w", err)
 	}
 	request, err := http.NewRequest("DELETE", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitee Api DeleteHooks url :%v Get err : %v", parse, err)
-		return err
+		return fmt.Errorf("gitee DeleteHooks: create request: %w", err)
 	}
 	logrus.Debugf("Gitee Api DeleteHooks url : %v", parse)
 	resp, err := s.client.HttpClient.Do(request)
 	if err != nil {
-		logrus.Errorf("Gitee Api DeleteHooks url :%v Get err : %v", parse, err)
-		return err
+		return fmt.Errorf("gitee DeleteHooks: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitee Api DeleteHooks url :%v ReadAll err : %v", parse, err)
-		return err
+		return fmt.Errorf("gitee DeleteHooks: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		logrus.Errorf("Gitee Api DeleteHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return fmt.Errorf("gitee api DeleteHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	return nil
@@ -127,37 +116,31 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 	values.Add("push_events", "true")
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteeCreateHooks, owner, repo))
 	if err != nil {
-		logrus.Errorf("Gitee Api CreateWebHooks Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitee CreateWebHooks: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitee Api CreateWebHooks url : %v", parse)
 	request, err := http.NewRequest("POST", parse.String(), strings.NewReader(values.Encode()))
 	if err != nil {
-		logrus.Errorf("Gitee Api CreateWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitee CreateWebHooks: create request: %w", err)
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := s.client.HttpClient.Do(request)
 	if err != nil {
-		logrus.Errorf("Gitee Api CreateWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitee CreateWebHooks: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitee Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitee CreateWebHooks: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		logrus.Errorf("Gitee Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitee api CreateWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	k := &thirdbean.ResultGetGiteeHook{}
 	err = json.Unmarshal(all, k)
 	if err != nil {
-		logrus.Errorf("Gitee Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitee CreateWebHooks: unmarshal response: %w", err)
 	}
 	return convertHook(k), nil
 }
@@ -165,75 +148,64 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]*thirdapi.RepositoryBranch, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteeGetRepoBranches, owner, repo, accessToken))
 	if err != nil {
-		logrus.Errorf("Gitee Api GetRepoBranches Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetRepoBranches: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitee Api GetRepoBranches url : %v", parse)
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitee Api GetRepoBranches url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetRepoBranches: create request: %w", err)
 	}
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Gitee Api GetRepoBranches url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetRepoBranches: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitee Api GetRepoBranches url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetRepoBranches: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Gitee Api GetRepoBranches url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitee api GetRepoBranches failed (status %d): %s", resp.StatusCode, string(all))
 	}
 
 	var branchList []*thirdbean.ResultGiteeRepoBranch
 	err = json.Unmarshal(all, &branchList)
 	if err != nil {
-		logrus.Errorf("RefreshRepos.GetRepoBranches Unmarshal err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetRepoBranches: unmarshal response: %w", err)
 	}
-	return convertBranchList(branchList), err
+	return convertBranchList(branchList), nil
 }
 
 func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, perPage int) ([]*thirdapi.RepositoryHook, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGiteeGetHooks, owner, repo, accessToken, page, perPage))
 	if err != nil {
-		logrus.Errorf("Gitee Api GetWebHooks Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetWebHooks: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitee Api GetWebHooks url : %v", parse)
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Gitee Api GetWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetWebHooks: create request: %w", err)
 	}
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Gitee Api CreateWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetWebHooks: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Gitee Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("gitee GetWebHooks: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Gitee Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("gitee api GetWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	hs := make([]*thirdbean.ResultGetGiteeHook, 0)
 	err = json.Unmarshal(all, &hs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gitee GetWebHooks: unmarshal response: %w", err)
 	}
-	return convertHookList(hs), err
+	return convertHookList(hs), nil
 }
 
 func convertHookList(ls []*thirdbean.ResultGetGiteeHook) []*thirdapi.RepositoryHook {

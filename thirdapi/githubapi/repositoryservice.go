@@ -35,36 +35,30 @@ type RepositoryService struct {
 func (s *RepositoryService) GetRepos(accessToken, username, types, sort, direction string, page, perPage int) (*thirdapi.RepositoryPage, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGithubGetRepos, types, sort, direction, page, perPage))
 	if err != nil {
-		logrus.Errorf("Github Api GetRepos Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("github GetRepos: parse URL: %w", err)
 	}
 	logrus.Debugf("Github Api GetRepos url : %v", parse.String())
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Github Api GetRepos url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github GetRepos: create request: %w", err)
 	}
 	req.Header.Set("Authorization", "token "+accessToken)
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Github Api GetRepos url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github GetRepos: HTTP request: %w", err)
 	}
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Github Api GetRepos url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("github api GetRepos failed (status %d)", resp.StatusCode)
 	}
 	repos, err := io.ReadAll(resp.Body)
-	defer func() { _ = resp.Body.Close() }()
 	if err != nil {
-		logrus.Errorf("Github Api GetRepos ReadAll err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("github GetRepos: read response body: %w", err)
 	}
 	var repoList []*thirdbean.ResultGithubRepo
 	err = json.Unmarshal(repos, &repoList)
 	if err != nil {
-		logrus.Errorf("Github Api GetRepos Unmarshal err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("github GetRepos: unmarshal response: %w", err)
 	}
 	lk := resp.Header.Get("Link")
 	var totalPages int64 = 1
@@ -80,7 +74,7 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 				get := p.Query().Get("page")
 				totalPages, err = strconv.ParseInt(get, 10, 64)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("github GetRepos: parse total pages: %w", err)
 				}
 			}
 		}
@@ -90,36 +84,31 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 		TotalPages: totalPages,
 		Ropes:      list,
 	}
-	return rp, err
+	return rp, nil
 }
 
 func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string) error {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGithubDeleteHooks, owner, repo, hookID))
 	if err != nil {
-		logrus.Errorf("Github Api DeleteHooks Parse err : %v", err)
-		return err
+		return fmt.Errorf("github DeleteHooks: parse URL: %w", err)
 	}
 	request, err := http.NewRequest("DELETE", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Github Api DeleteHooks url :%v Get err : %v", parse, err)
-		return err
+		return fmt.Errorf("github DeleteHooks: create request: %w", err)
 	}
 	request.Header.Set("Authorization", "token "+accessToken)
 	logrus.Debugf("Github Api DeleteHooks url : %v", parse)
 	resp, err := s.client.HttpClient.Do(request)
 	if err != nil {
-		logrus.Errorf("Github Api DeleteHooks url :%v Get err : %v", parse, err)
-		return err
+		return fmt.Errorf("github DeleteHooks: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Github Api DeleteHooks url :%v ReadAll err : %v", parse, err)
-		return err
+		return fmt.Errorf("github DeleteHooks: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		logrus.Errorf("Github Api DeleteHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return fmt.Errorf("github api DeleteHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	return nil
@@ -135,8 +124,7 @@ func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string)
 func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, password string) (*thirdapi.RepositoryHook, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGithubCreateHooks, owner, repo))
 	if err != nil {
-		logrus.Errorf("Github Api CreateWebHooks Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("github CreateWebHooks: parse URL: %w", err)
 	}
 	logrus.Debugf("Github Api CreateWebHooks url : %s", parse.String())
 	m := map[string]interface{}{}
@@ -148,37 +136,31 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 	obj["config"] = m
 	marshal, err := json.Marshal(obj)
 	if err != nil {
-		logrus.Errorf("Github Api CreateWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github CreateWebHooks: marshal request body: %w", err)
 	}
 	logrus.Debugf("CreateWebHooks json %s", string(marshal))
 	request, err := http.NewRequest("POST", parse.String(), bytes.NewBuffer(marshal))
 	if err != nil {
-		logrus.Errorf("Github Api CreateWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github CreateWebHooks: create request: %w", err)
 	}
 	request.Header.Set("Authorization", "token "+accessToken)
 	request.Header.Set("Content-Type", "application/json")
 	resp, err := s.client.HttpClient.Do(request)
 	if err != nil {
-		logrus.Errorf("Github Api CreateWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github CreateWebHooks: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Github Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github CreateWebHooks: read response body: %w", err)
 	}
 	if resp.StatusCode != http.StatusCreated {
-		logrus.Errorf("Github Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("github api CreateWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	k := &thirdbean.ResultGetGithubHook{}
 	err = json.Unmarshal(all, k)
 	if err != nil {
-		logrus.Errorf("Gitee Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github CreateWebHooks: unmarshal response: %w", err)
 	}
 	return convertHook(k), nil
 }
@@ -186,77 +168,66 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]*thirdapi.RepositoryBranch, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGithubGetRepoBranches, owner, repo))
 	if err != nil {
-		logrus.Errorf("Github Api GetRepoBranches Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("github GetRepoBranches: parse URL: %w", err)
 	}
 	logrus.Debugf("Github Api GetRepoBranches url : %v", parse)
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Github Api GetRepoBranches url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github GetRepoBranches: create request: %w", err)
 	}
 	req.Header.Set("Authorization", "token "+accessToken)
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Github Api GetRepoBranches url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github GetRepoBranches: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Github Api GetRepoBranches url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github GetRepoBranches: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Github Api GetRepoBranches url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("github api GetRepoBranches failed (status %d): %s", resp.StatusCode, string(all))
 	}
 	var branchList []*thirdbean.ResultGithubRepoBranch
 	err = json.Unmarshal(all, &branchList)
 	if err != nil {
-		logrus.Errorf("RefreshRepos.GetRepoBranches Unmarshal err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("github GetRepoBranches: unmarshal response: %w", err)
 	}
-	return convertBranchList(branchList), err
+	return convertBranchList(branchList), nil
 }
 
 func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, perPage int) ([]*thirdapi.RepositoryHook, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGithubGetHooks, owner, repo, page, perPage))
 	if err != nil {
-		logrus.Errorf("Github Api GetWebHooks Parse err : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("github GetWebHooks: parse URL: %w", err)
 	}
 	logrus.Debugf("Github Api GetWebHooks url : %v", parse)
 	req, err := http.NewRequest("GET", parse.String(), nil)
 	if err != nil {
-		logrus.Errorf("Github Api GetWebHooks url :%v Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github GetWebHooks: create request: %w", err)
 	}
 	req.Header.Set("Authorization", "token "+accessToken)
 	resp, err := s.client.HttpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Github Api CreateWebHooks url :%vs Get err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github GetWebHooks: HTTP request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Github Api CreateWebHooks url :%v ReadAll err : %v", parse, err)
-		return nil, err
+		return nil, fmt.Errorf("github GetWebHooks: read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Github Api CreateWebHooks url :%v Resp code : %v", parse, resp.StatusCode)
 		return nil, fmt.Errorf("github api GetWebHooks failed (status %d): %s", resp.StatusCode, string(all))
 	}
 
 	hs := make([]*thirdbean.ResultGetGithubHook, 0)
 	err = json.Unmarshal(all, &hs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("github GetWebHooks: unmarshal response: %w", err)
 	}
-	return convertHookList(hs), err
+	return convertHookList(hs), nil
 }
 
 func convertRepositoryList(ls []*thirdbean.ResultGithubRepo) []*thirdapi.Repository {
