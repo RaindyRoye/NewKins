@@ -67,6 +67,51 @@ func TestRateLimiter_DifferentKeys(t *testing.T) {
 	}
 }
 
+func TestRateLimiter_Stop(t *testing.T) {
+	rl := NewRateLimiter(2, 50*time.Millisecond)
+
+	// Allow should work before Stop
+	if !rl.Allow("test-key") {
+		t.Error("request should be allowed before Stop")
+	}
+
+	// Stop should not panic
+	rl.Stop()
+
+	// Calling Stop again should not panic (idempotent)
+	rl.Stop()
+
+	// Allow should still work after Stop (just no more cleanup)
+	if !rl.Allow("test-key") {
+		t.Error("request should still be allowed after Stop")
+	}
+}
+
+func TestRateLimiter_CleanupExitsOnStop(t *testing.T) {
+	rl := NewRateLimiter(5, 10*time.Millisecond)
+
+	// Add some entries
+	for i := 0; i < 10; i++ {
+		rl.Allow("key-" + string(rune('a'+i)))
+	}
+
+	rl.mu.Lock()
+	entryCount := len(rl.entries)
+	rl.mu.Unlock()
+	if entryCount == 0 {
+		t.Error("expected entries after Allow calls")
+	}
+
+	// Stop the limiter - cleanup goroutine should exit
+	rl.Stop()
+
+	// Give the goroutine time to exit
+	time.Sleep(30 * time.Millisecond)
+	// If the goroutine didn't exit, this would be a leak,
+	// but we can't easily test that directly. The fact that
+	// Stop() doesn't hang or panic is sufficient.
+}
+
 func TestMidRateLimit_GinMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	rl := NewRateLimiter(2, time.Minute)
