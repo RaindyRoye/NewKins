@@ -14,9 +14,17 @@ import (
 
 var mainCacheBucket = []byte("mainCacheBucket")
 
+// ErrCacheNotInit is returned when any cache operation is attempted
+// before the cache has been initialized.
+var ErrCacheNotInit = errors.New("cache not init")
+
+// ErrCacheDataNil is returned when a nil data argument is passed to
+// a cache setter that requires non-nil data.
+var ErrCacheDataNil = errors.New("data must not be nil")
+
 func CacheSet(key string, data []byte, outm ...time.Duration) error {
 	if BCache == nil {
-		return errors.New("cache not init")
+		return ErrCacheNotInit
 	}
 	err := BCache.Update(func(tx *bolt.Tx) error {
 		var err error
@@ -46,7 +54,7 @@ func CacheSet(key string, data []byte, outm ...time.Duration) error {
 }
 func CacheSets(key string, data interface{}, outm ...time.Duration) error {
 	if BCache == nil {
-		return errors.New("cache not init")
+		return ErrCacheNotInit
 	}
 	if data == nil {
 		return CacheSet(key, nil)
@@ -81,7 +89,7 @@ var ErrKeyTimeout = errors.New("key is timeout")
 
 func CacheGet(key string) ([]byte, error) {
 	if BCache == nil {
-		return nil, errors.New("cache not init")
+		return nil, ErrCacheNotInit
 	}
 	var rt []byte
 	var expired bool
@@ -122,10 +130,10 @@ func CacheGet(key string) ([]byte, error) {
 }
 func CacheGets(key string, data interface{}) error {
 	if BCache == nil {
-		return errors.New("cache not init")
+		return ErrCacheNotInit
 	}
 	if data == nil {
-		return errors.New("data not be nil")
+		return ErrCacheDataNil
 	}
 	bts, err := CacheGet(key)
 	if err != nil {
@@ -139,7 +147,7 @@ func CacheGets(key string, data interface{}) error {
 
 func CacheFlush() error {
 	if BCache == nil {
-		return errors.New("cache not init")
+		return ErrCacheNotInit
 	}
 	err := BCache.Update(func(tx *bolt.Tx) error {
 		return tx.DeleteBucket(mainCacheBucket)

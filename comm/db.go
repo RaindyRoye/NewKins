@@ -15,7 +15,7 @@ type SesFuncHandler = func(ses *xorm.Session)
 
 func findCount(cds builder.Cond, data interface{}) (int64, error) {
 	if data == nil {
-		return 0, errors.New("needs a pointer to a slice")
+		return 0, errors.New("findCount: data must be a non-nil pointer to a slice")
 	}
 	of := reflect.TypeOf(data)
 	if of.Kind() == reflect.Pointer {
@@ -33,7 +33,7 @@ func findCount(cds builder.Cond, data interface{}) (int64, error) {
 		defer func() { _ = ses.Close() }()
 		return ses.Where(cds).Count(pv.Interface())
 	}
-	return 0, errors.New("GetCount err : not found any data")
+	return 0, fmt.Errorf("findCount: expected pointer to slice, got %T", data)
 }
 
 func FindPage(ses *xorm.Session, ls interface{}, page int64, size ...int64) (*bean.Page, error) {

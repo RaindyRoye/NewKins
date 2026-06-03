@@ -2,6 +2,7 @@ package comm
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -277,7 +278,7 @@ func TestCacheGets_NilData(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil data parameter")
 	}
-	if err.Error() != "data not be nil" {
+	if !errors.Is(err, ErrCacheDataNil) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
