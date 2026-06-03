@@ -134,11 +134,11 @@ func setupTestCache(t *testing.T) func() {
 	if err != nil {
 		t.Fatalf("failed to create temp db: %v", err)
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	db, err := bolt.Open(tmpFile.Name(), 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		os.Remove(tmpFile.Name())
+		_ = os.Remove(tmpFile.Name())
 		t.Fatalf("failed to open bbolt: %v", err)
 	}
 
@@ -149,7 +149,7 @@ func setupTestCache(t *testing.T) func() {
 	return func() {
 		_ = db.Close()
 		BCache = oldCache
-		os.Remove(tmpFile.Name())
+		_ = os.Remove(tmpFile.Name())
 	}
 }
 
