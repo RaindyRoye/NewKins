@@ -392,7 +392,7 @@ func (PipelineController) run(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "No Auth")
 		return
 	}
-	tvp, rb, err := service.Run(lgusr.Id, pipelineId, sha, "run")
+	tvp, rb, err := service.Run(c.Request.Context(), lgusr.Id, pipelineId, sha, "run")
 	if err != nil {
 		util.RespInternalErr(c, "pipeline run", err)
 		return
@@ -479,7 +479,7 @@ func (PipelineController) rebuild(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "No Permission")
 		return
 	}
-	tvp, rb, err := service.ReBuild(lgusr.Id, tvp)
+	tvp, rb, err := service.ReBuild(c.Request.Context(), lgusr.Id, tvp)
 	if err != nil {
 		util.RespInternalErr(c, "pipeline rebuild", err)
 		return

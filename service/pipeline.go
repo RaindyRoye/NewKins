@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -15,9 +16,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func Run(uid, pipeId, sha, event string) (*model.TPipelineVersion, *runtime.Build, error) {
+func Run(ctx context.Context, uid, pipeId, sha, event string) (*model.TPipelineVersion, *runtime.Build, error) {
 	tpipe := &model.TPipelineConf{}
-	ok, _ := comm.Db.Where("pipeline_id=?", pipeId).Get(tpipe)
+	ok, _ := comm.Db.Context(ctx).Where("pipeline_id=?", pipeId).Get(tpipe)
 	if !ok {
 		return nil, nil, ErrPipelineNotFound
 	}
@@ -29,12 +30,12 @@ func Run(uid, pipeId, sha, event string) (*model.TPipelineVersion, *runtime.Buil
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse pipeline yaml: %w", err)
 	}
-	return preBuild(uid, pipe, tpipe, sha, event)
+	return preBuild(ctx, uid, pipe, tpipe, sha, event)
 }
 
-func ReBuild(uid string, tvp *model.TPipelineVersion) (*model.TPipelineVersion, *runtime.Build, error) {
+func ReBuild(ctx context.Context, uid string, tvp *model.TPipelineVersion) (*model.TPipelineVersion, *runtime.Build, error) {
 	tpipe := &model.TPipelineConf{}
-	ok, _ := comm.Db.Where("pipeline_id=?", tvp.PipelineId).Get(tpipe)
+	ok, _ := comm.Db.Context(ctx).Where("pipeline_id=?", tvp.PipelineId).Get(tpipe)
 	if !ok {
 		return nil, nil, ErrPipelineNotFound
 	}
@@ -46,13 +47,14 @@ func ReBuild(uid string, tvp *model.TPipelineVersion) (*model.TPipelineVersion, 
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse pipeline version yaml: %w", err)
 	}
-	return preBuild(uid, pipe, tpipe, tvp.Sha, "rebuild", tvp)
+	return preBuild(ctx, uid, pipe, tpipe, tvp.Sha, "rebuild", tvp)
 }
 
-func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, event string,
+func preBuild(ctx context.Context, uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, event string,
 	tvp ...*model.TPipelineVersion) (*model.TPipelineVersion, *runtime.Build, error) {
+	db := comm.Db.Context(ctx)
 	tp := &model.TPipeline{}
-	ok, _ := comm.Db.Where("id=? and deleted != 1", tpipe.PipelineId).Get(tp)
+	ok, _ := db.Where("id=? and deleted != 1", tpipe.PipelineId).Get(tp)
 	if !ok {
 		return nil, nil, ErrPipelineNotFound
 	}
@@ -62,7 +64,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 	}
 	pipe.ConvertCmd()
 
-	m, err := convertVar(tpipe.PipelineId, pipe.Vars)
+	m, err := convertVar(ctx, tpipe.PipelineId, pipe.Vars)
 	if err != nil {
 		return nil, nil, fmt.Errorf("convertVar: %w", err)
 	}
@@ -79,7 +81,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 	replaceStages(pipe.Stages, m)
 
 	number := int64(0)
-	_, err = comm.Db.
+	_, err = db.
 		SQL("SELECT max(number) FROM t_pipeline_version WHERE pipeline_id = ?", tpipe.PipelineId).
 		Get(&number)
 	if err != nil {
@@ -104,7 +106,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 		tpv.Sha = tvp[0].Sha
 		tpv.Content = tvp[0].Content
 	}
-	_, err = comm.Db.InsertOne(tpv)
+	_, err = db.InsertOne(tpv)
 	if err != nil {
 		return nil, nil, fmt.Errorf("insert pipeline version: %w", err)
 	}
@@ -117,7 +119,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 		Created:           time.Now(),
 		Version:           "",
 	}
-	_, err = comm.Db.InsertOne(tb)
+	_, err = db.InsertOne(tb)
 	if err != nil {
 		return nil, nil, fmt.Errorf("insert build: %w", err)
 	}
@@ -158,7 +160,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 			Created:     time.Now(),
 			Stage:       stage.Stage,
 		}
-		_, err = comm.Db.InsertOne(ts)
+		_, err = db.InsertOne(ts)
 		if err != nil {
 			return nil, nil, fmt.Errorf("insert stage %q: %w", stage.Name, err)
 		}
@@ -227,7 +229,7 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 					SourceStep:  v.FromStep,
 				})
 			}
-			_, err = comm.Db.InsertOne(tsp)
+			_, err = db.InsertOne(tsp)
 			if err != nil {
 				return nil, nil, fmt.Errorf("insert step %q: %w", step.Name, err)
 			}
@@ -238,10 +240,10 @@ func preBuild(uid string, pipe *bean.Pipeline, tpipe *model.TPipelineConf, sha, 
 	return tpv, rb, nil
 }
 
-func getOrgVars(pipelineId string) ([]*model.TOrgVar, error) {
+func getOrgVars(ctx context.Context, pipelineId string) ([]*model.TOrgVar, error) {
 	var rts []*model.TOrgVar
 	// Use a single query with a subquery to avoid N+1 problem
-	err := comm.Db.SQL(
+	err := comm.Db.Context(ctx).SQL(
 		"SELECT * FROM t_org_var WHERE org_id IN (SELECT org_id FROM t_org_pipe WHERE pipe_id = ?)",
 		pipelineId,
 	).Find(&rts)
@@ -251,10 +253,10 @@ func getOrgVars(pipelineId string) ([]*model.TOrgVar, error) {
 	return rts, nil
 }
 
-func convertVar(pipelineId string, vm map[string]string) (map[string]*runtime.Variables, error) {
+func convertVar(ctx context.Context, pipelineId string, vm map[string]string) (map[string]*runtime.Variables, error) {
 	vms := make(map[string]*runtime.Variables, 0)
 
-	oVars, err := getOrgVars(pipelineId)
+	oVars, err := getOrgVars(ctx, pipelineId)
 	if err != nil {
 		return nil, fmt.Errorf("getOrgVars: %w", err)
 	}
@@ -267,7 +269,7 @@ func convertVar(pipelineId string, vm map[string]string) (map[string]*runtime.Va
 	}
 
 	var tVars []*model.TPipelineVar
-	if err := comm.Db.Where("pipeline_id = ? ", pipelineId).Find(&tVars); err != nil {
+	if err := comm.Db.Context(ctx).Where("pipeline_id = ? ", pipelineId).Find(&tVars); err != nil {
 		return nil, fmt.Errorf("query pipeline vars: %w", err)
 	}
 	for _, v := range tVars {
