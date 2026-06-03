@@ -17,13 +17,13 @@ func GetIdOrAid(id interface{}, e interface{}) bool {
 	if v, ok := id.(string); ok && v == "" {
 		return false
 	}
-	ok, err := comm.Db.Where("id=?", id).Get(e)
+	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", id).Get(e)
 	if err != nil {
 		logrus.Errorf("GetIdOrAid(id=%v) query error: %v", id, err)
 		return false
 	}
 	if !ok {
-		ok, err = comm.Db.Where("aid=?", id).Get(e)
+		ok, err = comm.Db.Context(comm.Ctx).Where("aid=?", id).Get(e)
 		if err != nil {
 			logrus.Errorf("GetIdOrAid(aid=%v) fallback query error: %v", id, err)
 			return false
@@ -41,12 +41,12 @@ func GetIdOrAidE(id interface{}, e interface{}) (bool, error) {
 	if v, ok := id.(string); ok && v == "" {
 		return false, nil
 	}
-	ok, err := comm.Db.Where("id=?", id).Get(e)
+	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", id).Get(e)
 	if err != nil {
 		return false, fmt.Errorf("GetIdOrAidE(id=%v): %w", id, err)
 	}
 	if !ok {
-		ok, err = comm.Db.Where("aid=?", id).Get(e)
+		ok, err = comm.Db.Context(comm.Ctx).Where("aid=?", id).Get(e)
 		if err != nil {
 			return false, fmt.Errorf("GetIdOrAidE(aid=%v): %w", id, err)
 		}

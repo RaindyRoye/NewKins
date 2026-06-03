@@ -50,7 +50,10 @@ func CacheSet(key string, data []byte, outm ...time.Duration) error {
 		buf.Write(data)
 		return bk.Put([]byte(key), buf.Bytes())
 	})
-	return err
+	if err != nil {
+		return fmt.Errorf("cache set key %q: %w", key, err)
+	}
+	return nil
 }
 func CacheSets(key string, data interface{}, outm ...time.Duration) error {
 	if BCache == nil {
@@ -109,6 +112,10 @@ func CacheGet(key string) ([]byte, error) {
 		}
 		return nil
 	})
+	// Wrap unexpected bbolt errors while preserving sentinel errors for errors.Is checks.
+	if err != nil && !errors.Is(err, ErrKeyNotFound) && !errors.Is(err, ErrKeyTimeout) {
+		err = fmt.Errorf("cache get key %q: %w", key, err)
+	}
 	// Delete expired keys in a separate write transaction (View is read-only).
 	if expired {
 		go func() {

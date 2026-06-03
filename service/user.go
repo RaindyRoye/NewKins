@@ -15,7 +15,7 @@ func GetUser(uid string) (*model.TUser, bool) {
 		return nil, false
 	}
 	e := &model.TUser{}
-	ok, err := comm.Db.Where("id=?", uid).Get(e)
+	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", uid).Get(e)
 	if err != nil {
 		logrus.Errorf("GetUser(%s) err:%v", uid, err)
 	}
@@ -26,7 +26,7 @@ func GetUserInfo(uid string) (*model.TUserInfo, bool) {
 		return nil, false
 	}
 	e := &model.TUserInfo{Id: uid}
-	ok, err := comm.Db.Where("id=?", uid).Get(e)
+	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", uid).Get(e)
 	if err != nil {
 		logrus.Errorf("GetUser(%s) err:%v", uid, err)
 	}
@@ -34,7 +34,7 @@ func GetUserInfo(uid string) (*model.TUserInfo, bool) {
 }
 func FindUserName(name string) (*model.TUser, bool) {
 	e := &model.TUser{}
-	ok, err := comm.Db.Where("name=?", name).Get(e)
+	ok, err := comm.Db.Context(comm.Ctx).Where("name=?", name).Get(e)
 	if err != nil {
 		logrus.Errorf("FindUserName(%s) err:%v", name, err)
 	}
@@ -113,7 +113,7 @@ func GetUserOrg(uid, orgId string) (*model.TUserOrg, bool) {
 		return nil, false
 	}
 	usero := &model.TUserOrg{}
-	get, err := comm.Db.Where("uid =? and org_id =?", uid, torg.Id).Get(usero)
+	get, err := comm.Db.Context(comm.Ctx).Where("uid =? and org_id =?", uid, torg.Id).Get(usero)
 	if err != nil {
 		logrus.Debugf("HasOrgExec db err:%v", err)
 	}
@@ -140,7 +140,7 @@ func NewOrgPerm(lgusr *model.TUser, orgId string) *OrgPerm {
 		c.org = org
 		usero := &model.TUserOrg{}
 		if lgusr != nil {
-			ok, _ = comm.Db.Where("uid =? and org_id =?", lgusr.Id, org.Id).Get(usero)
+			ok, _ = comm.Db.Context(comm.Ctx).Where("uid =? and org_id =?", lgusr.Id, org.Id).Get(usero)
 			if ok {
 				c.usrOrg = usero
 			}
@@ -246,12 +246,12 @@ func NewPipePerm(lgusr *model.TUser, pipeId string) *PipePerm {
 	pipe := &model.TPipeline{}
 	ok := false
 	if pipeId != "" {
-		ok, _ = comm.Db.Where("id=?", pipeId).Get(pipe)
+		ok, _ = comm.Db.Context(comm.Ctx).Where("id=?", pipeId).Get(pipe)
 	}
 	if ok {
 		c.pipe = pipe
 		if comm.IsMySQL && lgusr != nil {
-			ses := comm.Db.SQL(`
+			ses := comm.Db.Context(comm.Ctx).SQL(`
 select org.id as org_id,org.name as org_name,org.uid as org_uid,org.public as org_public,op.public as op_public,
 uo.uid as cur_uid,uo.perm_adm,uo.perm_rw,uo.perm_exec,uo.perm_down
 from t_org org

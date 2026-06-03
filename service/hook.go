@@ -35,7 +35,7 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 		if infos != "" {
 			ttr.Infos = infos
 		}
-		if _, err := comm.Db.InsertOne(ttr); err != nil {
+		if _, err := comm.Db.Context(comm.Ctx).InsertOne(ttr); err != nil {
 			logrus.Errorf("TriggerHook: failed to save trigger run: %v", err)
 		}
 	}()
@@ -120,7 +120,7 @@ func TriggerWeb(tt *model.TTrigger, secret string) (rb *runtime.Build, err error
 		if err != nil {
 			ttr.Error = err.Error()
 		}
-		if _, err := comm.Db.InsertOne(ttr); err != nil {
+		if _, err := comm.Db.Context(comm.Ctx).InsertOne(ttr); err != nil {
 			logrus.Errorf("TriggerWeb: failed to save trigger run: %v", err)
 		}
 	}()
@@ -168,7 +168,7 @@ func TriggerTimer(tt *model.TTrigger) (rb *runtime.Build, err error) {
 		if err != nil {
 			ttr.Error = err.Error()
 		}
-		if _, err := comm.Db.InsertOne(ttr); err != nil {
+		if _, err := comm.Db.Context(comm.Ctx).InsertOne(ttr); err != nil {
 			logrus.Errorf("TriggerTimer: failed to save trigger run: %v", err)
 		}
 	}()

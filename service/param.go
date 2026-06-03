@@ -12,7 +12,7 @@ import (
 
 func FindParam(key string) (*model.TParam, bool) {
 	e := &model.TParam{}
-	ok, err := comm.Db.Where("name=?", key).Get(e)
+	ok, err := comm.Db.Context(comm.Ctx).Where("name=?", key).Get(e)
 	if err != nil {
 		logrus.Errorf("FindParam(%s) err:%v", key, err)
 	}
@@ -20,7 +20,7 @@ func FindParam(key string) (*model.TParam, bool) {
 }
 func SetParam(key string, data []byte, tit ...string) error {
 	var err error
-	db := comm.Db
+	db := comm.Db.Context(comm.Ctx)
 	e, ok := FindParam(key)
 	if len(tit) > 0 {
 		e.Title = tit[0]
