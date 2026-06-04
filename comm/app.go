@@ -40,3 +40,12 @@ func Cancel() {
 		cncl()
 	}
 }
+
+// ResetCtx creates a fresh context and cancel function. This is primarily
+// useful in tests to isolate context state between test cases.
+func ResetCtx() {
+	if cncl != nil {
+		cncl()
+	}
+	Ctx, cncl = context.WithCancel(context.Background())
+}

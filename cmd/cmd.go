@@ -140,7 +140,7 @@ func runProcess() error {
 	core.Debug = debugLog
 
 	csig := make(chan os.Signal, 1)
-	signal.Notify(csig, os.Interrupt, syscall.SIGALRM)
+	signal.Notify(csig, os.Interrupt, syscall.SIGTERM, syscall.SIGALRM)
 	go func() {
 		s := <-csig
 		hbtp.Debugf("get signal(%d):%s", s, s.String())

@@ -3,6 +3,7 @@ package server
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/base64"
 	"errors"
 	"net/http"
@@ -24,6 +25,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// shutdownTimeout is the maximum time to wait for in-flight requests
+// to complete during graceful shutdown.
+const shutdownTimeout = 10 * time.Second
+
 func runWeb() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -33,11 +38,41 @@ func runWeb() {
 	}()
 	comm.WebEgn = gin.Default()
 	comm.WebEgn.Use(midUiHandle)
-	err := comm.WebEgn.Run(comm.WebHost)
-	if err != nil {
-		logrus.Errorf("Web err:%v", err)
-		// comm.HbtpEgn.Stop()
+
+	srv := &http.Server{
+		Addr:              comm.WebHost,
+		Handler:           comm.WebEgn,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
+
+	// Start server in a goroutine so we can handle graceful shutdown
+	errCh := make(chan error, 1)
+	go func() {
+		logrus.Infof("Web server listening on %s", comm.WebHost)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errCh <- err
+		}
+		close(errCh)
+	}()
+
+	// Wait for context cancellation or server error
+	select {
+	case <-comm.Ctx.Done():
+		logrus.Info("Shutting down web server gracefully...")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			logrus.Errorf("Web server forced shutdown: %v", err)
+		}
+	case err := <-errCh:
+		if err != nil {
+			logrus.Errorf("Web err:%v", err)
+		}
+	}
+
 	comm.Cancel()
 	time.Sleep(time.Millisecond * 100)
 }

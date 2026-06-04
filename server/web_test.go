@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gokins/core"
@@ -155,5 +156,49 @@ func TestApiVersionEndpoint(t *testing.T) {
 	}
 	if w.Body.String() != comm.Version {
 		t.Errorf("expected version %q, got %q", comm.Version, w.Body.String())
+	}
+}
+
+func TestGracefulShutdown(t *testing.T) {
+	// Reset context for this test
+	comm.ResetCtx()
+	// Restore original context after test
+	defer comm.ResetCtx()
+
+	gin.SetMode(gin.TestMode)
+	comm.WebEgn = gin.New()
+	comm.WebEgn.Use(gin.Recovery())
+
+	// Add a slow endpoint to test in-flight requests
+	comm.WebEgn.GET("/slow", func(c *gin.Context) {
+		time.Sleep(100 * time.Millisecond)
+		c.String(http.StatusOK, "done")
+	})
+
+	comm.WebHost = ":0" // Use random port
+
+	// Start server in background
+	done := make(chan struct{})
+	go func() {
+		runWeb()
+		close(done)
+	}()
+
+	// Give server time to start
+	time.Sleep(50 * time.Millisecond)
+
+	// Make a request to verify server is running
+	// (Note: we can't easily test the actual HTTP request here since
+	// we don't know the port, but we can test the shutdown behavior)
+
+	// Trigger shutdown
+	comm.Cancel()
+
+	// Wait for shutdown to complete with timeout
+	select {
+	case <-done:
+		// Server shut down successfully
+	case <-time.After(2 * time.Second):
+		t.Error("server did not shut down within timeout")
 	}
 }
