@@ -84,20 +84,9 @@ func (PipelineController) orgPipelines(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	//}
-	for _, v := range ls {
-		usr, ok := service.GetUser(v.Uid)
-		if ok {
-			v.Nick = usr.Nick
-			v.Avat = usr.Avatar
-		}
-		last := &model.RunBuild{}
-		v.Buildln, _ = comm.Db.Where("pipeline_id=?", v.Id).Count(last)
-		if v.Buildln > 0 {
-			ok, _ = comm.Db.Where("pipeline_id=?", v.Id).OrderBy("created DESC").Get(last)
-			if ok {
-				v.Build = last
-			}
-		}
+	if err := fillPipelineListBuildInfo(ls); err != nil {
+		util.RespInternalErr(c, "fill pipeline info", err)
+		return
 	}
 	c.JSON(http.StatusOK, page)
 }
@@ -130,20 +119,9 @@ func (PipelineController) getPipelines(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	//}
-	for _, v := range ls {
-		usr, ok := service.GetUser(v.Uid)
-		if ok {
-			v.Nick = usr.Nick
-			v.Avat = usr.Avatar
-		}
-		last := &model.RunBuild{}
-		v.Buildln, _ = comm.Db.Where("pipeline_id=?", v.Id).Count(last)
-		if v.Buildln > 0 {
-			ok, _ = comm.Db.Where("pipeline_id=?", v.Id).OrderBy("created DESC").Get(last)
-			if ok {
-				v.Build = last
-			}
-		}
+	if err := fillPipelineListBuildInfo(ls); err != nil {
+		util.RespInternalErr(c, "fill pipeline info", err)
+		return
 	}
 	c.JSON(http.StatusOK, page)
 }
@@ -539,11 +517,19 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 		}
 	}
 
+	// Batch load latest builds for all pipeline versions (eliminates N+1 queries)
+	versionIds := make([]string, len(ls))
+	for i, v := range ls {
+		versionIds[i] = v.Id
+	}
+	latestBuilds, err := service.BatchLatestBuildsForVersions(versionIds)
+	if err != nil {
+		util.RespInternalErr(c, "batch load builds", err)
+		return
+	}
 	for _, v := range ls {
-		last := &model.RunBuild{}
-		ok, _ := comm.Db.Where("pipeline_version_id=?", v.Id).OrderBy("created DESC").Get(last)
-		if ok {
-			v.Build = last
+		if b, ok := latestBuilds[v.Id]; ok {
+			v.Build = b
 		}
 	}
 
@@ -760,4 +746,59 @@ func (PipelineController) varDel(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	c.String(200, "ok")
+}
+
+// fillPipelineListBuildInfo enriches a list of pipelines with user info, build counts,
+// and latest build data using batch queries instead of N+1 individual queries.
+// This reduces database round-trips from O(N) to O(1) for each page of results.
+func fillPipelineListBuildInfo(ls []*model.TPipeline) error {
+	if len(ls) == 0 {
+		return nil
+	}
+
+	// Collect unique pipeline IDs and user IDs
+	pipelineIds := make([]string, len(ls))
+	uidSet := make(map[string]struct{})
+	for i, v := range ls {
+		pipelineIds[i] = v.Id
+		if v.Uid != "" {
+			uidSet[v.Uid] = struct{}{}
+		}
+	}
+
+	// Batch fetch users
+	uids := make([]string, 0, len(uidSet))
+	for uid := range uidSet {
+		uids = append(uids, uid)
+	}
+	userMap, err := service.BatchGetUsers(uids)
+	if err != nil {
+		return fmt.Errorf("batch get users: %w", err)
+	}
+
+	// Batch fetch build counts
+	countMap, err := service.BatchBuildCounts(pipelineIds)
+	if err != nil {
+		return fmt.Errorf("batch build counts: %w", err)
+	}
+
+	// Batch fetch latest builds
+	buildMap, err := service.BatchLatestBuilds(pipelineIds)
+	if err != nil {
+		return fmt.Errorf("batch latest builds: %w", err)
+	}
+
+	// Enrich pipelines with batched data
+	for _, v := range ls {
+		if usr, ok := userMap[v.Uid]; ok {
+			v.Nick = usr.Nick
+			v.Avat = usr.Avatar
+		}
+		v.Buildln = countMap[v.Id]
+		if b, ok := buildMap[v.Id]; ok {
+			v.Build = b
+		}
+	}
+
+	return nil
 }

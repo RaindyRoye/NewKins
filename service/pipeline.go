@@ -347,6 +347,104 @@ func replaceMaps(envs map[string]string, mVars map[string]*runtime.Variables) ma
 	return m
 }
 
+// BatchBuildCounts returns build counts for multiple pipeline IDs in a single query,
+// eliminating the N+1 query problem when listing pipelines.
+func BatchBuildCounts(pipelineIds []string) (map[string]int64, error) {
+	if len(pipelineIds) == 0 {
+		return map[string]int64{}, nil
+	}
+	type buildCount struct {
+		PipelineId string `xorm:"pipeline_id"`
+		Cnt        int64  `xorm:"cnt"`
+	}
+	var counts []buildCount
+	err := comm.Db.SQL(
+		"SELECT pipeline_id, COUNT(*) as cnt FROM t_build WHERE pipeline_id IN (?) GROUP BY pipeline_id",
+		pipelineIds,
+	).Find(&counts)
+	if err != nil {
+		return nil, fmt.Errorf("batch build counts: %w", err)
+	}
+	result := make(map[string]int64, len(counts))
+	for _, c := range counts {
+		result[c.PipelineId] = c.Cnt
+	}
+	return result, nil
+}
+
+// BatchLatestBuilds returns the latest build for each pipeline ID in a single query.
+// Uses a correlated subquery to efficiently find the most recent build per pipeline.
+func BatchLatestBuilds(pipelineIds []string) (map[string]*model.RunBuild, error) {
+	if len(pipelineIds) == 0 {
+		return map[string]*model.RunBuild{}, nil
+	}
+	var builds []*model.RunBuild
+	err := comm.Db.SQL(`
+		SELECT b1.* FROM t_build b1
+		WHERE b1.pipeline_id IN (?)
+		AND b1.created = (
+			SELECT MAX(b2.created) FROM t_build b2
+			WHERE b2.pipeline_id = b1.pipeline_id
+		)
+	`, pipelineIds).Find(&builds)
+	if err != nil {
+		return nil, fmt.Errorf("batch latest builds: %w", err)
+	}
+	result := make(map[string]*model.RunBuild, len(builds))
+	for _, b := range builds {
+		// If there are timestamp ties, pick the first one encountered
+		if _, exists := result[b.PipelineId]; !exists {
+			result[b.PipelineId] = b
+		}
+	}
+	return result, nil
+}
+
+// BatchLatestBuildsForVersions returns the latest build for each pipeline version ID
+// in a single query, eliminating N+1 queries in the pipelineVersions endpoint.
+func BatchLatestBuildsForVersions(versionIds []string) (map[string]*model.RunBuild, error) {
+	if len(versionIds) == 0 {
+		return map[string]*model.RunBuild{}, nil
+	}
+	var builds []*model.RunBuild
+	err := comm.Db.SQL(`
+		SELECT b1.* FROM t_build b1
+		WHERE b1.pipeline_version_id IN (?)
+		AND b1.created = (
+			SELECT MAX(b2.created) FROM t_build b2
+			WHERE b2.pipeline_version_id = b1.pipeline_version_id
+		)
+	`, versionIds).Find(&builds)
+	if err != nil {
+		return nil, fmt.Errorf("batch latest builds for versions: %w", err)
+	}
+	result := make(map[string]*model.RunBuild, len(builds))
+	for _, b := range builds {
+		if _, exists := result[b.PipelineVersionId]; !exists {
+			result[b.PipelineVersionId] = b
+		}
+	}
+	return result, nil
+}
+
+// BatchGetUsers fetches multiple users by their IDs in a single query,
+// returning a map from user ID to user struct.
+func BatchGetUsers(uids []string) (map[string]*model.TUser, error) {
+	if len(uids) == 0 {
+		return map[string]*model.TUser{}, nil
+	}
+	var users []*model.TUser
+	err := comm.Db.In("id", uids).Find(&users)
+	if err != nil {
+		return nil, fmt.Errorf("batch get users: %w", err)
+	}
+	result := make(map[string]*model.TUser, len(users))
+	for _, u := range users {
+		result[u.Id] = u
+	}
+	return result, nil
+}
+
 func replace(s string, mVars map[string]*runtime.Variables, mustShow ...bool) (string, bool) {
 	if s == "" {
 		return "", false

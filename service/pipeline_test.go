@@ -306,3 +306,75 @@ func TestReplaceStages_NilInput(t *testing.T) {
 	// Should not panic with nil stages
 	replaceStages(nil, nil)
 }
+
+func TestBatchBuildCounts_EmptyInput(t *testing.T) {
+	result, err := BatchBuildCounts(nil)
+	if err != nil {
+		t.Fatalf("BatchBuildCounts(nil) error = %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchBuildCounts(nil) should return empty map, got %v", result)
+	}
+
+	result, err = BatchBuildCounts([]string{})
+	if err != nil {
+		t.Fatalf("BatchBuildCounts([]) error = %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchBuildCounts([]) should return empty map, got %v", result)
+	}
+}
+
+func TestBatchLatestBuilds_EmptyInput(t *testing.T) {
+	result, err := BatchLatestBuilds(nil)
+	if err != nil {
+		t.Fatalf("BatchLatestBuilds(nil) error = %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchLatestBuilds(nil) should return empty map, got %v", result)
+	}
+
+	result, err = BatchLatestBuilds([]string{})
+	if err != nil {
+		t.Fatalf("BatchLatestBuilds([]) error = %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchLatestBuilds([]) should return empty map, got %v", result)
+	}
+}
+
+func TestBatchLatestBuildsForVersions_EmptyInput(t *testing.T) {
+	result, err := BatchLatestBuildsForVersions(nil)
+	if err != nil {
+		t.Fatalf("BatchLatestBuildsForVersions(nil) error = %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchLatestBuildsForVersions(nil) should return empty map, got %v", result)
+	}
+
+	result, err = BatchLatestBuildsForVersions([]string{})
+	if err != nil {
+		t.Fatalf("BatchLatestBuildsForVersions([]) error = %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchLatestBuildsForVersions([]) should return empty map, got %v", result)
+	}
+}
+
+func TestBatchGetUsers_EmptyInput(t *testing.T) {
+	result, err := BatchGetUsers(nil)
+	if err != nil {
+		t.Fatalf("BatchGetUsers(nil) error = %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchGetUsers(nil) should return empty map, got %v", result)
+	}
+
+	result, err = BatchGetUsers([]string{})
+	if err != nil {
+		t.Fatalf("BatchGetUsers([]) error = %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchGetUsers([]) should return empty map, got %v", result)
+	}
+}
