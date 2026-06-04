@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -10,31 +11,54 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// GetUser fetches a user by ID using the global context.
+// Prefer GetUserCtx when a request context is available.
 func GetUser(uid string) (*model.TUser, bool) {
+	return GetUserCtx(comm.Ctx, uid)
+}
+
+// GetUserCtx fetches a user by ID with the provided context for cancellation/timeout.
+func GetUserCtx(ctx context.Context, uid string) (*model.TUser, bool) {
 	if uid == "" {
 		return nil, false
 	}
 	e := &model.TUser{}
-	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", uid).Get(e)
+	ok, err := comm.Db.Context(ctx).Where("id=?", uid).Get(e)
 	if err != nil {
 		logrus.Errorf("GetUser(%s) err:%v", uid, err)
 	}
 	return e, ok
 }
+
+// GetUserInfo fetches user info by ID using the global context.
+// Prefer GetUserInfoCtx when a request context is available.
 func GetUserInfo(uid string) (*model.TUserInfo, bool) {
+	return GetUserInfoCtx(comm.Ctx, uid)
+}
+
+// GetUserInfoCtx fetches user info by ID with the provided context.
+func GetUserInfoCtx(ctx context.Context, uid string) (*model.TUserInfo, bool) {
 	if uid == "" {
 		return nil, false
 	}
 	e := &model.TUserInfo{Id: uid}
-	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", uid).Get(e)
+	ok, err := comm.Db.Context(ctx).Where("id=?", uid).Get(e)
 	if err != nil {
 		logrus.Errorf("GetUser(%s) err:%v", uid, err)
 	}
 	return e, ok
 }
+
+// FindUserName looks up a user by name using the global context.
+// Prefer FindUserNameCtx when a request context is available.
 func FindUserName(name string) (*model.TUser, bool) {
+	return FindUserNameCtx(comm.Ctx, name)
+}
+
+// FindUserNameCtx looks up a user by name with the provided context.
+func FindUserNameCtx(ctx context.Context, name string) (*model.TUser, bool) {
 	e := &model.TUser{}
-	ok, err := comm.Db.Context(comm.Ctx).Where("name=?", name).Get(e)
+	ok, err := comm.Db.Context(ctx).Where("name=?", name).Get(e)
 	if err != nil {
 		logrus.Errorf("FindUserName(%s) err:%v", name, err)
 	}
@@ -107,13 +131,18 @@ func HasOrgExec(uid, orgId string) bool {
 	return usero.PermExec != 0
 }
 func GetUserOrg(uid, orgId string) (*model.TUserOrg, bool) {
+	return GetUserOrgCtx(comm.Ctx, uid, orgId)
+}
+
+// GetUserOrgCtx is the context-aware version of GetUserOrg.
+func GetUserOrgCtx(ctx context.Context, uid, orgId string) (*model.TUserOrg, bool) {
 	torg := &model.TOrg{}
-	ok := GetIdOrAid(orgId, torg)
+	ok := GetIdOrAidCtx(ctx, orgId, torg)
 	if !ok {
 		return nil, false
 	}
 	usero := &model.TUserOrg{}
-	get, err := comm.Db.Context(comm.Ctx).Where("uid =? and org_id =?", uid, torg.Id).Get(usero)
+	get, err := comm.Db.Context(ctx).Where("uid =? and org_id =?", uid, torg.Id).Get(usero)
 	if err != nil {
 		logrus.Debugf("HasOrgExec db err:%v", err)
 	}
@@ -129,18 +158,25 @@ type OrgPerm struct {
 	usrOrg *model.TUserOrg
 }
 
+// NewOrgPerm creates an OrgPerm using the global context.
+// Prefer NewOrgPermCtx when a request context is available.
 func NewOrgPerm(lgusr *model.TUser, orgId string) *OrgPerm {
+	return NewOrgPermCtx(comm.Ctx, lgusr, orgId)
+}
+
+// NewOrgPermCtx is the context-aware version of NewOrgPerm.
+func NewOrgPermCtx(ctx context.Context, lgusr *model.TUser, orgId string) *OrgPerm {
 	c := &OrgPerm{lgusr: lgusr}
 	org := &model.TOrg{}
 	ok := false
 	if orgId != "" {
-		ok = GetIdOrAid(orgId, org)
+		ok = GetIdOrAidCtx(ctx, orgId, org)
 	}
 	if ok && org.Deleted != 1 {
 		c.org = org
 		usero := &model.TUserOrg{}
 		if lgusr != nil {
-			ok, _ = comm.Db.Context(comm.Ctx).Where("uid =? and org_id =?", lgusr.Id, org.Id).Get(usero)
+			ok, _ = comm.Db.Context(ctx).Where("uid =? and org_id =?", lgusr.Id, org.Id).Get(usero)
 			if ok {
 				c.usrOrg = usero
 			}
@@ -241,17 +277,24 @@ type PipePerm struct {
 	perms []*UserPipeOrgPerm
 }
 
+// NewPipePerm creates a PipePerm using the global context.
+// Prefer NewPipePermCtx when a request context is available.
 func NewPipePerm(lgusr *model.TUser, pipeId string) *PipePerm {
+	return NewPipePermCtx(comm.Ctx, lgusr, pipeId)
+}
+
+// NewPipePermCtx is the context-aware version of NewPipePerm.
+func NewPipePermCtx(ctx context.Context, lgusr *model.TUser, pipeId string) *PipePerm {
 	c := &PipePerm{lgusr: lgusr}
 	pipe := &model.TPipeline{}
 	ok := false
 	if pipeId != "" {
-		ok, _ = comm.Db.Context(comm.Ctx).Where("id=?", pipeId).Get(pipe)
+		ok, _ = comm.Db.Context(ctx).Where("id=?", pipeId).Get(pipe)
 	}
 	if ok {
 		c.pipe = pipe
 		if comm.IsMySQL && lgusr != nil {
-			ses := comm.Db.Context(comm.Ctx).SQL(`
+			ses := comm.Db.Context(ctx).SQL(`
 select org.id as org_id,org.name as org_name,org.uid as org_uid,org.public as org_public,op.public as op_public,
 uo.uid as cur_uid,uo.perm_adm,uo.perm_rw,uo.perm_exec,uo.perm_down
 from t_org org
