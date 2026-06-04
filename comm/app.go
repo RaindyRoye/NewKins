@@ -2,6 +2,7 @@ package comm
 
 import (
 	"context"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
@@ -18,6 +19,20 @@ var (
 	Ctx  context.Context
 	cncl context.CancelFunc
 )
+
+// InstalledCh is closed when the installation process completes.
+// It is used to signal the main server loop instead of busy-waiting.
+var InstalledCh = make(chan struct{})
+
+var installOnce sync.Once
+
+// MarkInstalled signals that installation is complete. Safe to call multiple times.
+func MarkInstalled() {
+	Installed = true
+	installOnce.Do(func() {
+		close(InstalledCh)
+	})
+}
 var (
 	Cfg       = Config{}
 	Db        *xorm.Engine

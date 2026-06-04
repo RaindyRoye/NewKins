@@ -143,7 +143,7 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 		c.String(500, "init config err:%v", err)
 		return
 	}
-	comm.Installed = true
+	comm.MarkInstalled()
 	c.String(200, "ok")
 }
 

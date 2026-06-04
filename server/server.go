@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -40,11 +39,12 @@ func Run() error {
 		logrus.Debugf("parseConfig err:%v", err)
 		comm.WebEgn.GET("/install", route.Install)
 		util.GinRegController(comm.WebEgn, &route.InstallController{})
-		for !comm.Installed {
-			time.Sleep(time.Millisecond * 100)
-			if hbtp.EndContext(comm.Ctx) {
-				return errors.New("ctx dead")
-			}
+		// Wait for installation to complete or context cancellation
+		select {
+		case <-comm.InstalledCh:
+			// Installation completed
+		case <-comm.Ctx.Done():
+			return fmt.Errorf("shutdown during installation: %w", comm.Ctx.Err())
 		}
 	}
 
@@ -59,7 +59,7 @@ func Run() error {
 	defer func() { _ = comm.BCache.Close() }()
 
 	regApi()
-	comm.Installed = true
+	comm.MarkInstalled()
 	err = engine.Start()
 	if err != nil {
 		return fmt.Errorf("engine.Start: %w", err)
@@ -67,9 +67,10 @@ func Run() error {
 
 	go runHbtp()
 	hbtp.Infof("gokins running in %s", comm.WorkPath)
-	for !hbtp.EndContext(comm.Ctx) {
-		time.Sleep(time.Millisecond * 100)
-	}
+	// Block until context is cancelled (signal received)
+	<-comm.Ctx.Done()
+	logrus.Info("Context cancelled, initiating shutdown...")
+	// Give background goroutines time to clean up
 	time.Sleep(time.Second)
 	return nil
 }
