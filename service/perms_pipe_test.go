@@ -104,7 +104,7 @@ func TestPipePermIsPipeOwner(t *testing.T) {
 func TestPipePermCanRead(t *testing.T) {
 	adminUser := &model.TUser{Id: "admin"}
 	regularUser := &model.TUser{Id: "user1"}
-	orgMember := &model.TUser{Id: "member1"}
+	otherUser := &model.TUser{Id: "user2"}
 
 	tests := []struct {
 		name string
@@ -112,7 +112,7 @@ func TestPipePermCanRead(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "admin can read",
+			name: "admin can always read",
 			pp: &PipePerm{
 				lgusr: adminUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "someone"},
@@ -128,53 +128,52 @@ func TestPipePermCanRead(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "org member can read (via CurUid)",
+			name: "org member can read",
 			pp: &PipePerm{
-				lgusr: orgMember,
+				lgusr: regularUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
 				perms: []*UserPipeOrgPerm{
-					{OrgId: "org1", CurUid: "member1"},
+					{OrgUid: "someone", CurUid: "user1"},
 				},
 			},
 			want: true,
 		},
 		{
-			name: "public org allows read",
+			name: "public org pipeline allows read",
 			pp: &PipePerm{
 				lgusr: regularUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
 				perms: []*UserPipeOrgPerm{
-					{OrgId: "org1", OrgPublic: 1},
+					{OrgPublic: 1},
 				},
 			},
 			want: true,
 		},
 		{
-			name: "non-member private pipe cannot read",
+			name: "private org, non-member cannot read",
 			pp: &PipePerm{
 				lgusr: regularUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
 				perms: []*UserPipeOrgPerm{
-					{OrgId: "org1", OrgPublic: 0, OrgUid: "someone-else"},
+					{OrgPublic: 0, OrgUid: "orgowner"},
 				},
 			},
 			want: false,
 		},
 		{
-			name: "nil user with no perms cannot read",
+			name: "no perms and not owner",
 			pp: &PipePerm{
-				lgusr: nil,
-				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
+				lgusr: otherUser,
+				pipe:  &model.TPipeline{Id: "pipe1", Uid: "user1"},
 				perms: nil,
 			},
 			want: false,
 		},
 		{
-			name: "empty perms list, non-owner non-admin",
+			name: "nil pipe",
 			pp: &PipePerm{
 				lgusr: regularUser,
-				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
-				perms: []*UserPipeOrgPerm{},
+				pipe:  nil,
 			},
 			want: false,
 		},
@@ -199,7 +198,7 @@ func TestPipePermCanWrite(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "admin can write",
+			name: "admin can always write",
 			pp: &PipePerm{
 				lgusr: adminUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "someone"},
@@ -215,55 +214,55 @@ func TestPipePermCanWrite(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "member with admin perm can write",
+			name: "org admin can write",
 			pp: &PipePerm{
 				lgusr: regularUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
 				perms: []*UserPipeOrgPerm{
-					{OrgId: "org1", CurUid: "user1", PermAdm: 1},
+					{CurUid: "user1", PermAdm: 1},
 				},
 			},
 			want: true,
 		},
 		{
-			name: "member with rw perm can write",
+			name: "org member with write perm can write",
 			pp: &PipePerm{
 				lgusr: regularUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
 				perms: []*UserPipeOrgPerm{
-					{OrgId: "org1", CurUid: "user1", PermRw: 1},
+					{CurUid: "user1", PermRw: 1},
 				},
 			},
 			want: true,
 		},
 		{
-			name: "member without write perms cannot write",
+			name: "org member without write perm cannot write",
 			pp: &PipePerm{
 				lgusr: regularUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
 				perms: []*UserPipeOrgPerm{
-					{OrgId: "org1", CurUid: "user1", PermAdm: 0, PermRw: 0},
+					{CurUid: "user1", PermRw: 0, PermAdm: 0},
 				},
 			},
 			want: false,
 		},
 		{
-			name: "non-member cannot write even if public",
+			name: "non-member cannot write",
 			pp: &PipePerm{
 				lgusr: regularUser,
-				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
-				perms: []*UserPipeOrgPerm{
-					{OrgId: "org1", OrgPublic: 1, OrgUid: "someone"},
-				},
-			},
-			want: false,
-		},
-		{
-			name: "nil user cannot write",
-			pp: &PipePerm{
-				lgusr: nil,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
 				perms: nil,
+			},
+			want: false,
+		},
+		{
+			name: "public org does not grant write",
+			pp: &PipePerm{
+				lgusr: regularUser,
+				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
+				perms: []*UserPipeOrgPerm{
+					{OrgPublic: 1, CurUid: ""},
+				},
 			},
 			want: false,
 		},
@@ -288,7 +287,7 @@ func TestPipePermCanExec(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "admin can exec",
+			name: "admin can always exec",
 			pp: &PipePerm{
 				lgusr: adminUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "someone"},
@@ -304,34 +303,34 @@ func TestPipePermCanExec(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "member with exec perm can exec",
+			name: "org admin can exec",
 			pp: &PipePerm{
 				lgusr: regularUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
 				perms: []*UserPipeOrgPerm{
-					{OrgId: "org1", CurUid: "user1", PermExec: 1},
+					{CurUid: "user1", PermAdm: 1, PermExec: 0},
 				},
 			},
 			want: true,
 		},
 		{
-			name: "member with admin perm can exec",
+			name: "org member with exec perm can exec",
 			pp: &PipePerm{
 				lgusr: regularUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
 				perms: []*UserPipeOrgPerm{
-					{OrgId: "org1", CurUid: "user1", PermAdm: 1, PermExec: 0},
+					{CurUid: "user1", PermExec: 1},
 				},
 			},
 			want: true,
 		},
 		{
-			name: "member without exec perm cannot exec",
+			name: "org member without exec perm cannot exec",
 			pp: &PipePerm{
 				lgusr: regularUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
 				perms: []*UserPipeOrgPerm{
-					{OrgId: "org1", CurUid: "user1", PermAdm: 0, PermExec: 0},
+					{CurUid: "user1", PermExec: 0, PermAdm: 0},
 				},
 			},
 			want: false,
@@ -341,18 +340,18 @@ func TestPipePermCanExec(t *testing.T) {
 			pp: &PipePerm{
 				lgusr: regularUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
-				perms: []*UserPipeOrgPerm{
-					{OrgId: "org1", OrgPublic: 1, OrgUid: "someone"},
-				},
+				perms: nil,
 			},
 			want: false,
 		},
 		{
-			name: "nil user cannot exec",
+			name: "member with write but no exec cannot exec",
 			pp: &PipePerm{
-				lgusr: nil,
+				lgusr: regularUser,
 				pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
-				perms: nil,
+				perms: []*UserPipeOrgPerm{
+					{CurUid: "user1", PermRw: 1, PermExec: 0, PermAdm: 0},
+				},
 			},
 			want: false,
 		},
@@ -371,24 +370,51 @@ func TestPipePermAccessors(t *testing.T) {
 	user := &model.TUser{Id: "user1"}
 	pipe := &model.TPipeline{Id: "pipe1"}
 
-	pp := &PipePerm{
-		lgusr: user,
-		pipe:  pipe,
-	}
+	pp := &PipePerm{lgusr: user, pipe: pipe}
 
 	if pp.LgUser() != user {
-		t.Error("LgUser() returned wrong user")
+		t.Error("LgUser() should return the user")
 	}
 	if pp.Pipeline() != pipe {
-		t.Error("Pipeline() returned wrong pipeline")
+		t.Error("Pipeline() should return the pipeline")
 	}
 
 	// Test nil accessors
-	ppNil := &PipePerm{}
-	if ppNil.LgUser() != nil {
+	pp2 := &PipePerm{}
+	if pp2.LgUser() != nil {
 		t.Error("LgUser() should return nil")
 	}
-	if ppNil.Pipeline() != nil {
+	if pp2.Pipeline() != nil {
 		t.Error("Pipeline() should return nil")
+	}
+}
+
+func TestPipePermMultipleOrgPerms(t *testing.T) {
+	regularUser := &model.TUser{Id: "user1"}
+
+	// Test with multiple org permissions entries
+	pp := &PipePerm{
+		lgusr: regularUser,
+		pipe:  &model.TPipeline{Id: "pipe1", Uid: "other"},
+		perms: []*UserPipeOrgPerm{
+			{OrgUid: "org1owner", OrgPublic: 0, CurUid: ""},
+			{OrgUid: "org2owner", OrgPublic: 0, CurUid: "user1", PermRw: 1, PermExec: 0},
+			{OrgUid: "org3owner", OrgPublic: 1, CurUid: ""},
+		},
+	}
+
+	// Should be able to read (org2 has membership, org3 is public)
+	if !pp.CanRead() {
+		t.Error("should be able to read via org membership or public org")
+	}
+
+	// Should be able to write (org2 has PermRw)
+	if !pp.CanWrite() {
+		t.Error("should be able to write via org2 PermRw")
+	}
+
+	// Should NOT be able to exec (no org has PermExec)
+	if pp.CanExec() {
+		t.Error("should not be able to exec without PermExec")
 	}
 }
