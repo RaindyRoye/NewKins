@@ -122,7 +122,11 @@ func (RuntimeController) cancel(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	build := &model.TBuild{}
-	ok, _ := comm.Db.Where("id=?", bdid).Get(build)
+	ok, err := comm.Db.Where("id=?", bdid).Get(build)
+	if err != nil {
+		util.RespInternalErr(c, "query build", err)
+		return
+	}
 	if !ok {
 		c.String(404, "Not Found")
 		return

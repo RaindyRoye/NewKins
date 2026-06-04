@@ -132,7 +132,11 @@ func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
 func (TriggerController) delete(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	tt := &model.TTrigger{}
-	ok, _ := comm.Db.Where("id = ?", id).Get(tt)
+	ok, err := comm.Db.Where("id = ?", id).Get(tt)
+	if err != nil {
+		util.RespInternalErr(c, "query trigger", err)
+		return
+	}
 	if !ok {
 		c.String(404, "触发器不存在")
 		return
@@ -147,7 +151,7 @@ func (TriggerController) delete(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "No Auth")
 		return
 	}
-	_, err := comm.Db.Where("id = ?", tt.Id).Delete(tt)
+	_, err = comm.Db.Where("id = ?", tt.Id).Delete(tt)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -169,7 +173,11 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	pg, _ := m.GetInt("page")
 	tt := &model.TTrigger{}
-	ok, _ := comm.Db.Where("id = ?", id).Get(tt)
+	ok, err := comm.Db.Where("id = ?", id).Get(tt)
+	if err != nil {
+		util.RespInternalErr(c, "query trigger", err)
+		return
+	}
 	if !ok {
 		c.String(404, "触发器不存在")
 		return

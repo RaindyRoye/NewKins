@@ -26,7 +26,11 @@ func (PipelineVersionController) delete(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	tpv := &model.TPipelineVersion{}
-	ok, _ := comm.Db.Where("id = ? ", id).Get(tpv)
+	ok, err := comm.Db.Where("id = ? ", id).Get(tpv)
+	if err != nil {
+		util.RespInternalErr(c, "query pipeline version", err)
+		return
+	}
 	if !ok {
 		c.String(404, "not found pipe_var")
 		return
@@ -41,7 +45,7 @@ func (PipelineVersionController) delete(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	tpv.Deleted = 1
-	_, err := comm.Db.Cols("deleted").Where("id = ?", tpv.Id).Update(tpv)
+	_, err = comm.Db.Cols("deleted").Where("id = ?", tpv.Id).Update(tpv)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return

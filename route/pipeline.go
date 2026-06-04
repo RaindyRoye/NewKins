@@ -322,13 +322,17 @@ func (PipelineController) info(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	pipe := &model.TPipelineInfo{}
-	ok, _ := comm.Db.Where("id=? and deleted != 1", id).Get(pipe)
+	ok, err := comm.Db.Where("id=? and deleted != 1", id).Get(pipe)
+	if err != nil {
+		util.RespInternalErr(c, "query pipeline", err)
+		return
+	}
 	if !ok {
 		c.String(404, "未找到流水线信息")
 		return
 	}
 	tpc := &model.TPipelineConf{}
-	_, err := comm.Db.Where("pipeline_id=?", pipe.Id).Get(tpc)
+	_, err = comm.Db.Where("pipeline_id=?", pipe.Id).Get(tpc)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -442,7 +446,11 @@ func (PipelineController) rebuild(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	tvp := &model.TPipelineVersion{}
-	ok, _ := comm.Db.Where("id=? and deleted != 1", pipelineVersionId).Get(tvp)
+	ok, err := comm.Db.Where("id=? and deleted != 1", pipelineVersionId).Get(tvp)
+	if err != nil {
+		util.RespInternalErr(c, "query pipeline version", err)
+		return
+	}
 	if !ok {
 		c.String(404, "构建记录不存在")
 		return
@@ -543,7 +551,11 @@ func (PipelineController) pipelineVersion(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	pv := &model.TPipelineVersion{}
-	ok, _ := comm.Db.Where("id=?", id).Get(pv)
+	ok, err := comm.Db.Where("id=?", id).Get(pv)
+	if err != nil {
+		util.RespInternalErr(c, "query pipeline version", err)
+		return
+	}
 	if !ok {
 		c.String(404, "not found pv")
 		return
@@ -567,7 +579,7 @@ func (PipelineController) pipelineVersion(c *gin.Context, m *hbtp.Map) {
 	}
 
 	pipeShow := &bean.PipelineShow{}
-	err := utils.Struct2Struct(pipeShow, perm.Pipeline())
+	err = utils.Struct2Struct(pipeShow, perm.Pipeline())
 	if err != nil {
 		c.String(405, "conv err:%v", err)
 		return
@@ -726,7 +738,11 @@ func (PipelineController) varDel(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	pipelineVar := &model.TPipelineVar{}
-	ok, _ := comm.Db.Where("aid = ? ", aId).Get(pipelineVar)
+	ok, err := comm.Db.Where("aid = ? ", aId).Get(pipelineVar)
+	if err != nil {
+		util.RespInternalErr(c, "query pipeline var", err)
+		return
+	}
 	if !ok {
 		c.String(404, "not found pipe_var")
 		return

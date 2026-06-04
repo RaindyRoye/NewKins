@@ -401,7 +401,11 @@ func (OrgController) pipeAdd(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	ne := &model.TOrgPipe{}
-	ok, _ := comm.Db.Where("org_id=? and pipe_id=?", perm.Org().Id, pipeId).Get(ne)
+	ok, err := comm.Db.Where("org_id=? and pipe_id=?", perm.Org().Id, pipeId).Get(ne)
+	if err != nil {
+		util.RespInternalErr(c, "query org pipe", err)
+		return
+	}
 	if ok {
 		c.String(511, "pipeline exist")
 		return
@@ -409,7 +413,7 @@ func (OrgController) pipeAdd(c *gin.Context, m *hbtp.Map) {
 	ne.OrgId = perm.Org().Id
 	ne.PipeId = pipeId
 	ne.Created = time.Now()
-	_, err := comm.Db.InsertOne(ne)
+	_, err = comm.Db.InsertOne(ne)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -536,7 +540,11 @@ func (OrgController) varDel(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	orgVar := &model.TOrgVar{}
-	ok, _ := comm.Db.Where("aid = ? ", aId).Get(orgVar)
+	ok, err := comm.Db.Where("aid = ? ", aId).Get(orgVar)
+	if err != nil {
+		util.RespInternalErr(c, "query org var", err)
+		return
+	}
 	if !ok {
 		c.String(404, "not found pipe_var")
 		return

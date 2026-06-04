@@ -18,7 +18,10 @@ import (
 
 func Run(ctx context.Context, uid, pipeId, sha, event string) (*model.TPipelineVersion, *runtime.Build, error) {
 	tpipe := &model.TPipelineConf{}
-	ok, _ := comm.Db.Context(ctx).Where("pipeline_id=?", pipeId).Get(tpipe)
+	ok, err := comm.Db.Context(ctx).Where("pipeline_id=?", pipeId).Get(tpipe)
+	if err != nil {
+		return nil, nil, fmt.Errorf("query pipeline config: %w", err)
+	}
 	if !ok {
 		return nil, nil, ErrPipelineNotFound
 	}
@@ -26,7 +29,7 @@ func Run(ctx context.Context, uid, pipeId, sha, event string) (*model.TPipelineV
 		return nil, nil, ErrPipelineYmlEmpty
 	}
 	pipe := &bean.Pipeline{}
-	err := yaml.Unmarshal([]byte(tpipe.YmlContent), pipe)
+	err = yaml.Unmarshal([]byte(tpipe.YmlContent), pipe)
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse pipeline yaml: %w", err)
 	}
@@ -35,7 +38,10 @@ func Run(ctx context.Context, uid, pipeId, sha, event string) (*model.TPipelineV
 
 func ReBuild(ctx context.Context, uid string, tvp *model.TPipelineVersion) (*model.TPipelineVersion, *runtime.Build, error) {
 	tpipe := &model.TPipelineConf{}
-	ok, _ := comm.Db.Context(ctx).Where("pipeline_id=?", tvp.PipelineId).Get(tpipe)
+	ok, err := comm.Db.Context(ctx).Where("pipeline_id=?", tvp.PipelineId).Get(tpipe)
+	if err != nil {
+		return nil, nil, fmt.Errorf("query pipeline config: %w", err)
+	}
 	if !ok {
 		return nil, nil, ErrPipelineNotFound
 	}
@@ -43,7 +49,7 @@ func ReBuild(ctx context.Context, uid string, tvp *model.TPipelineVersion) (*mod
 		return nil, nil, ErrPipelineYmlEmpty
 	}
 	pipe := &bean.Pipeline{}
-	err := yaml.Unmarshal([]byte(tvp.Content), pipe)
+	err = yaml.Unmarshal([]byte(tvp.Content), pipe)
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse pipeline version yaml: %w", err)
 	}
