@@ -158,7 +158,7 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 		Name:        name,
 		DisplayName: displayName,
 	}
-	_, err = comm.Db.Cols("name,display_name").Where("id = ?", pipelineId).Update(pipeline)
+	_, err = comm.Db.Context(c.Request.Context()).Cols("name,display_name").Where("id = ?", pipelineId).Update(pipeline)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -169,7 +169,7 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 		Username:    username,
 		AccessToken: accessToken,
 	}
-	_, err = comm.Db.Cols("yml_content,url,username,access_token").Where("pipeline_id = ?", pipelineId).Update(tpc)
+	_, err = comm.Db.Context(c.Request.Context()).Cols("yml_content,url,username,access_token").Where("pipeline_id = ?", pipelineId).Update(tpc)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -196,7 +196,7 @@ func (PipelineController) delete(c *gin.Context, m *hbtp.Map) {
 		Deleted:     1,
 		DeletedTime: time.Now(),
 	}
-	_, err := comm.Db.Cols("deleted").Where("id = ?", id).Update(tp)
+	_, err := comm.Db.Context(c.Request.Context()).Cols("deleted").Where("id = ?", id).Update(tp)
 	if err != nil {
 		util.RespInternalErr(c, "pipeline delete", err)
 		return
@@ -204,7 +204,7 @@ func (PipelineController) delete(c *gin.Context, m *hbtp.Map) {
 	version := &model.TPipelineVersion{
 		Deleted: 1,
 	}
-	_, err = comm.Db.Cols("deleted").Where("pipeline_id = ?", id).Update(version)
+	_, err = comm.Db.Context(c.Request.Context()).Cols("deleted").Where("pipeline_id = ?", id).Update(version)
 	if err != nil {
 		util.RespInternalErr(c, "pipeline delete", err)
 		return
@@ -251,7 +251,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 		DisplayName:  npipe.DisplayName,
 		PipelineType: "",
 	}
-	_, err = comm.Db.InsertOne(pipeline)
+	_, err = comm.Db.Context(c.Request.Context()).InsertOne(pipeline)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -263,7 +263,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 		Username:    npipe.Username,
 		AccessToken: npipe.AccessToken,
 	}
-	_, err = comm.Db.InsertOne(tpc)
+	_, err = comm.Db.Context(c.Request.Context()).InsertOne(tpc)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -281,7 +281,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 			if v.Public {
 				pipelineVar.Public = 1
 			}
-			_, err = comm.Db.InsertOne(pipelineVar)
+			_, err = comm.Db.Context(c.Request.Context()).InsertOne(pipelineVar)
 			if err != nil {
 				util.RespInternalErr(c, "db operation", err)
 				return
@@ -295,7 +295,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 			Created: time.Now(),
 			Public:  0,
 		}
-		_, err = comm.Db.InsertOne(top)
+		_, err = comm.Db.Context(c.Request.Context()).InsertOne(top)
 		if err != nil {
 			util.RespInternalErr(c, "db operation", err)
 			return
@@ -321,8 +321,9 @@ func (PipelineController) info(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "No Auth")
 		return
 	}
+	ctx := c.Request.Context()
 	pipe := &model.TPipelineInfo{}
-	ok, err := comm.Db.Where("id=? and deleted != 1", id).Get(pipe)
+	ok, err := comm.Db.Context(ctx).Where("id=? and deleted != 1", id).Get(pipe)
 	if err != nil {
 		util.RespInternalErr(c, "query pipeline", err)
 		return
@@ -332,7 +333,7 @@ func (PipelineController) info(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	tpc := &model.TPipelineConf{}
-	_, err = comm.Db.Where("pipeline_id=?", pipe.Id).Get(tpc)
+	_, err = comm.Db.Context(ctx).Where("pipeline_id=?", pipe.Id).Get(tpc)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -413,14 +414,14 @@ func (PipelineController) copy(c *gin.Context, m *hbtp.Map) {
 		DisplayName:  perm.Pipeline().DisplayName,
 		PipelineType: perm.Pipeline().PipelineType,
 	}
-	_, err := comm.Db.InsertOne(pipe)
+	_, err := comm.Db.Context(c.Request.Context()).InsertOne(pipe)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 
 	tpc := &model.TPipelineConf{}
-	_, err = comm.Db.Where("pipeline_id=?", perm.Pipeline().Id).Get(tpc)
+	_, err = comm.Db.Context(c.Request.Context()).Where("pipeline_id=?", perm.Pipeline().Id).Get(tpc)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -432,7 +433,7 @@ func (PipelineController) copy(c *gin.Context, m *hbtp.Map) {
 		YmlContent:  tpc.YmlContent,
 		Username:    tpc.Username,
 	}
-	_, err = comm.Db.InsertOne(ne)
+	_, err = comm.Db.Context(c.Request.Context()).InsertOne(ne)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -446,7 +447,7 @@ func (PipelineController) rebuild(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	tvp := &model.TPipelineVersion{}
-	ok, err := comm.Db.Where("id=? and deleted != 1", pipelineVersionId).Get(tvp)
+	ok, err := comm.Db.Context(c.Request.Context()).Where("id=? and deleted != 1", pipelineVersionId).Get(tvp)
 	if err != nil {
 		util.RespInternalErr(c, "query pipeline version", err)
 		return
@@ -491,7 +492,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 			c.String(405, "No Auth")
 			return
 		}
-		where := comm.Db.Where("pipeline_id = ? and deleted != 1", pipelineId).Desc("id")
+		where := comm.Db.Context(c.Request.Context()).Where("pipeline_id = ? and deleted != 1", pipelineId).Desc("id")
 		page, err = comm.FindPage(where, &ls, pg)
 		if err != nil {
 			util.RespInternalErr(c, "db operation", err)
@@ -499,7 +500,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 		}
 	} else {
 		if service.IsAdmin(usr) {
-			where := comm.Db.Where(" deleted != 1").Desc("id")
+			where := comm.Db.Context(c.Request.Context()).Where(" deleted != 1").Desc("id")
 			page, err = comm.FindPage(where, &ls, pg)
 			if err != nil {
 				util.RespInternalErr(c, "db operation", err)
@@ -507,7 +508,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 			}
 		} else {
 			tpipeIds := []string{}
-			err = comm.Db.Table(&model.TPipeline{}).Cols("id").Where("uid = ? and deleted != 1", usr.Id).Find(&tpipeIds)
+			err = comm.Db.Context(c.Request.Context()).Table(&model.TPipeline{}).Cols("id").Where("uid = ? and deleted != 1", usr.Id).Find(&tpipeIds)
 			if err != nil {
 				util.RespInternalErr(c, "db operation", err)
 				return
@@ -516,7 +517,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 				c.JSON(200, page)
 				return
 			}
-			where := comm.Db.In("pipeline_id", tpipeIds).Where("deleted != 1").Desc("id")
+			where := comm.Db.Context(c.Request.Context()).In("pipeline_id", tpipeIds).Where("deleted != 1").Desc("id")
 			page, err = comm.FindPage(where, &ls, pg, 20)
 			if err != nil {
 				util.RespInternalErr(c, "db operation", err)
@@ -550,8 +551,9 @@ func (PipelineController) pipelineVersion(c *gin.Context, m *hbtp.Map) {
 		c.String(500, "param err")
 		return
 	}
+	ctx := c.Request.Context()
 	pv := &model.TPipelineVersion{}
-	ok, err := comm.Db.Where("id=?", id).Get(pv)
+	ok, err := comm.Db.Context(ctx).Where("id=?", id).Get(pv)
 	if err != nil {
 		util.RespInternalErr(c, "query pipeline version", err)
 		return
@@ -561,9 +563,9 @@ func (PipelineController) pipelineVersion(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	usr := &model.TUser{}
-	service.GetIdOrAid(pv.Uid, usr)
+	service.GetIdOrAidCtx(ctx, pv.Uid, usr)
 	build := &model.RunBuild{}
-	ok, _ = comm.Db.Where("pipeline_version_id=?", pv.Id).Get(build)
+	ok, _ = comm.Db.Context(ctx).Where("pipeline_version_id=?", pv.Id).Get(build)
 	if !ok {
 		c.String(404, "not found build")
 		return
@@ -585,7 +587,7 @@ func (PipelineController) pipelineVersion(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	pinfo := &model.TPipelineConf{}
-	ok, _ = comm.Db.Where("pipeline_id=?", perm.Pipeline().Id).Get(pinfo)
+	ok, _ = comm.Db.Context(ctx).Where("pipeline_id=?", perm.Pipeline().Id).Get(pinfo)
 	if ok {
 		pipeShow.Url = pinfo.Url
 	}
@@ -618,7 +620,7 @@ func (PipelineController) searchSha(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	shas := []string{}
-	session := comm.Db.Table("t_pipeline_version").
+	session := comm.Db.Context(c.Request.Context()).Table("t_pipeline_version").
 		Distinct("sha").Cols("sha").
 		Where("pipeline_id = ?", id).Desc("sha")
 	if q != "" {
@@ -660,7 +662,7 @@ func (PipelineController) vars(c *gin.Context, m *hbtp.Map) {
 	var ls []*model.TPipelineVar
 	var page *bean.Page
 	var err error
-	session := comm.Db.Where("pipeline_id = ?", pipelineId)
+	session := comm.Db.Context(c.Request.Context()).Where("pipeline_id = ?", pipelineId)
 	if q != "" {
 		session.And("(name like ? or value like ?)", "%"+q+"%", "%"+q+"%")
 	}
@@ -702,7 +704,7 @@ func (PipelineController) varSave(c *gin.Context, pv *bean.PipelineVar) {
 		pipelineVar.Public = 1
 	}
 	tpv := &model.TPipelineVar{}
-	ok, err := comm.Db.Where("pipeline_id = ? and name = ?", pv.PipelineId, pv.Name).Get(tpv)
+	ok, err := comm.Db.Context(c.Request.Context()).Where("pipeline_id = ? and name = ?", pv.PipelineId, pv.Name).Get(tpv)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -712,7 +714,7 @@ func (PipelineController) varSave(c *gin.Context, pv *bean.PipelineVar) {
 			c.String(500, "变量名重复")
 			return
 		}
-		_, err = comm.Db.Cols("name,value,remarks,public").Where("aid = ?", pv.Aid).Update(pipelineVar)
+		_, err = comm.Db.Context(c.Request.Context()).Cols("name,value,remarks,public").Where("aid = ?", pv.Aid).Update(pipelineVar)
 		if err != nil {
 			util.RespInternalErr(c, "db operation", err)
 			return
@@ -724,7 +726,7 @@ func (PipelineController) varSave(c *gin.Context, pv *bean.PipelineVar) {
 		c.String(500, "变量名重复")
 		return
 	}
-	_, err = comm.Db.InsertOne(pipelineVar)
+	_, err = comm.Db.Context(c.Request.Context()).InsertOne(pipelineVar)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -738,7 +740,7 @@ func (PipelineController) varDel(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	pipelineVar := &model.TPipelineVar{}
-	ok, err := comm.Db.Where("aid = ? ", aId).Get(pipelineVar)
+	ok, err := comm.Db.Context(c.Request.Context()).Where("aid = ? ", aId).Get(pipelineVar)
 	if err != nil {
 		util.RespInternalErr(c, "query pipeline var", err)
 		return
@@ -756,7 +758,7 @@ func (PipelineController) varDel(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "no permission")
 		return
 	}
-	_, err = comm.Db.Where("aid = ?", aId).Delete(pipelineVar)
+	_, err = comm.Db.Context(c.Request.Context()).Where("aid = ?", aId).Delete(pipelineVar)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
