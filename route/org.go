@@ -85,14 +85,15 @@ func (OrgController) list(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
+	ctx := c.Request.Context()
 	for _, v := range ls {
-		usr, ok := service.GetUser(v.Uid)
+		usr, ok := service.GetUserCtx(ctx, v.Uid)
 		if ok {
 			v.Nick = usr.Nick
 			v.Avat = usr.Avatar
 		}
-		v.Pipeln, _ = comm.Db.Where("org_id=?", v.Id).Count(model.TOrgPipe{})
-		v.Userln, _ = comm.Db.Where("org_id=?", v.Id).Count(model.TUserOrg{})
+		v.Pipeln, _ = comm.Db.Context(ctx).Where("org_id=?", v.Id).Count(model.TOrgPipe{})
+		v.Userln, _ = comm.Db.Context(ctx).Where("org_id=?", v.Id).Count(model.TUserOrg{})
 	}
 	c.JSON(200, page)
 }
@@ -124,7 +125,7 @@ func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 	if pub {
 		ne.Public = 1
 	}
-	_, err := comm.Db.InsertOne(ne)
+	_, err := comm.Db.Context(c.Request.Context()).InsertOne(ne)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -142,7 +143,8 @@ func (OrgController) info(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	org := &model.TOrg{}
-	ok := service.GetIdOrAid(id, org)
+	ctx := c.Request.Context()
+	ok := service.GetIdOrAidCtx(ctx, id, org)
 	if !ok || org.Deleted == 1 {
 		c.String(404, "not found org")
 		return
@@ -153,7 +155,7 @@ func (OrgController) info(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	usr := &model.TUser{}
-	ok = service.GetIdOrAid(org.Uid, usr)
+	ok = service.GetIdOrAidCtx(ctx, org.Uid, usr)
 	if !ok {
 		c.String(404, "not found user?")
 		return
@@ -188,7 +190,7 @@ func (OrgController) users(c *gin.Context, m *hbtp.Map) {
 	}
 	var usrs []*model.TUserOrgInfo
 	// if comm.IsMySQL {
-	ses := comm.Db.SQL(`
+	ses := comm.Db.Context(c.Request.Context()).SQL(`
 		select usr.*,urg.perm_adm,urg.perm_rw,urg.perm_exec,urg.perm_down,urg.created as join_time from t_user usr
 		JOIN t_user_org urg ON urg.org_id=?
 		where usr.id=urg.uid
@@ -240,7 +242,7 @@ func (OrgController) save(c *gin.Context, m *hbtp.Map) {
 	if pub {
 		ne.Public = 1
 	}
-	_, err := comm.Db.Cols("name", "desc", "public", "updated").
+	_, err := comm.Db.Context(c.Request.Context()).Cols("name", "desc", "public", "updated").
 		Where("id=?", perm.Org().Id).Update(ne)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
@@ -267,7 +269,7 @@ func (OrgController) rm(c *gin.Context, m *hbtp.Map) {
 		DeletedTime: time.Now(),
 		Updated:     time.Now(),
 	}
-	_, err := comm.Db.Cols("deleted", "deleted_time", "updated").
+	_, err := comm.Db.Context(c.Request.Context()).Cols("deleted", "deleted_time", "updated").
 		Where("id=?", perm.Org().Id).Update(ne)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
@@ -289,14 +291,15 @@ func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	usr := &model.TUser{}
-	ok := service.GetIdOrAid(uid, usr)
+	ctx := c.Request.Context()
+	ok := service.GetIdOrAidCtx(ctx, uid, usr)
 	if !ok {
 		c.String(404, "not found user")
 		return
 	}
 	var err error
 	ne := &model.TUserOrg{}
-	isup, _ := comm.Db.Where("uid=? and org_id=?", usr.Id, perm.Org().Id).Get(ne)
+	isup, _ := comm.Db.Context(ctx).Where("uid=? and org_id=?", usr.Id, perm.Org().Id).Get(ne)
 	if usr.Id == perm.LgUser().Id {
 		c.String(511, "can't edit yourself")
 		return
@@ -337,13 +340,13 @@ func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 		}
 	}
 	if isup {
-		_, err = comm.Db.Cols("perm_adm", "perm_rw", "perm_exec", "perm_down").
+		_, err = comm.Db.Context(ctx).Cols("perm_adm", "perm_rw", "perm_exec", "perm_down").
 			Where("aid=?", ne.Aid).Update(ne)
 	} else {
 		ne.Uid = usr.Id
 		ne.OrgId = perm.Org().Id
 		ne.Created = time.Now()
-		_, err = comm.Db.InsertOne(ne)
+		_, err = comm.Db.Context(ctx).InsertOne(ne)
 	}
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
@@ -361,13 +364,14 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	usr := &model.TUser{}
-	ok := service.GetIdOrAid(uid, usr)
+	ctx := c.Request.Context()
+	ok := service.GetIdOrAidCtx(ctx, uid, usr)
 	if !ok {
 		c.String(404, "not found user")
 		return
 	}
 	ne := &model.TUserOrg{}
-	ok, _ = comm.Db.Where("uid=? and org_id=?", usr.Id, perm.Org().Id).Get(ne)
+	ok, _ = comm.Db.Context(ctx).Where("uid=? and org_id=?", usr.Id, perm.Org().Id).Get(ne)
 	if !ok {
 		c.String(404, "not found user org")
 		return
@@ -380,7 +384,7 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "no permission")
 		return
 	}
-	_, err := comm.Db.Where("aid=?", ne.Aid).Delete(ne)
+	_, err := comm.Db.Context(ctx).Where("aid=?", ne.Aid).Delete(ne)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -401,7 +405,7 @@ func (OrgController) pipeAdd(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	ne := &model.TOrgPipe{}
-	ok, err := comm.Db.Where("org_id=? and pipe_id=?", perm.Org().Id, pipeId).Get(ne)
+	ok, err := comm.Db.Context(c.Request.Context()).Where("org_id=? and pipe_id=?", perm.Org().Id, pipeId).Get(ne)
 	if err != nil {
 		util.RespInternalErr(c, "query org pipe", err)
 		return
@@ -413,7 +417,7 @@ func (OrgController) pipeAdd(c *gin.Context, m *hbtp.Map) {
 	ne.OrgId = perm.Org().Id
 	ne.PipeId = pipeId
 	ne.Created = time.Now()
-	_, err = comm.Db.InsertOne(ne)
+	_, err = comm.Db.Context(c.Request.Context()).InsertOne(ne)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -434,7 +438,7 @@ func (OrgController) pipeRm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	ne := &model.TOrgPipe{}
-	_, err := comm.Db.Where("org_id=? and pipe_id=?", perm.Org().Id, pipeId).Delete(ne)
+	_, err := comm.Db.Context(c.Request.Context()).Where("org_id=? and pipe_id=?", perm.Org().Id, pipeId).Delete(ne)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -462,7 +466,7 @@ func (OrgController) vars(c *gin.Context, m *hbtp.Map) {
 	var ls []*model.TOrgVar
 	var page *bean.Page
 	var err error
-	session := comm.Db.Where("org_id = ?", orgId)
+	session := comm.Db.Context(c.Request.Context()).Where("org_id = ?", orgId)
 	if q != "" {
 		session.And("(name like ? or value like ?)", "%"+q+"%", "%"+q+"%")
 	}
@@ -504,7 +508,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 		orgVar.Public = 1
 	}
 	tpv := &model.TOrgVar{}
-	ok, err := comm.Db.Where("org_id = ? and name = ?", pv.OrgId, pv.Name).Get(tpv)
+	ok, err := comm.Db.Context(c.Request.Context()).Where("org_id = ? and name = ?", pv.OrgId, pv.Name).Get(tpv)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -514,7 +518,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 			c.String(500, "变量名重复")
 			return
 		}
-		_, err = comm.Db.Cols("name,value,remarks,public").Where("aid = ?", pv.Aid).Update(orgVar)
+		_, err = comm.Db.Context(c.Request.Context()).Cols("name,value,remarks,public").Where("aid = ?", pv.Aid).Update(orgVar)
 		if err != nil {
 			util.RespInternalErr(c, "db operation", err)
 			return
@@ -526,7 +530,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 		c.String(500, "变量名重复")
 		return
 	}
-	_, err = comm.Db.InsertOne(orgVar)
+	_, err = comm.Db.Context(c.Request.Context()).InsertOne(orgVar)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -540,7 +544,7 @@ func (OrgController) varDel(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	orgVar := &model.TOrgVar{}
-	ok, err := comm.Db.Where("aid = ? ", aId).Get(orgVar)
+	ok, err := comm.Db.Context(c.Request.Context()).Where("aid = ? ", aId).Get(orgVar)
 	if err != nil {
 		util.RespInternalErr(c, "query org var", err)
 		return
@@ -558,7 +562,7 @@ func (OrgController) varDel(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "no permission")
 		return
 	}
-	_, err = comm.Db.Where("aid = ?", aId).Delete(orgVar)
+	_, err = comm.Db.Context(c.Request.Context()).Where("aid = ?", aId).Delete(orgVar)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
