@@ -61,7 +61,9 @@ func TestInitPostgresMigrate_EmptyParams(t *testing.T) {
 }
 
 func TestPostgresConnectionStringFormat(t *testing.T) {
-	// Verify the connection string template produces valid format
+	// Regression test: the old format string had "***" hardcoded instead of "%s"
+	// for the password field, causing all Postgres connections to fail.
+	// The format string must use %s for all 4 parameters (user, pass, host, dbs).
 	user, pass, host, dbs := "testuser", "testpass", "localhost:5432", "testdb"
 	ul := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, pass, host, dbs)
 
@@ -78,10 +80,42 @@ func TestPostgresConnectionStringFormat(t *testing.T) {
 		t.Errorf("connection string should end with ?sslmode=disable, got: %s", ul)
 	}
 
-	// Verify all 4 parameters are included (regression test for the broken format bug)
-	for _, part := range []string{user, pass, host, dbs} {
-		if !strings.Contains(ul, part) {
-			t.Errorf("connection string missing parameter %q: %s", part, ul)
-		}
+	// Verify exact expected string to catch any format regressions
+	expected := "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
+	if ul != expected {
+		t.Errorf("connection string = %q, want %q", ul, expected)
+	}
+}
+
+func TestMysqlConnectionStringFormat(t *testing.T) {
+	// Verify MySQL connection string format includes all parameters correctly
+	user, pass, host, dbs := "root", "secret", "127.0.0.1:3306", "gokins"
+	ul := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&multiStatements=true",
+		user, pass, host, dbs)
+
+	expected := "root:secret@tcp(127.0.0.1:3306)/gokins?parseTime=true&multiStatements=true"
+	if ul != expected {
+		t.Errorf("mysql connection string = %q, want %q", ul, expected)
+	}
+}
+
+func TestUpMysqlMigrate_EmptyURL(t *testing.T) {
+	err := UpMysqlMigrate("")
+	if err == nil {
+		t.Error("expected error for empty URL, got nil")
+	}
+}
+
+func TestUpPostgresMigrate_EmptyURL(t *testing.T) {
+	err := UpPostgresMigrate("")
+	if err == nil {
+		t.Error("expected error for empty URL, got nil")
+	}
+}
+
+func TestUpSqliteMigrate_EmptyURL(t *testing.T) {
+	err := UpSqliteMigrate("")
+	if err == nil {
+		t.Error("expected error for empty URL, got nil")
 	}
 }

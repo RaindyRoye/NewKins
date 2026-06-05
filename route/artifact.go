@@ -82,21 +82,22 @@ func (ArtifactController) orgList(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	//}
+	ctx := c.Request.Context()
 	for _, v := range ls {
-		usr, ok := service.GetUser(v.Uid)
+		usr, ok := service.GetUserCtx(ctx, v.Uid)
 		if ok {
 			v.Nick = usr.Nick
 			v.Avat = usr.Avatar
 		}
 		e := &model.TArtifactPackage{}
-		v.Artln, _ = comm.Db.Where("repo_id=?", v.Id).Count(e)
+		v.Artln, _ = comm.Db.Context(ctx).Where("repo_id=?", v.Id).Count(e)
 	}
 	c.JSON(http.StatusOK, page)
 }
 func (ArtifactController) info(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	arty := &model.TArtifactory{}
-	ok := service.GetIdOrAid(id, arty)
+	ok := service.GetIdOrAidCtx(c.Request.Context(), id, arty)
 	if !ok || arty.Deleted == 1 {
 		c.String(404, "not found art")
 		return
@@ -107,7 +108,7 @@ func (ArtifactController) info(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	usr := &model.TUser{}
-	ok = service.GetIdOrAid(arty.Uid, usr)
+	ok = service.GetIdOrAidCtx(c.Request.Context(), arty.Uid, usr)
 	if !ok {
 		c.String(404, "not found user?")
 		return
