@@ -32,7 +32,7 @@ func (HookController) hooks(c *gin.Context) {
 		return
 	}
 	tt := &model.TTrigger{}
-	ok, err := comm.Db.Where("id = ? and enabled != 0", triggerId).Get(tt)
+	ok, err := comm.Db.Context(c.Request.Context()).Where("id = ? and enabled != 0", triggerId).Get(tt)
 	if err != nil {
 		util.RespInternalErr(c, "query trigger", err)
 		return
@@ -60,7 +60,7 @@ func (HookController) web(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	tt := &model.TTrigger{}
-	ok, err := comm.Db.Where("id = ? and enabled != 0", triggerId).Get(tt)
+	ok, err := comm.Db.Context(c.Request.Context()).Where("id = ? and enabled != 0", triggerId).Get(tt)
 	if err != nil {
 		util.RespInternalErr(c, "query trigger", err)
 		return

@@ -49,8 +49,9 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 			return
 		}
 	}
+	ctx := c.Request.Context()
 	ls := make([]*model.TTrigger, 0)
-	session := comm.Db.NewSession()
+	session := comm.Db.Context(ctx)
 	if pipelineId != "" {
 		session.And("pipeline_id = ?", pipelineId)
 	}
@@ -66,7 +67,7 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	for _, v := range ls {
-		usr, ok := service.GetUser(v.Uid)
+		usr, ok := service.GetUserCtx(ctx, v.Uid)
 		if ok {
 			v.Nick = usr.Nick
 			v.Avat = usr.Avatar
@@ -80,6 +81,7 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 }
 
 func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
+	ctx := c.Request.Context()
 	if err := tp.Check(); err != nil {
 		util.RespErr(c, 400, "validation error", err)
 		return
@@ -107,14 +109,14 @@ func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
 		tt.Id = utils.NewXid()
 		tt.Created = time.Now()
 		tt.Uid = lgusr.Id
-		_, err = comm.Db.InsertOne(tt)
+		_, err = comm.Db.Context(ctx).InsertOne(tt)
 		if err != nil {
 			util.RespInternalErr(c, "db operation", err)
 			return
 		}
 	} else {
 		tt.Updated = time.Now()
-		_, err = comm.Db.Cols("name,desc,params,types,enabled,updated").Where("id =?", tt.Id).Update(tt)
+		_, err = comm.Db.Context(ctx).Cols("name,desc,params,types,enabled,updated").Where("id =?", tt.Id).Update(tt)
 		if err != nil {
 			util.RespInternalErr(c, "db operation", err)
 			return
@@ -130,9 +132,10 @@ func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
 }
 
 func (TriggerController) delete(c *gin.Context, m *hbtp.Map) {
+	ctx := c.Request.Context()
 	id := m.GetString("id")
 	tt := &model.TTrigger{}
-	ok, err := comm.Db.Where("id = ?", id).Get(tt)
+	ok, err := comm.Db.Context(ctx).Where("id = ?", id).Get(tt)
 	if err != nil {
 		util.RespInternalErr(c, "query trigger", err)
 		return
@@ -151,13 +154,13 @@ func (TriggerController) delete(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "No Auth")
 		return
 	}
-	_, err = comm.Db.Where("id = ?", tt.Id).Delete(tt)
+	_, err = comm.Db.Context(ctx).Where("id = ?", tt.Id).Delete(tt)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 	tr := model.TTriggerRun{}
-	_, err = comm.Db.Where("tid = ?", tt.Id).Delete(tr)
+	_, err = comm.Db.Context(ctx).Where("tid = ?", tt.Id).Delete(tr)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -170,10 +173,11 @@ func (TriggerController) delete(c *gin.Context, m *hbtp.Map) {
 }
 
 func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
+	ctx := c.Request.Context()
 	id := m.GetString("id")
 	pg, _ := m.GetInt("page")
 	tt := &model.TTrigger{}
-	ok, err := comm.Db.Where("id = ?", id).Get(tt)
+	ok, err := comm.Db.Context(ctx).Where("id = ?", id).Get(tt)
 	if err != nil {
 		util.RespInternalErr(c, "query trigger", err)
 		return
@@ -193,7 +197,7 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	var ls []*model.TTriggerRun
-	session := comm.Db.Where("tid = ?", tt.Id).Desc("created")
+	session := comm.Db.Context(ctx).Where("tid = ?", tt.Id).Desc("created")
 	page, err := comm.FindPage(session, &ls, pg)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
@@ -204,7 +208,7 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 			continue
 		}
 		rpv := &model.RunPipelineVersion{}
-		ok, _ = comm.Db.Table("t_pipeline_version").
+		ok, _ = comm.Db.Context(ctx).Table("t_pipeline_version").
 			Where("t_pipeline_version.id = ?", v.PipeVersionId).
 			Join("left", "t_build", "t_build.pipeline_version_id = ?", v.PipeVersionId).
 			Get(rpv)

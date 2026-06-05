@@ -89,7 +89,7 @@ func (LoginController) login(c *gin.Context, m *bean.LoginReq) {
 	c.JSON(200, rt)
 
 	usr.LoginTime = time.Now()
-	if _, err := comm.Db.Cols("login_time").Where("id=?", usr.Id).Update(usr); err != nil {
+	if _, err := comm.Db.Context(c.Request.Context()).Cols("login_time").Where("id=?", usr.Id).Update(usr); err != nil {
 		logrus.Errorf("login: failed to update login time for user %s: %v", usr.Id, err)
 	}
 }

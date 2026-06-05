@@ -25,8 +25,9 @@ func (PipelineVersionController) delete(c *gin.Context, m *hbtp.Map) {
 		c.String(500, "param err")
 		return
 	}
+	ctx := c.Request.Context()
 	tpv := &model.TPipelineVersion{}
-	ok, err := comm.Db.Where("id = ? ", id).Get(tpv)
+	ok, err := comm.Db.Context(ctx).Where("id = ? ", id).Get(tpv)
 	if err != nil {
 		util.RespInternalErr(c, "query pipeline version", err)
 		return
@@ -45,7 +46,7 @@ func (PipelineVersionController) delete(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	tpv.Deleted = 1
-	_, err = comm.Db.Cols("deleted").Where("id = ?", tpv.Id).Update(tpv)
+	_, err = comm.Db.Context(ctx).Cols("deleted").Where("id = ?", tpv.Id).Update(tpv)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return

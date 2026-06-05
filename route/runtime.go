@@ -36,8 +36,9 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 		c.String(500, "param err")
 		return
 	}
+	ctx := c.Request.Context()
 	var ls []*model.RunStage
-	err := comm.Db.Where("pipeline_version_id=?", pvId).OrderBy("sort ASC").Find(&ls)
+	err := comm.Db.Context(ctx).Where("pipeline_version_id=?", pvId).OrderBy("sort ASC").Find(&ls)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -48,7 +49,7 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 	for _, v := range ls {
 		v.Stepids = make([]string, 0)
 		var spls []*model.RunStep
-		err := comm.Db.Where("stage_id=?", v.Id).OrderBy("sort ASC").Find(&spls)
+		err := comm.Db.Context(ctx).Where("stage_id=?", v.Id).OrderBy("sort ASC").Find(&spls)
 		if err == nil {
 			ids = append(ids, v.Id)
 			stages[v.Id] = v
@@ -74,7 +75,7 @@ func (RuntimeController) cmds(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	var ls []*model.TCmdLine
-	err := comm.Db.Where("step_id=?", stepId).OrderBy("num ASC").Find(&ls)
+	err := comm.Db.Context(c.Request.Context()).Where("step_id=?", stepId).OrderBy("num ASC").Find(&ls)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -122,7 +123,7 @@ func (RuntimeController) cancel(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	build := &model.TBuild{}
-	ok, err := comm.Db.Where("id=?", bdid).Get(build)
+	ok, err := comm.Db.Context(c.Request.Context()).Where("id=?", bdid).Get(build)
 	if err != nil {
 		util.RespInternalErr(c, "query build", err)
 		return
