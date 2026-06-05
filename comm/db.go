@@ -79,7 +79,11 @@ func FindPages(gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*b
 	if gen.CountCols != "" {
 		counts = fmt.Sprintf("count(%s)", gen.CountCols)
 	}
-	sqls := strings.Replace(gen.SQL[:strings.LastIndex(gen.SQL, "\nORDER BY")], "{{select}}", counts, 1)
+	orderIdx := strings.LastIndex(gen.SQL, "\nORDER BY")
+	if orderIdx < 0 {
+		return nil, fmt.Errorf("FindPages: SQL must contain '\\nORDER BY' clause, got: %.80s", gen.SQL)
+	}
+	sqls := strings.Replace(gen.SQL[:orderIdx], "{{select}}", counts, 1)
 	sqls = strings.Replace(sqls, "{{limit}}", "", 1)
 	_, err := Db.SQL(sqls, gen.Args...).Get(&count)
 	if err != nil {
