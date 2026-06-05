@@ -29,6 +29,9 @@ import (
 // to complete during graceful shutdown.
 const shutdownTimeout = 10 * time.Second
 
+// apiRateLimiter limits all API requests to 120 per minute per IP.
+var apiRateLimiter = util.NewRateLimiter(120, time.Minute)
+
 func runWeb() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -37,6 +40,7 @@ func runWeb() {
 		}
 	}()
 	comm.WebEgn = gin.Default()
+	comm.WebEgn.Use(util.MidSecurityHeaders())
 	comm.WebEgn.Use(midUiHandle)
 
 	srv := &http.Server{
@@ -78,6 +82,14 @@ func runWeb() {
 }
 
 func regApi() {
+	// Apply rate limiting to all /api/* routes.
+	comm.WebEgn.Use(func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/api/") || c.Request.URL.Path == "/api" {
+			util.MidRateLimit(apiRateLimiter)(c)
+			return
+		}
+		c.Next()
+	})
 	if core.Debug {
 		comm.WebEgn.Use(util.MidAccessAllowFun)
 		// pprof profiling endpoints (debug mode only)
