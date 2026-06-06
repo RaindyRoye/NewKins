@@ -84,7 +84,9 @@ func GetUserCache(uid string) (*model.TUser, bool) {
 	}
 	e, ok = GetUser(uid)
 	if ok {
-		_ = comm.CacheSets(uids, e)
+		if err := comm.CacheSets(uids, e); err != nil {
+			logrus.Warnf("GetUserCache: failed to cache user %s: %v", uid, err)
+		}
 	}
 	return e, ok
 }
@@ -176,7 +178,10 @@ func NewOrgPermCtx(ctx context.Context, lgusr *model.TUser, orgId string) *OrgPe
 		c.org = org
 		usero := &model.TUserOrg{}
 		if lgusr != nil {
-			ok, _ = comm.Db.Context(ctx).Where("uid =? and org_id =?", lgusr.Id, org.Id).Get(usero)
+			ok, err := comm.Db.Context(ctx).Where("uid =? and org_id =?", lgusr.Id, org.Id).Get(usero)
+			if err != nil {
+				logrus.Warnf("NewOrgPermCtx: failed to query user org (uid=%s, org=%s): %v", lgusr.Id, org.Id, err)
+			}
 			if ok {
 				c.usrOrg = usero
 			}
@@ -289,7 +294,11 @@ func NewPipePermCtx(ctx context.Context, lgusr *model.TUser, pipeId string) *Pip
 	pipe := &model.TPipeline{}
 	ok := false
 	if pipeId != "" {
-		ok, _ = comm.Db.Context(ctx).Where("id=?", pipeId).Get(pipe)
+		var err error
+		ok, err = comm.Db.Context(ctx).Where("id=?", pipeId).Get(pipe)
+		if err != nil {
+			logrus.Warnf("NewPipePermCtx: failed to query pipeline (id=%s): %v", pipeId, err)
+		}
 	}
 	if ok {
 		c.pipe = pipe
@@ -302,7 +311,9 @@ JOIN t_org_pipe op ON op.pipe_id=? and org.id=op.org_id
 LEFT JOIN t_user_org uo ON uo.uid=? and org.id=uo.org_id
 where org.deleted!=1 or org.public=1
 			`, pipe.Id, lgusr.Id)
-			_ = ses.Find(&c.perms)
+			if err := ses.Find(&c.perms); err != nil {
+				logrus.Warnf("NewPipePermCtx: failed to query org perms (pipe=%s, user=%s): %v", pipe.Id, lgusr.Id, err)
+			}
 		}
 	}
 	return c

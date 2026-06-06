@@ -15,6 +15,7 @@ import (
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -565,7 +566,10 @@ func (PipelineController) pipelineVersion(c *gin.Context, m *hbtp.Map) {
 	usr := &model.TUser{}
 	service.GetIdOrAidCtx(ctx, pv.Uid, usr)
 	build := &model.RunBuild{}
-	ok, _ = comm.Db.Context(ctx).Where("pipeline_version_id=?", pv.Id).Get(build)
+	ok, err = comm.Db.Context(ctx).Where("pipeline_version_id=?", pv.Id).Get(build)
+	if err != nil {
+		logrus.Warnf("pipeline buildInfo: query build (pv=%s): %v", pv.Id, err)
+	}
 	if !ok {
 		c.String(404, "not found build")
 		return
@@ -587,7 +591,10 @@ func (PipelineController) pipelineVersion(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	pinfo := &model.TPipelineConf{}
-	ok, _ = comm.Db.Context(ctx).Where("pipeline_id=?", perm.Pipeline().Id).Get(pinfo)
+	ok, err = comm.Db.Context(ctx).Where("pipeline_id=?", perm.Pipeline().Id).Get(pinfo)
+	if err != nil {
+		logrus.Warnf("pipeline buildInfo: query pipeline conf (pipe=%s): %v", perm.Pipeline().Id, err)
+	}
 	if ok {
 		pipeShow.Url = pinfo.Url
 	}

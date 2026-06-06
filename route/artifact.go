@@ -90,7 +90,10 @@ func (ArtifactController) orgList(c *gin.Context, m *hbtp.Map) {
 			v.Avat = usr.Avatar
 		}
 		e := &model.TArtifactPackage{}
-		v.Artln, _ = comm.Db.Context(ctx).Where("repo_id=?", v.Id).Count(e)
+		v.Artln, err = comm.Db.Context(ctx).Where("repo_id=?", v.Id).Count(e)
+		if err != nil {
+			logrus.Warnf("artifact list: count packages (repo=%s): %v", v.Id, err)
+		}
 	}
 	c.JSON(http.StatusOK, page)
 }
@@ -249,7 +252,10 @@ func (ArtifactController) packageList(c *gin.Context, m *hbtp.Map) {
 			v.Avat = usr.Avatar
 		}*/
 		e := &model.TArtifactVersion{}
-		v.Verln, _ = comm.Db.Where("package_id=?", v.Id).Count(e)
+		v.Verln, err = comm.Db.Context(c.Request.Context()).Where("package_id=?", v.Id).Count(e)
+		if err != nil {
+			logrus.Warnf("artifact versionList: count versions (pkg=%s): %v", v.Id, err)
+		}
 	}
 	c.JSON(200, page)
 }

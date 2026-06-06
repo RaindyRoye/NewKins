@@ -13,6 +13,7 @@ import (
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
+	"github.com/sirupsen/logrus"
 )
 
 type TriggerController struct{}
@@ -72,7 +73,9 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 			v.Nick = usr.Nick
 			v.Avat = usr.Avatar
 		}
-		_ = json.Unmarshal([]byte(v.Params), &v.Param)
+		if err := json.Unmarshal([]byte(v.Params), &v.Param); err != nil {
+			logrus.Warnf("trigger list: unmarshal params (trigger=%s): %v", v.Id, err)
+		}
 	}
 	ms := map[string]interface{}{}
 	ms["page"] = page
@@ -208,10 +211,13 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 			continue
 		}
 		rpv := &model.RunPipelineVersion{}
-		ok, _ = comm.Db.Context(ctx).Table("t_pipeline_version").
+		ok, err = comm.Db.Context(ctx).Table("t_pipeline_version").
 			Where("t_pipeline_version.id = ?", v.PipeVersionId).
 			Join("left", "t_build", "t_build.pipeline_version_id = ?", v.PipeVersionId).
 			Get(rpv)
+		if err != nil {
+			logrus.Warnf("trigger runs: query pipeline version (pv=%s): %v", v.PipeVersionId, err)
+		}
 		if ok {
 			v.Number = rpv.Number
 			v.PipelineName = rpv.PipelineName

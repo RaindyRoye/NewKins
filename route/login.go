@@ -34,7 +34,9 @@ func (LoginController) info(c *gin.Context) {
 	usr, ok := service.CurrUserCache(c)
 	if ok {
 		usrs := &model.TUser{}
-		_ = utils.Struct2Struct(usrs, usr)
+		if err := utils.Struct2Struct(usrs, usr); err != nil {
+			logrus.Warnf("login info: struct2struct user: %v", err)
+		}
 		rt["user"] = usrs
 		info, _ := service.GetUserInfo(usrs.Id)
 		rt["info"] = info

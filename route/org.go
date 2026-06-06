@@ -12,6 +12,7 @@ import (
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
+	"github.com/sirupsen/logrus"
 )
 
 type OrgController struct{}
@@ -92,8 +93,14 @@ func (OrgController) list(c *gin.Context, m *hbtp.Map) {
 			v.Nick = usr.Nick
 			v.Avat = usr.Avatar
 		}
-		v.Pipeln, _ = comm.Db.Context(ctx).Where("org_id=?", v.Id).Count(model.TOrgPipe{})
-		v.Userln, _ = comm.Db.Context(ctx).Where("org_id=?", v.Id).Count(model.TUserOrg{})
+		v.Pipeln, err = comm.Db.Context(ctx).Where("org_id=?", v.Id).Count(model.TOrgPipe{})
+		if err != nil {
+			logrus.Warnf("org list: count org pipes (org=%s): %v", v.Id, err)
+		}
+		v.Userln, err = comm.Db.Context(ctx).Where("org_id=?", v.Id).Count(model.TUserOrg{})
+		if err != nil {
+			logrus.Warnf("org list: count org users (org=%s): %v", v.Id, err)
+		}
 	}
 	c.JSON(200, page)
 }
@@ -371,7 +378,10 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	ne := &model.TUserOrg{}
-	ok, _ = comm.Db.Context(ctx).Where("uid=? and org_id=?", usr.Id, perm.Org().Id).Get(ne)
+	ok, err := comm.Db.Context(ctx).Where("uid=? and org_id=?", usr.Id, perm.Org().Id).Get(ne)
+	if err != nil {
+		logrus.Warnf("org removeMember: query user org (uid=%s, org=%s): %v", usr.Id, perm.Org().Id, err)
+	}
 	if !ok {
 		c.String(404, "not found user org")
 		return
@@ -384,7 +394,7 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "no permission")
 		return
 	}
-	_, err := comm.Db.Context(ctx).Where("aid=?", ne.Aid).Delete(ne)
+	_, err = comm.Db.Context(ctx).Where("aid=?", ne.Aid).Delete(ne)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return

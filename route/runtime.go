@@ -13,6 +13,7 @@ import (
 	"github.com/gokins/gokins/engine"
 	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/service"
+	"github.com/sirupsen/logrus"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 )
@@ -55,7 +56,9 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 			stages[v.Id] = v
 			for _, step := range spls {
 				if step.Id != "" {
-					_ = json.Unmarshal([]byte(step.Waits), &step.Waitings)
+					if err := json.Unmarshal([]byte(step.Waits), &step.Waitings); err != nil {
+						logrus.Warnf("runtime: unmarshal step waits (step=%s): %v", step.Id, err)
+					}
 					v.Stepids = append(v.Stepids, step.Id)
 					steps[step.Id] = step
 				}
