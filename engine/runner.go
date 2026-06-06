@@ -356,7 +356,7 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 	}
 
 	arty := &model.TArtifactory{}
-	ok, _ = comm.Db.Where("deleted!=1 and identifier=? and org_id in (select org_id from t_org_pipe where pipe_id=?)",
+	ok, _ = comm.Db.Context(comm.Ctx).Where("deleted!=1 and identifier=? and org_id in (select org_id from t_org_pipe where pipe_id=?)",
 		idnt, build.build.PipelineId).Get(arty)
 	if !ok {
 		return "", fmt.Errorf("findArtVersionId: artifactory %q not found", idnt)
@@ -378,12 +378,12 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 	}
 
 	artp := &model.TArtifactPackage{}
-	ok, _ = comm.Db.Where("deleted!=1 and repo_id=? and name=?", arty.Id, name).Get(artp)
+	ok, _ = comm.Db.Context(comm.Ctx).Where("deleted!=1 and repo_id=? and name=?", arty.Id, name).Get(artp)
 	if !ok {
 		return "", fmt.Errorf("not found artifact '%s'", names)
 	}
 	artv := &model.TArtifactVersion{}
-	ses := comm.Db.Where("package_id=?", artp.Id)
+	ses := comm.Db.Context(comm.Ctx).Where("package_id=?", artp.Id)
 	if vers != "" {
 		ses.And("version=? or sha=?", vers)
 	}
@@ -404,7 +404,7 @@ func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string,
 	}
 
 	arty := &model.TArtifactory{}
-	ok, _ = comm.Db.Where("deleted!=1 and identifier=? and org_id in (select org_id from t_org_pipe where pipe_id=?)",
+	ok, _ = comm.Db.Context(comm.Ctx).Where("deleted!=1 and identifier=? and org_id in (select org_id from t_org_pipe where pipe_id=?)",
 		idnt, build.build.PipelineId).Get(arty)
 	if !ok {
 		return "", fmt.Errorf("newArtVersionId: artifactory %q not found", idnt)
@@ -414,14 +414,14 @@ func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string,
 	}
 
 	artp := &model.TArtifactPackage{}
-	ok, _ = comm.Db.Where("deleted!=1 and repo_id=? and name=?", arty.Id, name).Get(artp)
+	ok, _ = comm.Db.Context(comm.Ctx).Where("deleted!=1 and repo_id=? and name=?", arty.Id, name).Get(artp)
 	if !ok {
 		artp.Id = utils.NewXid()
 		artp.RepoId = arty.Id
 		artp.Name = name
 		artp.Created = time.Now()
 		artp.Updated = time.Now()
-		_, err := comm.Db.InsertOne(artp)
+		_, err := comm.Db.Context(comm.Ctx).InsertOne(artp)
 		if err != nil {
 			return "", fmt.Errorf("insert artifact package: %w", err)
 		}
@@ -436,7 +436,7 @@ func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string,
 		Updated:   time.Now(),
 	}
 	artv.Sha = artv.Id
-	_, err := comm.Db.InsertOne(artv)
+	_, err := comm.Db.Context(comm.Ctx).InsertOne(artv)
 	if err != nil {
 		return "", fmt.Errorf("insert artifact version: %w", err)
 	}

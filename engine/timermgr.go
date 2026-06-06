@@ -97,7 +97,7 @@ func (c *TimerEngine) refresh() {
 		}
 	}()
 	var ls []*model.TTrigger
-	if err := comm.Db.Where("enabled = 1 AND types = 'timer'").Find(&ls); err != nil {
+	if err := comm.Db.Context(comm.Ctx).Where("enabled = 1 AND types = 'timer'").Find(&ls); err != nil {
 		logrus.Errorf("TimerEngine refresh find err: %v", err)
 		return
 	}
@@ -202,7 +202,7 @@ func (c *TimerEngine) Refresh(tmrid string) error {
 		return errors.New("timer id is empty")
 	}
 	tmr := &model.TTrigger{}
-	ok, err := comm.Db.Where("id=?", tmrid).Get(tmr)
+	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", tmrid).Get(tmr)
 	if err != nil {
 		return fmt.Errorf("query trigger %s: %w", tmrid, err)
 	}
