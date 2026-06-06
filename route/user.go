@@ -37,7 +37,8 @@ func (UserController) page(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 
-	ses := comm.Db.OrderBy("aid ASC")
+	ctx := c.Request.Context()
+	ses := comm.Db.Context(ctx).OrderBy("aid ASC")
 	if q != "" {
 		ses.And("name like ? or nick like ?", "%"+q+"%", "%"+q+"%")
 	}
@@ -91,7 +92,7 @@ func (UserController) new(c *gin.Context, m *hbtp.Map) {
 	if pmPipe{
 		ne.NewPipe=1
 	}*/
-	_, err := comm.Db.InsertOne(ne)
+	_, err := comm.Db.Context(c.Request.Context()).InsertOne(ne)
 	if err != nil {
 		util.RespInternalErr(c, "create user", err)
 		return
@@ -106,7 +107,7 @@ func (UserController) info(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	usr := &model.TUser{}
-	ok := service.GetIdOrAid(id, usr)
+	ok := service.GetIdOrAidCtx(c.Request.Context(), id, usr)
 	if !ok {
 		c.String(404, "not found user")
 		return
@@ -128,7 +129,7 @@ func (UserController) upinfo(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	usr := &model.TUser{}
-	ok := service.GetIdOrAid(id, usr)
+	ok := service.GetIdOrAidCtx(c.Request.Context(), id, usr)
 	if !ok {
 		c.String(404, "not found user")
 		return
@@ -140,7 +141,7 @@ func (UserController) upinfo(c *gin.Context, m *hbtp.Map) {
 	}
 	uinfo, isup := service.GetUserInfo(usr.Id)
 	usr.Nick = nick
-	_, err := comm.Db.Cols("nick").Where("id=?", usr.Id).Update(usr)
+	_, err := comm.Db.Context(c.Request.Context()).Cols("nick").Where("id=?", usr.Id).Update(usr)
 	if err != nil {
 		util.RespInternalErr(c, "update user nick", err)
 		return
@@ -149,11 +150,11 @@ func (UserController) upinfo(c *gin.Context, m *hbtp.Map) {
 	uinfo.Email = email
 	uinfo.Remark = remark
 	if isup {
-		_, err = comm.Db.Cols("phone", "email", "remark").
+		_, err = comm.Db.Context(c.Request.Context()).Cols("phone", "email", "remark").
 			Where("id=?", usr.Id).Update(uinfo)
 	} else {
 		uinfo.Id = usr.Id
-		_, err = comm.Db.InsertOne(uinfo)
+		_, err = comm.Db.Context(c.Request.Context()).InsertOne(uinfo)
 	}
 	if err != nil {
 		util.RespInternalErr(c, "update user info", err)
@@ -175,7 +176,7 @@ func (UserController) upass(c *gin.Context, m *hbtp.Map) {
 	if id == lgusr.Id {
 		usr = lgusr
 	} else {
-		ok := service.GetIdOrAid(id, usr)
+		ok := service.GetIdOrAidCtx(c.Request.Context(), id, usr)
 		if !ok {
 			c.String(404, "not found user")
 			return
@@ -201,7 +202,7 @@ func (UserController) upass(c *gin.Context, m *hbtp.Map) {
 	}
 
 	usr.Pass = utils.Md5String(pass)
-	_, err := comm.Db.Cols("pass").Where("id=?", usr.Id).Update(usr)
+	_, err := comm.Db.Context(c.Request.Context()).Cols("pass").Where("id=?", usr.Id).Update(usr)
 	if err != nil {
 		util.RespInternalErr(c, "update user password", err)
 		return
@@ -222,7 +223,7 @@ func (UserController) active(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	usr := &model.TUser{}
-	ok := service.GetIdOrAid(id, usr)
+	ok := service.GetIdOrAidCtx(c.Request.Context(), id, usr)
 	if !ok {
 		c.String(404, "not found user")
 		return
@@ -232,7 +233,7 @@ func (UserController) active(c *gin.Context, m *hbtp.Map) {
 	} else {
 		usr.Active = 0
 	}
-	_, err := comm.Db.Cols("active").Where("id=?", usr.Id).Update(usr)
+	_, err := comm.Db.Context(c.Request.Context()).Cols("active").Where("id=?", usr.Id).Update(usr)
 	if err != nil {
 		util.RespInternalErr(c, "update user active status", err)
 		return
@@ -258,7 +259,7 @@ func (UserController) perm(c *gin.Context, m *hbtp.Map) {
 		}
 	}
 	usr := &model.TUser{}
-	ok := service.GetIdOrAid(id, usr)
+	ok := service.GetIdOrAidCtx(c.Request.Context(), id, usr)
 	if !ok {
 		c.String(404, "not found user")
 		return
@@ -281,11 +282,11 @@ func (UserController) perm(c *gin.Context, m *hbtp.Map) {
 	}
 	var err error
 	if isup {
-		_, err = comm.Db.Cols("perm_user", "perm_org", "perm_pipe").
+		_, err = comm.Db.Context(c.Request.Context()).Cols("perm_user", "perm_org", "perm_pipe").
 			Where("id=?", usr.Id).Update(uinfo)
 	} else {
 		uinfo.Id = usr.Id
-		_, err = comm.Db.InsertOne(uinfo)
+		_, err = comm.Db.Context(c.Request.Context()).InsertOne(uinfo)
 	}
 	if err != nil {
 		util.RespInternalErr(c, "update user permissions", err)
