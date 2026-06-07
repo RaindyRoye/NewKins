@@ -10,6 +10,7 @@ import (
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/runner/runners"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
+	"github.com/sirupsen/logrus"
 )
 
 type HbtpRunner struct {
@@ -27,8 +28,8 @@ func (HbtpRunner) AuthFun() hbtp.AuthFun {
 		}
 		signs := utils.Md5String(cmds + random + times + comm.Cfg.Server.Secret)
 		if sign != signs {
-			println("token err:" + sign)
-			_ = c.ResString(hbtp.ResStatusAuth, "token err:"+sign)
+			logrus.Warnf("hbtp runner auth failed: signature mismatch for command %q", cmds)
+			_ = c.ResString(hbtp.ResStatusAuth, "authentication failed")
 			return false
 		}
 		tm, err := strconv.ParseInt(times, 10, 64)
