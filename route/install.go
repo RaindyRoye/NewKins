@@ -1,6 +1,7 @@
 package route
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -58,12 +59,13 @@ func (InstallController) check(c *gin.Context) {
 	c.String(200, "hello gokins!")
 }
 func checkUrl(host string) bool {
-	req, err := http.NewRequest("POST", host+"/api/install/check", nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "POST", host+"/api/install/check", nil)
 	if err != nil {
 		return false
 	}
 	cli := http.Client{}
-	cli.Timeout = time.Second * 5
 	res, err := cli.Do(req)
 	if err != nil {
 		return false
