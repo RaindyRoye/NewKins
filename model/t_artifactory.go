@@ -9,7 +9,7 @@ type TArtifactory struct {
 	Aid         int64     `xorm:"not null pk autoincr BIGINT(20)" json:"aid"`
 	Uid         string    `xorm:"VARCHAR(64)" json:"uid"`
 	OrgId       string    `xorm:"VARCHAR(64)" json:"orgId"`
-	Identifier  string    `xorm:"VARCHAR(50)" json:"identifier"`
+	Identifier  string    `xorm:"index(idx_artifactory_identifier) VARCHAR(50)" json:"identifier"`
 	Name        string    `xorm:"VARCHAR(200)" json:"name"`
 	Disabled    int       `xorm:"default 0 comment('是否归档(1归档|0正常)') INT(1)" json:"disabled"`
 	Source      string    `xorm:"VARCHAR(50)" json:"source"`

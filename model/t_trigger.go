@@ -9,11 +9,11 @@ type TTrigger struct {
 	Aid        int64     `xorm:"not null pk autoincr BIGINT(20)" json:"aid"`
 	Uid        string    `xorm:"index VARCHAR(64)" json:"uid"`
 	PipelineId string    `xorm:"VARCHAR(64)" json:"pipelineId"`
-	Types      string    `xorm:"VARCHAR(50)" json:"types"`
+	Types      string    `xorm:"index(idx_trigger_enabled_types) VARCHAR(50)" json:"types"`
 	Name       string    `xorm:"VARCHAR(100)" json:"name"`
 	Desc       string    `xorm:"VARCHAR(255)" json:"desc"`
 	Params     string    `xorm:"JSON" json:"-"`
-	Enabled    int       `xorm:"INT(1)" json:"enabled"`
+	Enabled    int       `xorm:"index(idx_trigger_enabled_types) INT(1)" json:"enabled"`
 	Nick       string    `xorm:"-" json:"nick"`
 	Avat       string    `xorm:"-" json:"avat"`
 	Created    time.Time `xorm:"DATETIME" json:"created"`

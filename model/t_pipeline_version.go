@@ -12,7 +12,7 @@ type TPipelineVersion struct {
 	Sha                 string    `xorm:"VARCHAR(255)" json:"sha"`
 	PipelineName        string    `xorm:"VARCHAR(255)" json:"pipelineName"`
 	PipelineDisplayName string    `xorm:"VARCHAR(255)" json:"pipelineDisplayName"`
-	PipelineId          string    `xorm:"VARCHAR(64)" json:"pipelineId"`
+	PipelineId          string    `xorm:"index(idx_pipever_pipeline_id) VARCHAR(64)" json:"pipelineId"`
 	Version             string    `xorm:"VARCHAR(255)" json:"version"`
 	Content             string    `xorm:"LONGTEXT" json:"content"`
 	Created             time.Time `xorm:"DATETIME" json:"created"`

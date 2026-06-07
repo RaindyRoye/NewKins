@@ -7,8 +7,8 @@ import (
 type TCmdLine struct {
 	Id       string    `xorm:"not null pk VARCHAR(64)" json:"id"`
 	GroupId  string    `xorm:"VARCHAR(64)" json:"groupId"`
-	BuildId  string    `xorm:"VARCHAR(64)" json:"buildId"`
-	StepId   string    `xorm:"VARCHAR(64)" json:"stepId"`
+	BuildId  string    `xorm:"index(idx_cmdline_build_id) VARCHAR(64)" json:"buildId"`
+	StepId   string    `xorm:"index(idx_cmdline_step_id) VARCHAR(64)" json:"stepId"`
 	Status   string    `xorm:"VARCHAR(50)" json:"status"`
 	Num      int       `xorm:"INT(11)" json:"num"`
 	Code     int       `xorm:"INT(11)" json:"code"`

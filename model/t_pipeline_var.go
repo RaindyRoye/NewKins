@@ -3,7 +3,7 @@ package model
 type TPipelineVar struct {
 	Aid        int64  `xorm:"not null pk autoincr BIGINT(20)" json:"aid"`
 	Uid        string `xorm:"VARCHAR(64)" json:"uid"`
-	PipelineId string `xorm:"VARCHAR(64)" json:"pipelineId"`
+	PipelineId string `xorm:"index(idx_pipevar_pipeline_id) VARCHAR(64)" json:"pipelineId"`
 	Name       string `xorm:"VARCHAR(255)" json:"name"`
 	Value      string `xorm:"text" json:"value"`
 	Remarks    string `xorm:"VARCHAR(255)" json:"remarks"`

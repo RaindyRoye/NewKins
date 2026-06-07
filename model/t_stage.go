@@ -7,7 +7,7 @@ import (
 type TStage struct {
 	Id                string    `xorm:"not null pk VARCHAR(64)" json:"id"`
 	PipelineVersionId string    `xorm:"comment('流水线id') VARCHAR(64)" json:"pipelineVersionId"`
-	BuildId           string    `xorm:"VARCHAR(64)" json:"buildId"`
+	BuildId           string    `xorm:"index(idx_stage_build_id) VARCHAR(64)" json:"buildId"`
 	Status            string    `xorm:"comment('构建状态') VARCHAR(100)" json:"status"`
 	Error             string    `xorm:"comment('错误信息') VARCHAR(500)" json:"error"`
 	Name              string    `xorm:"comment('名字') VARCHAR(255)" json:"name"`

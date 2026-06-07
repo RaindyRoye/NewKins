@@ -6,8 +6,8 @@ import (
 
 type TStep struct {
 	Id                string    `xorm:"not null pk VARCHAR(64)" json:"id"`
-	BuildId           string    `xorm:"VARCHAR(64)" json:"buildId"`
-	StageId           string    `xorm:"comment('流水线id') VARCHAR(100)" json:"stageId"`
+	BuildId           string    `xorm:"index(idx_step_build_id) VARCHAR(64)" json:"buildId"`
+	StageId           string    `xorm:"index(idx_step_stage_id) comment('流水线id') VARCHAR(100)" json:"stageId"`
 	DisplayName       string    `xorm:"VARCHAR(255)" json:"displayName"`
 	PipelineVersionId string    `xorm:"comment('流水线id') VARCHAR(64)" json:"pipelineVersionId"`
 	Step              string    `xorm:"VARCHAR(255)" json:"step"`

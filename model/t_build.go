@@ -6,8 +6,8 @@ import (
 
 type TBuild struct {
 	Id                string    `xorm:"not null pk VARCHAR(64)" json:"id"`
-	PipelineId        string    `xorm:"VARCHAR(64)" json:"pipelineId"`
-	PipelineVersionId string    `xorm:"VARCHAR(64)" json:"pipelineVersionId"`
+	PipelineId        string    `xorm:"index(idx_build_pipeline_id) VARCHAR(64)" json:"pipelineId"`
+	PipelineVersionId string    `xorm:"index(idx_build_pipeline_version_id) VARCHAR(64)" json:"pipelineVersionId"`
 	Status            string    `xorm:"comment('构建状态') VARCHAR(100)" json:"status"`
 	Error             string    `xorm:"comment('错误信息') VARCHAR(500)" json:"error"`
 	Event             string    `xorm:"comment('事件') VARCHAR(100)" json:"event"`
