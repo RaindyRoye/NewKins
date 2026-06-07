@@ -40,14 +40,14 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 	case hook.GitlabEventPR:
 		wb, err = parsePullRequestHook(data)
 	default:
-		return nil, fmt.Errorf("hook含有未知的header:%v", req.Header.Get(hook.GitlabEvent))
+		return nil, fmt.Errorf("hook contains unknown header: %v", req.Header.Get(hook.GitlabEvent))
 	}
 	if err != nil {
 		return nil, err
 	}
 	sig := req.Header.Get("X-Gitlab-Token")
 	if secret != sig {
-		return wb, errors.New("密钥不正确")
+		return wb, errors.New("secret validation failed")
 	}
 	return wb, nil
 }

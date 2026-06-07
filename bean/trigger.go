@@ -14,16 +14,16 @@ type TriggerParam struct {
 
 func (c *TriggerParam) Check() error {
 	if c.PipelineId == "" {
-		return errors.New("流水线ID不能为空")
+		return errors.New("pipeline ID is required")
 	}
 	if c.Types == "" {
-		return errors.New("触发器类型不能为空")
+		return errors.New("trigger type is required")
 	}
 	if c.Name == "" {
-		return errors.New("触发器名称不能为空")
+		return errors.New("trigger name is required")
 	}
 	if c.Params == "" {
-		return errors.New("触发器参数不能为空")
+		return errors.New("trigger params is required")
 	}
 	return nil
 }

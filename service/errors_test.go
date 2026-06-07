@@ -70,18 +70,18 @@ func TestSentinelErrors_ErrorMessages(t *testing.T) {
 		err  error
 		want string
 	}{
-		{ErrPipelineNotFound, "流水线不存在"},
-		{ErrPipelineYmlEmpty, "流水线Yaml为空"},
-		{ErrTriggerNoParams, "触发器没有配置参数"},
-		{ErrHookTypeEmpty, "hookType为空"},
-		{ErrWebhookParseFailed, "webhook解析失败"},
-		{ErrWebhookEventMismatch, "webhook事件不匹配"},
-		{ErrBranchMismatch, "分支不匹配"},
-		{ErrTriggerNoSecret, "触发器没有配置密钥"},
-		{ErrTriggerSecretMismatch, "密钥不正确"},
-		{ErrPermissionDenied, "触发器创建者没有权限"},
-		{ErrParamDataNil, "data is nil"},
-		{ErrParamNotFound, "not found param"},
+		{ErrPipelineNotFound, "pipeline not found"},
+		{ErrPipelineYmlEmpty, "pipeline YAML content is empty"},
+		{ErrTriggerNoParams, "trigger has no configuration parameters"},
+		{ErrHookTypeEmpty, "hook type is empty"},
+		{ErrWebhookParseFailed, "failed to parse webhook payload"},
+		{ErrWebhookEventMismatch, "webhook event type does not match"},
+		{ErrBranchMismatch, "branch does not match filter"},
+		{ErrTriggerNoSecret, "trigger secret is not configured"},
+		{ErrTriggerSecretMismatch, "trigger secret does not match"},
+		{ErrPermissionDenied, "permission denied"},
+		{ErrParamDataNil, "parameter data is nil"},
+		{ErrParamNotFound, "parameter not found"},
 	}
 
 	for _, tt := range tests {

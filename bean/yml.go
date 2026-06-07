@@ -107,29 +107,29 @@ func (c *Pipeline) ConvertCmd() {
 func (c *Pipeline) Check() error {
 	stages := make(map[string]map[string]*Step)
 	if len(c.Stages) == 0 {
-		return errors.New("stages 为空")
+		return errors.New("stages is empty")
 	}
 	for _, v := range c.Stages {
 		if v.Name == "" {
-			return errors.New("stages name 为空")
+			return errors.New("stage name is empty")
 		}
 		if len(v.Steps) == 0 {
-			return errors.New("step 为空")
+			return errors.New("steps is empty")
 		}
 		if _, ok := stages[v.Name]; ok {
-			return fmt.Errorf("build stages.%s 重复", v.Name)
+			return fmt.Errorf("duplicate stage name: %s", v.Name)
 		}
 		m := map[string]*Step{}
 		stages[v.Name] = m
 		for _, e := range v.Steps {
 			if strings.TrimSpace(e.Step) == "" {
-				return errors.New("step 插件为空")
+				return errors.New("step plugin is empty")
 			}
 			if e.Name == "" {
-				return errors.New("step name 为空")
+				return errors.New("step name is empty")
 			}
 			if _, ok := m[e.Name]; ok {
-				return fmt.Errorf("steps.%s 重复", e.Name)
+				return fmt.Errorf("duplicate step name: %s", e.Name)
 			}
 			m[e.Name] = e
 		}
