@@ -52,6 +52,7 @@ func Run() error {
 	if err != nil {
 		return fmt.Errorf("initDb: %w", err)
 	}
+	ensureIndexes()
 	err = initCache()
 	if err != nil {
 		return fmt.Errorf("initCache: %w", err)
