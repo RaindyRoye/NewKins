@@ -29,6 +29,9 @@ func CheckOutHash(repository *git.Repository, hash string) error {
 }
 
 func CheckOut(repository *git.Repository, option *git.CheckoutOptions) error {
+	if repository == nil {
+		return fmt.Errorf("checkout: repository is nil")
+	}
 	worktree, err := repository.Worktree()
 	if err != nil {
 		return fmt.Errorf("get worktree: %w", err)
@@ -47,5 +50,8 @@ func GetLogsHash(repository *git.Repository, hash string) (object.CommitIter, er
 }
 
 func GetLogs(repository *git.Repository, option *git.LogOptions) (object.CommitIter, error) {
+	if repository == nil {
+		return nil, fmt.Errorf("get logs: repository is nil")
+	}
 	return repository.Log(option)
 }
