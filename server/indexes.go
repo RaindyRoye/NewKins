@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/gokins/gokins/comm"
@@ -103,14 +104,14 @@ func createIndexIfNotExists(table, indexName, columns string) error {
 			if strings.Contains(msg, "Duplicate key name") || strings.Contains(msg, "1061") {
 				return nil
 			}
-			return err
+			return fmt.Errorf("create mysql index %s on %s: %w", indexName, table, err)
 		}
 	} else {
 		// SQLite and PostgreSQL support IF NOT EXISTS
 		sql = "CREATE INDEX IF NOT EXISTS " + indexName + " ON " + table + " (" + columns + ")"
 		_, err := comm.Db.Exec(sql)
 		if err != nil {
-			return err
+			return fmt.Errorf("create index %s on %s: %w", indexName, table, err)
 		}
 	}
 	return nil

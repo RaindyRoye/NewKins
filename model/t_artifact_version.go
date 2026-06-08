@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -30,13 +31,16 @@ func (c *TArtifactVersion) ReadFiles() error {
 	dir := filepath.Join(comm.WorkPath, common.PathArtifacts, c.Id)
 	fls, err := c.readDir(dir)
 	c.Files = fls
-	return err
+	if err != nil {
+		return fmt.Errorf("read artifact files %q: %w", c.Id, err)
+	}
+	return nil
 }
 func (c *TArtifactVersion) readDir(pth string) ([]hbtp.Map, error) {
 	var rts []hbtp.Map
 	fls, err := os.ReadDir(pth)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read artifact dir %s: %w", pth, err)
 	}
 	for _, v := range fls {
 		if v.IsDir() {
