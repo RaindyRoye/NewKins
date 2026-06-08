@@ -89,7 +89,7 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 		c.String(500, "hbtp host err:%s", m.Server.HbtpHost)
 		return
 	}
-	if m.Datasource.Driver == comm.DATASOURCE_DRIVER_MYSQL || m.Datasource.Driver == comm.DATASOURCE_DRIVER_POSTGRES {
+	if m.Datasource.Driver == comm.DatasourceDriverMySQL || m.Datasource.Driver == comm.DatasourceDriverPostgres {
 		if !common.RegHost2.MatchString(m.Datasource.Host) {
 			c.String(500, "dbhost err:%s", m.Datasource.Host)
 			return

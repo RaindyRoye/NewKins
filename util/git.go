@@ -19,7 +19,7 @@ func CloneRepo(path string, option *git.CloneOptions, ctx context.Context) (*git
 
 func CheckOutHash(repository *git.Repository, hash string) error {
 	if !plumbing.IsHash(hash) {
-		return fmt.Errorf("%s Is Not Hash", hash)
+		return fmt.Errorf("checkout: %q is not a valid git hash", hash)
 	}
 	options := &git.CheckoutOptions{
 		Force: true,

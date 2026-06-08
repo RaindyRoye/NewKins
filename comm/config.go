@@ -16,6 +16,18 @@ type Config struct {
 	} `yaml:"datasource"`
 }
 
-const DATASOURCE_DRIVER_MYSQL = "mysql"
-const DATASOURCE_DRIVER_POSTGRES = "postgres"
-const DATASOURCE_DRIVER_SQLITE = "sqlite"
+// Idiomatic Go constant names for datasource drivers.
+const (
+	DatasourceDriverMySQL    = "mysql"
+	DatasourceDriverPostgres = "postgres"
+	DatasourceDriverSQLite   = "sqlite"
+)
+
+// Deprecated: Use DatasourceDriverMySQL instead.
+const DATASOURCE_DRIVER_MYSQL = DatasourceDriverMySQL
+
+// Deprecated: Use DatasourceDriverPostgres instead.
+const DATASOURCE_DRIVER_POSTGRES = DatasourceDriverPostgres
+
+// Deprecated: Use DatasourceDriverSQLite instead.
+const DATASOURCE_DRIVER_SQLITE = DatasourceDriverSQLite

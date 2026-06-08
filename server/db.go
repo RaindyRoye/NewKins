@@ -16,17 +16,17 @@ import (
 
 func initDb() error {
 	var err error
-	dvs := comm.DATASOURCE_DRIVER_MYSQL
+	dvs := comm.DatasourceDriverMySQL
 	ul := comm.Cfg.Datasource.Url
 	if comm.Cfg.Datasource.Driver != "" {
 		dvs = comm.Cfg.Datasource.Driver
 	}
-	comm.IsMySQL = dvs == comm.DATASOURCE_DRIVER_MYSQL
+	comm.IsMySQL = dvs == comm.DatasourceDriverMySQL
 	if !comm.Installed {
 		switch dvs {
-		case comm.DATASOURCE_DRIVER_MYSQL:
+		case comm.DatasourceDriverMySQL:
 			err = migrates.UpMysqlMigrate(ul)
-		case comm.DATASOURCE_DRIVER_POSTGRES:
+		case comm.DatasourceDriverPostgres:
 			err = migrates.UpPostgresMigrate(ul)
 		default:
 			err = migrates.UpSqliteMigrate(ul)
