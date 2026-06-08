@@ -80,7 +80,7 @@ func (c *TimerEngine) execItem(v *timerExec) {
 			v.tick = now.Add(time.Hour * 24 * 30)
 		}
 
-		rb, err := service.TriggerTimer(v.tt)
+		rb, err := service.TriggerTimer(comm.Ctx, v.tt)
 		if err != nil {
 			logrus.Errorf("TriggerTimer err:%v", err)
 		} else {

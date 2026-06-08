@@ -69,7 +69,7 @@ func (HookController) web(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "触发器不存在或者未激活")
 		return
 	}
-	rb, err := service.TriggerWeb(tt, secret)
+	rb, err := service.TriggerWeb(c.Request.Context(), tt, secret)
 	if err != nil {
 		util.RespInternalErr(c, "trigger web", err)
 		return

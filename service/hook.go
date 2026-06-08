@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -35,7 +36,7 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 		if infos != "" {
 			ttr.Infos = infos
 		}
-		if _, err := comm.Db.Context(comm.Ctx).InsertOne(ttr); err != nil {
+		if _, err := comm.Db.Context(req.Context()).InsertOne(ttr); err != nil {
 			logrus.Errorf("TriggerHook: failed to save trigger run: %v", err)
 		}
 	}()
@@ -107,7 +108,7 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 	return rb, nil
 }
 
-func TriggerWeb(tt *model.TTrigger, secret string) (rb *runtime.Build, err error) {
+func TriggerWeb(ctx context.Context, tt *model.TTrigger, secret string) (rb *runtime.Build, err error) {
 	tvpId := ""
 	defer func() {
 		ttr := &model.TTriggerRun{
@@ -120,7 +121,7 @@ func TriggerWeb(tt *model.TTrigger, secret string) (rb *runtime.Build, err error
 		if err != nil {
 			ttr.Error = err.Error()
 		}
-		if _, err := comm.Db.Context(comm.Ctx).InsertOne(ttr); err != nil {
+		if _, err := comm.Db.Context(ctx).InsertOne(ttr); err != nil {
 			logrus.Errorf("TriggerWeb: failed to save trigger run: %v", err)
 		}
 	}()
@@ -150,14 +151,14 @@ func TriggerWeb(tt *model.TTrigger, secret string) (rb *runtime.Build, err error
 	if s, ok := m["branch"]; ok {
 		branch = s
 	}
-	tvp, rb, err := Run(comm.Ctx, tt.Uid, tt.PipelineId, branch, "web")
+	tvp, rb, err := Run(ctx, tt.Uid, tt.PipelineId, branch, "web")
 	if err != nil {
 		return nil, err
 	}
 	tvpId = tvp.Id
 	return rb, nil
 }
-func TriggerTimer(tt *model.TTrigger) (rb *runtime.Build, err error) {
+func TriggerTimer(ctx context.Context, tt *model.TTrigger) (rb *runtime.Build, err error) {
 	ttr := &model.TTriggerRun{
 		Id:      utils.NewXid(),
 		Tid:     tt.Id,
@@ -168,7 +169,7 @@ func TriggerTimer(tt *model.TTrigger) (rb *runtime.Build, err error) {
 		if err != nil {
 			ttr.Error = err.Error()
 		}
-		if _, err := comm.Db.Context(comm.Ctx).InsertOne(ttr); err != nil {
+		if _, err := comm.Db.Context(ctx).InsertOne(ttr); err != nil {
 			logrus.Errorf("TriggerTimer: failed to save trigger run: %v", err)
 		}
 	}()
@@ -176,7 +177,7 @@ func TriggerTimer(tt *model.TTrigger) (rb *runtime.Build, err error) {
 	if err != nil {
 		return nil, err
 	}
-	tvp, rb, err := Run(comm.Ctx, tt.Uid, tt.PipelineId, "", "timer")
+	tvp, rb, err := Run(ctx, tt.Uid, tt.PipelineId, "", "timer")
 	if err != nil {
 		return nil, err
 	}

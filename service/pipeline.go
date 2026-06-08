@@ -355,7 +355,8 @@ func replaceMaps(envs map[string]string, mVars map[string]*runtime.Variables) ma
 
 // BatchBuildCounts returns build counts for multiple pipeline IDs in a single query,
 // eliminating the N+1 query problem when listing pipelines.
-func BatchBuildCounts(pipelineIds []string) (map[string]int64, error) {
+// Uses the provided context for database operations.
+func BatchBuildCounts(ctx context.Context, pipelineIds []string) (map[string]int64, error) {
 	if len(pipelineIds) == 0 {
 		return map[string]int64{}, nil
 	}
@@ -364,7 +365,7 @@ func BatchBuildCounts(pipelineIds []string) (map[string]int64, error) {
 		Cnt        int64  `xorm:"cnt"`
 	}
 	var counts []buildCount
-	err := comm.Db.SQL(
+	err := comm.Db.Context(ctx).SQL(
 		"SELECT pipeline_id, COUNT(*) as cnt FROM t_build WHERE pipeline_id IN (?) GROUP BY pipeline_id",
 		pipelineIds,
 	).Find(&counts)
@@ -380,12 +381,13 @@ func BatchBuildCounts(pipelineIds []string) (map[string]int64, error) {
 
 // BatchLatestBuilds returns the latest build for each pipeline ID in a single query.
 // Uses a correlated subquery to efficiently find the most recent build per pipeline.
-func BatchLatestBuilds(pipelineIds []string) (map[string]*model.RunBuild, error) {
+// Uses the provided context for database operations.
+func BatchLatestBuilds(ctx context.Context, pipelineIds []string) (map[string]*model.RunBuild, error) {
 	if len(pipelineIds) == 0 {
 		return map[string]*model.RunBuild{}, nil
 	}
 	var builds []*model.RunBuild
-	err := comm.Db.SQL(`
+	err := comm.Db.Context(ctx).SQL(`
 		SELECT b1.* FROM t_build b1
 		WHERE b1.pipeline_id IN (?)
 		AND b1.created = (
@@ -408,12 +410,13 @@ func BatchLatestBuilds(pipelineIds []string) (map[string]*model.RunBuild, error)
 
 // BatchLatestBuildsForVersions returns the latest build for each pipeline version ID
 // in a single query, eliminating N+1 queries in the pipelineVersions endpoint.
-func BatchLatestBuildsForVersions(versionIds []string) (map[string]*model.RunBuild, error) {
+// Uses the provided context for database operations.
+func BatchLatestBuildsForVersions(ctx context.Context, versionIds []string) (map[string]*model.RunBuild, error) {
 	if len(versionIds) == 0 {
 		return map[string]*model.RunBuild{}, nil
 	}
 	var builds []*model.RunBuild
-	err := comm.Db.SQL(`
+	err := comm.Db.Context(ctx).SQL(`
 		SELECT b1.* FROM t_build b1
 		WHERE b1.pipeline_version_id IN (?)
 		AND b1.created = (
@@ -435,12 +438,13 @@ func BatchLatestBuildsForVersions(versionIds []string) (map[string]*model.RunBui
 
 // BatchGetUsers fetches multiple users by their IDs in a single query,
 // returning a map from user ID to user struct.
-func BatchGetUsers(uids []string) (map[string]*model.TUser, error) {
+// Uses the provided context for database operations.
+func BatchGetUsers(ctx context.Context, uids []string) (map[string]*model.TUser, error) {
 	if len(uids) == 0 {
 		return map[string]*model.TUser{}, nil
 	}
 	var users []*model.TUser
-	err := comm.Db.In("id", uids).Find(&users)
+	err := comm.Db.Context(ctx).In("id", uids).Find(&users)
 	if err != nil {
 		return nil, fmt.Errorf("batch get users: %w", err)
 	}

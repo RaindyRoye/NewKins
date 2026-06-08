@@ -1,6 +1,7 @@
 package route
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -85,7 +86,7 @@ func (PipelineController) orgPipelines(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	//}
-	if err := fillPipelineListBuildInfo(ls); err != nil {
+	if err := fillPipelineListBuildInfo(c.Request.Context(), ls); err != nil {
 		util.RespInternalErr(c, "fill pipeline info", err)
 		return
 	}
@@ -120,7 +121,7 @@ func (PipelineController) getPipelines(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	//}
-	if err := fillPipelineListBuildInfo(ls); err != nil {
+	if err := fillPipelineListBuildInfo(c.Request.Context(), ls); err != nil {
 		util.RespInternalErr(c, "fill pipeline info", err)
 		return
 	}
@@ -532,7 +533,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 	for i, v := range ls {
 		versionIds[i] = v.Id
 	}
-	latestBuilds, err := service.BatchLatestBuildsForVersions(versionIds)
+	latestBuilds, err := service.BatchLatestBuildsForVersions(c.Request.Context(), versionIds)
 	if err != nil {
 		util.RespInternalErr(c, "batch load builds", err)
 		return
@@ -776,7 +777,7 @@ func (PipelineController) varDel(c *gin.Context, m *hbtp.Map) {
 // fillPipelineListBuildInfo enriches a list of pipelines with user info, build counts,
 // and latest build data using batch queries instead of N+1 individual queries.
 // This reduces database round-trips from O(N) to O(1) for each page of results.
-func fillPipelineListBuildInfo(ls []*model.TPipeline) error {
+func fillPipelineListBuildInfo(ctx context.Context, ls []*model.TPipeline) error {
 	if len(ls) == 0 {
 		return nil
 	}
@@ -796,19 +797,19 @@ func fillPipelineListBuildInfo(ls []*model.TPipeline) error {
 	for uid := range uidSet {
 		uids = append(uids, uid)
 	}
-	userMap, err := service.BatchGetUsers(uids)
+	userMap, err := service.BatchGetUsers(ctx, uids)
 	if err != nil {
 		return fmt.Errorf("batch get users: %w", err)
 	}
 
 	// Batch fetch build counts
-	countMap, err := service.BatchBuildCounts(pipelineIds)
+	countMap, err := service.BatchBuildCounts(ctx, pipelineIds)
 	if err != nil {
 		return fmt.Errorf("batch build counts: %w", err)
 	}
 
 	// Batch fetch latest builds
-	buildMap, err := service.BatchLatestBuilds(pipelineIds)
+	buildMap, err := service.BatchLatestBuilds(ctx, pipelineIds)
 	if err != nil {
 		return fmt.Errorf("batch latest builds: %w", err)
 	}

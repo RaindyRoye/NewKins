@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 
 	"github.com/gokins/core/runtime"
@@ -308,7 +309,7 @@ func TestReplaceStages_NilInput(t *testing.T) {
 }
 
 func TestBatchBuildCounts_EmptyInput(t *testing.T) {
-	result, err := BatchBuildCounts(nil)
+	result, err := BatchBuildCounts(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("BatchBuildCounts(nil) error = %v", err)
 	}
@@ -316,7 +317,7 @@ func TestBatchBuildCounts_EmptyInput(t *testing.T) {
 		t.Errorf("BatchBuildCounts(nil) should return empty map, got %v", result)
 	}
 
-	result, err = BatchBuildCounts([]string{})
+	result, err = BatchBuildCounts(context.Background(), []string{})
 	if err != nil {
 		t.Fatalf("BatchBuildCounts([]) error = %v", err)
 	}
@@ -326,7 +327,7 @@ func TestBatchBuildCounts_EmptyInput(t *testing.T) {
 }
 
 func TestBatchLatestBuilds_EmptyInput(t *testing.T) {
-	result, err := BatchLatestBuilds(nil)
+	result, err := BatchLatestBuilds(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("BatchLatestBuilds(nil) error = %v", err)
 	}
@@ -334,7 +335,7 @@ func TestBatchLatestBuilds_EmptyInput(t *testing.T) {
 		t.Errorf("BatchLatestBuilds(nil) should return empty map, got %v", result)
 	}
 
-	result, err = BatchLatestBuilds([]string{})
+	result, err = BatchLatestBuilds(context.Background(), []string{})
 	if err != nil {
 		t.Fatalf("BatchLatestBuilds([]) error = %v", err)
 	}
@@ -344,7 +345,7 @@ func TestBatchLatestBuilds_EmptyInput(t *testing.T) {
 }
 
 func TestBatchLatestBuildsForVersions_EmptyInput(t *testing.T) {
-	result, err := BatchLatestBuildsForVersions(nil)
+	result, err := BatchLatestBuildsForVersions(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("BatchLatestBuildsForVersions(nil) error = %v", err)
 	}
@@ -352,7 +353,7 @@ func TestBatchLatestBuildsForVersions_EmptyInput(t *testing.T) {
 		t.Errorf("BatchLatestBuildsForVersions(nil) should return empty map, got %v", result)
 	}
 
-	result, err = BatchLatestBuildsForVersions([]string{})
+	result, err = BatchLatestBuildsForVersions(context.Background(), []string{})
 	if err != nil {
 		t.Fatalf("BatchLatestBuildsForVersions([]) error = %v", err)
 	}
@@ -362,7 +363,7 @@ func TestBatchLatestBuildsForVersions_EmptyInput(t *testing.T) {
 }
 
 func TestBatchGetUsers_EmptyInput(t *testing.T) {
-	result, err := BatchGetUsers(nil)
+	result, err := BatchGetUsers(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("BatchGetUsers(nil) error = %v", err)
 	}
@@ -370,7 +371,7 @@ func TestBatchGetUsers_EmptyInput(t *testing.T) {
 		t.Errorf("BatchGetUsers(nil) should return empty map, got %v", result)
 	}
 
-	result, err = BatchGetUsers([]string{})
+	result, err = BatchGetUsers(context.Background(), []string{})
 	if err != nil {
 		t.Fatalf("BatchGetUsers([]) error = %v", err)
 	}
