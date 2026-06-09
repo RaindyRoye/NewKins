@@ -48,8 +48,8 @@ func (c *TimerEngine) run() {
 		}
 	}()
 
-	c.tasklk.RLock()
-	defer c.tasklk.RUnlock()
+	c.tasklk.Lock()
+	defer c.tasklk.Unlock()
 	for _, v := range c.tasks {
 		c.execItem(v)
 	}
