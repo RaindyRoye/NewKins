@@ -184,21 +184,33 @@ func mainCacheClear() {
 	/*if err := CacheFlush(); err != nil {
 		logrus.Errorf("mainCacheClear err:%v", err)
 	}*/
+	var deleteErrors int
 	err := BCache.Update(func(tx *bolt.Tx) error {
 		bk := tx.Bucket(mainCacheBucket)
 		if bk == nil {
 			return nil
 		}
+		// Collect keys to delete first to avoid mutating during iteration.
+		var toDelete [][]byte
 		_ = bk.ForEach(func(k, v []byte) error {
 			data := parseCacheData(v)
 			if data == nil {
-				return bk.Delete(k)
+				toDelete = append(toDelete, append([]byte(nil), k...))
 			}
 			return nil
 		})
+		for _, k := range toDelete {
+			if err := bk.Delete(k); err != nil {
+				deleteErrors++
+				logrus.Warnf("mainCacheClear: failed to delete expired key %q: %v", k, err)
+			}
+		}
 		return nil
 	})
 	if err != nil {
 		logrus.Errorf("mainCacheClear err:%v", err)
+	}
+	if deleteErrors > 0 {
+		logrus.Warnf("mainCacheClear: %d keys could not be deleted", deleteErrors)
 	}
 }
