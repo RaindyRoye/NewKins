@@ -174,8 +174,8 @@ func (c *JobEngine) Pull(name string, plugs []string) *runners.RunJob {
 
 func (c *JobEngine) Plugins() []string {
 	var rts []string
-	c.exelk.Lock()
-	defer c.exelk.Unlock()
+	c.exelk.RLock()
+	defer c.exelk.RUnlock()
 	for _, v := range c.execs {
 		rts = append(rts, v.plug)
 	}

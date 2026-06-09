@@ -2,6 +2,8 @@ package engine
 
 import (
 	"encoding/json"
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -175,4 +177,105 @@ func TestTimerEngineResetOnePanicRecovery(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error from panic recovery")
 	}
+}
+
+func TestTimerEngineConcurrentResetOneAndDelete(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+
+	// Pre-populate some tasks
+	for i := 0; i < 20; i++ {
+		id := fmt.Sprintf("timer-%d", i)
+		te.tasks[id] = &timerExec{
+			tt:  &model.TTrigger{Id: id},
+			typ: 1,
+		}
+	}
+
+	var wg sync.WaitGroup
+
+	// Concurrent resetOne calls (which now hold the lock internally)
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			futureTime := time.Now().Add(time.Hour)
+			params := map[string]interface{}{
+				"timerType": 1,
+				"dates":     futureTime.Format(time.RFC3339Nano),
+			}
+			paramBytes, _ := json.Marshal(params)
+			tmr := &model.TTrigger{
+				Id:     fmt.Sprintf("timer-%d", n),
+				Types:  "timer",
+				Name:   fmt.Sprintf("test-%d", n),
+				Params: string(paramBytes),
+			}
+			_ = te.resetOne(tmr)
+		}(i)
+	}
+
+	// Concurrent Delete calls
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			te.Delete(fmt.Sprintf("timer-%d", n))
+		}(i)
+	}
+
+	wg.Wait()
+	// If we get here without a race detector complaint, the test passes
+}
+
+func TestTimerEngineConcurrentReadsAndWrites(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+
+	var wg sync.WaitGroup
+
+	// Writers: add tasks
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			futureTime := time.Now().Add(time.Hour)
+			params := map[string]interface{}{
+				"timerType": 2,
+				"dates":     futureTime.Format(time.RFC3339Nano),
+			}
+			paramBytes, _ := json.Marshal(params)
+			tmr := &model.TTrigger{
+				Id:     fmt.Sprintf("concurrent-%d", n),
+				Types:  "timer",
+				Name:   fmt.Sprintf("test-%d", n),
+				Params: string(paramBytes),
+			}
+			_ = te.resetOne(tmr)
+		}(i)
+	}
+
+	// Readers: read tasks via RLock (simulated by accessing tasklk.RLock)
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			te.tasklk.RLock()
+			_ = len(te.tasks)
+			te.tasklk.RUnlock()
+		}()
+	}
+
+	// Deleters: remove tasks
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			te.Delete(fmt.Sprintf("concurrent-%d", n))
+		}(i)
+	}
+
+	wg.Wait()
 }

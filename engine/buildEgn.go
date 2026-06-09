@@ -125,8 +125,8 @@ func (c *BuildEngine) Get(buildid string) (*BuildTask, bool) {
 	if buildid == "" {
 		return nil, false
 	}
-	c.tskslk.Lock()
-	defer c.tskslk.Unlock()
+	c.tskslk.RLock()
+	defer c.tskslk.RUnlock()
 	v, ok := c.tasks[buildid]
 	return v, ok
 }

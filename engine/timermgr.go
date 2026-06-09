@@ -102,8 +102,6 @@ func (c *TimerEngine) refresh() {
 		return
 	}
 
-	c.tasklk.Lock()
-	defer c.tasklk.Unlock()
 	for _, v := range ls {
 		err := c.resetOne(v)
 		if err != nil {
@@ -140,6 +138,8 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 	if err != nil {
 		return fmt.Errorf("parse dates %q: %w", dates, err)
 	}
+	c.tasklk.Lock()
+	defer c.tasklk.Unlock()
 	switch typ {
 	case 0:
 		if time.Since(tms) < 0 {
