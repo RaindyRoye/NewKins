@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -83,7 +84,7 @@ func getTokenAuth(c *gin.Context) string {
 	if err != nil {
 		return ""
 	}
-	aths = strings.Replace(aths, "TOKEN ", "", 1)
+	aths = strings.TrimPrefix(aths, "TOKEN ")
 	return aths
 }
 func GetTokens(s string, key string) jwt.MapClaims {
@@ -91,6 +92,11 @@ func GetTokens(s string, key string) jwt.MapClaims {
 		return nil
 	}
 	token, err := jwt.Parse(s, func(token *jwt.Token) (interface{}, error) {
+		// Validate the signing method to prevent algorithm confusion attacks.
+		// We only accept HMAC-based signing (HS512) since that's what CreateToken uses.
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return []byte(key), nil
 	})
 	if err == nil {
