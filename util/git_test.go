@@ -57,27 +57,30 @@ func initTestRepo(t *testing.T) (*git.Repository, func()) {
 		t.Fatalf("create temp dir: %v", err)
 	}
 
+	cleanup := func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Logf("cleanup temp dir %s: %v", dir, err)
+		}
+	}
+	t.Cleanup(cleanup)
+
 	repo, err := git.PlainInit(dir, false)
 	if err != nil {
-		os.RemoveAll(dir)
 		t.Fatalf("init repo: %v", err)
 	}
 
 	wt, err := repo.Worktree()
 	if err != nil {
-		os.RemoveAll(dir)
 		t.Fatalf("get worktree: %v", err)
 	}
 
 	// Create a file and commit it
 	testFile := filepath.Join(dir, "test.txt")
 	if err := os.WriteFile(testFile, []byte("hello"), 0644); err != nil {
-		os.RemoveAll(dir)
 		t.Fatalf("write file: %v", err)
 	}
 
 	if _, err := wt.Add("test.txt"); err != nil {
-		os.RemoveAll(dir)
 		t.Fatalf("add file: %v", err)
 	}
 
@@ -89,11 +92,10 @@ func initTestRepo(t *testing.T) (*git.Repository, func()) {
 		},
 	})
 	if err != nil {
-		os.RemoveAll(dir)
 		t.Fatalf("commit: %v", err)
 	}
 
-	return repo, func() { os.RemoveAll(dir) }
+	return repo, cleanup
 }
 
 func TestCheckOut_WithRealRepo(t *testing.T) {
@@ -128,7 +130,11 @@ func TestCloneRepo_CancelledContext(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create temp dir: %v", err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Logf("cleanup temp dir %s: %v", dir, err)
+		}
+	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
