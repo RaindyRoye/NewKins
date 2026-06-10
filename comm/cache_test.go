@@ -328,3 +328,83 @@ func TestCache_NilBCache(t *testing.T) {
 		t.Error("CacheFlush with nil BCache should return error")
 	}
 }
+
+func TestMainCacheClear_RemovesExpiredKeepsValid(t *testing.T) {
+	cleanup := setupTestCache(t)
+	defer cleanup()
+
+	// Insert a valid (non-expired) key
+	if err := CacheSet("valid-key", []byte("valid-data"), time.Hour); err != nil {
+		t.Fatalf("CacheSet valid-key: %v", err)
+	}
+
+	// Manually insert an expired key
+	expiredEntry := buildCacheEntry(time.Now().Add(-time.Hour), []byte("expired-data"))
+	if err := BCache.Update(func(tx *bolt.Tx) error {
+		bk, err := tx.CreateBucketIfNotExists(mainCacheBucket)
+		if err != nil {
+			return err
+		}
+		return bk.Put([]byte("expired-key"), expiredEntry)
+	}); err != nil {
+		t.Fatalf("setup expired key: %v", err)
+	}
+
+	// Run the cleanup
+	mainCacheClear()
+
+	// Expired key should be gone
+	_, err := CacheGet("expired-key")
+	if err != ErrKeyNotFound {
+		t.Errorf("expected ErrKeyNotFound for expired key after mainCacheClear, got: %v", err)
+	}
+
+	// Valid key should still exist
+	got, err := CacheGet("valid-key")
+	if err != nil {
+		t.Fatalf("CacheGet valid-key after mainCacheClear: %v", err)
+	}
+	if !bytes.Equal(got, []byte("valid-data")) {
+		t.Errorf("valid-key data = %q, want %q", got, "valid-data")
+	}
+}
+
+func TestMainCacheClear_NilBCache(t *testing.T) {
+	oldCache := BCache
+	BCache = nil
+	defer func() { BCache = oldCache }()
+
+	// Should not panic when BCache is nil
+	mainCacheClear()
+}
+
+func TestMainCacheClear_EmptyBucket(t *testing.T) {
+	cleanup := setupTestCache(t)
+	defer cleanup()
+
+	// Create the bucket but leave it empty
+	if err := BCache.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists(mainCacheBucket)
+		return err
+	}); err != nil {
+		t.Fatalf("create bucket: %v", err)
+	}
+
+	// Should not panic on empty bucket
+	mainCacheClear()
+}
+
+func TestMainCacheClear_UpdatesTimestamp(t *testing.T) {
+	cleanup := setupTestCache(t)
+	defer cleanup()
+
+	before := mainCacheClearTime
+	// Ensure some time passes
+	time.Sleep(10 * time.Millisecond)
+
+	mainCacheClear()
+
+	if !mainCacheClearTime.After(before) {
+		t.Error("mainCacheClearTime should be updated after mainCacheClear")
+	}
+}
