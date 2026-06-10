@@ -57,7 +57,7 @@ func findPages(ses *xorm.Session, ls interface{}, count, page int64, size ...int
 	start := (pageno - 1) * sizeno
 	err := ses.Limit(int(sizeno), int(start)).Find(ls)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("findPages: query data: %w", err)
 	}
 	pagest := count / sizeno
 	if count%sizeno > 0 {
@@ -87,7 +87,7 @@ func FindPages(gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*b
 	sqls = strings.Replace(sqls, "{{limit}}", "", 1)
 	_, err := Db.SQL(sqls, gen.Args...).Get(&count)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("FindPages: count query: %w", err)
 	}
 
 	var pageno int64 = 1
@@ -116,7 +116,7 @@ func FindPages(gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*b
 	}
 	err = ses.SQL(sqls, gen.Args...).Find(ls)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("FindPages: query data: %w", err)
 	}
 	pagest := count / sizeno
 	if count%sizeno > 0 {

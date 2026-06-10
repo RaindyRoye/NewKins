@@ -1,6 +1,7 @@
 package gitlabapi
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -11,7 +12,7 @@ import (
 func New(uri string) (*thirdapi.Client, error) {
 	base, err := url.Parse(uri)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gitlab: parse API URL: %w", err)
 	}
 	client := &wrapper{new(thirdapi.Client)}
 	client.BaseURL = base

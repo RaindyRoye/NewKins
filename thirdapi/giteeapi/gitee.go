@@ -1,6 +1,7 @@
 package giteeapi
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -12,7 +13,7 @@ import (
 func New(uri string) (*thirdapi.Client, error) {
 	base, err := url.Parse(uri)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gitee: parse API URL: %w", err)
 	}
 	if !strings.HasSuffix(base.Path, "/") {
 		base.Path += "/"

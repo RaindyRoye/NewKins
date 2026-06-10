@@ -5,7 +5,47 @@ import (
 	"testing"
 
 	"github.com/gokins/gokins/bean"
+	"xorm.io/builder"
 )
+
+func TestFindCount_NilData(t *testing.T) {
+	_, err := findCount(builder.NewCond(), nil)
+	if err == nil {
+		t.Fatal("expected error for nil data, got nil")
+	}
+	if !strings.Contains(err.Error(), "non-nil pointer") {
+		t.Errorf("error = %q, want containing \"non-nil pointer\"", err.Error())
+	}
+}
+
+func TestFindCount_NonSlicePointer(t *testing.T) {
+	type item struct{ Name string }
+	var v item
+	_, err := findCount(builder.NewCond(), &v)
+	if err == nil {
+		t.Fatal("expected error for pointer to non-slice, got nil")
+	}
+	if !strings.Contains(err.Error(), "expected pointer to slice") {
+		t.Errorf("error = %q, want containing \"expected pointer to slice\"", err.Error())
+	}
+}
+
+func TestFindCount_NonPointer(t *testing.T) {
+	_, err := findCount(builder.NewCond(), 42)
+	if err == nil {
+		t.Fatal("expected error for non-pointer, got nil")
+	}
+	if !strings.Contains(err.Error(), "expected pointer to slice") {
+		t.Errorf("error = %q, want containing \"expected pointer to slice\"", err.Error())
+	}
+}
+
+func TestFindCount_StringArg(t *testing.T) {
+	_, err := findCount(builder.NewCond(), "not a slice")
+	if err == nil {
+		t.Fatal("expected error for string argument, got nil")
+	}
+}
 
 func TestFindPages_MissingOrderByClause(t *testing.T) {
 	// FindPages should return an error (not panic) when SQL lacks "\nORDER BY"
