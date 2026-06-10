@@ -1,6 +1,7 @@
 package giteeapi
 
 import (
+	"context"
 	"fmt"
 	"testing"
 )
@@ -24,7 +25,7 @@ import (
 
 func TestGiteeCreateFile(t *testing.T) {
 	newDefault := NewDefault()
-	_, err := newDefault.Repositories.GetRepos("abd17cf076f3a208cc359302dfaadc42", "all", "pushed", "desc", "", 1, 20)
+	_, err := newDefault.Repositories.GetRepos(context.Background(), "abd17cf076f3a208cc359302dfaadc42", "all", "pushed", "desc", "", 1, 20)
 	if err != nil {
 		fmt.Println("err", err)
 	}

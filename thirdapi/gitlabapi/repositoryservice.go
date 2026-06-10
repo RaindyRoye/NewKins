@@ -2,6 +2,7 @@ package gitlabapi
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,13 +19,13 @@ type RepositoryService struct {
 	client *wrapper
 }
 
-func (s *RepositoryService) GetRepos(accessToken, username, types, sort, direction string, page, perPage int) (*thirdapi.RepositoryPage, error) {
+func (s *RepositoryService) GetRepos(ctx context.Context, accessToken, username, types, sort, direction string, page, perPage int) (*thirdapi.RepositoryPage, error) {
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGitlabGetRepos, username, types, page, perPage))
 	if err != nil {
 		return nil, fmt.Errorf("gitlab GetRepos: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitlab Api GetRepos url : %v", parse.String())
-	req, err := http.NewRequest("GET", parse.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", parse.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("gitlab GetRepos: create request: %w", err)
 	}
@@ -62,13 +63,13 @@ func (s *RepositoryService) GetRepos(accessToken, username, types, sort, directi
 	return rp, nil
 }
 
-func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string) error {
+func (s *RepositoryService) DeleteHooks(ctx context.Context, accessToken, owner, repo, hookID string) error {
 	escape := url.QueryEscape(owner + "/" + repo)
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGitlabDeleteHooks, escape, hookID))
 	if err != nil {
 		return fmt.Errorf("gitlab DeleteHooks: parse URL: %w", err)
 	}
-	request, err := http.NewRequest("DELETE", parse.String(), nil)
+	request, err := http.NewRequestWithContext(ctx, "DELETE", parse.String(), nil)
 	if err != nil {
 		return fmt.Errorf("gitlab DeleteHooks: create request: %w", err)
 	}
@@ -97,7 +98,7 @@ func (s *RepositoryService) DeleteHooks(accessToken, owner, repo, hookID string)
   backURL : 回调地址
   password : webhook 密钥
 */
-func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, password string) (*thirdapi.RepositoryHook, error) {
+func (s *RepositoryService) CreateWebHooks(ctx context.Context, accessToken, owner, repo, backURL, password string) (*thirdapi.RepositoryHook, error) {
 	escape := url.QueryEscape(owner + "/" + repo)
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGitlabCreateHooks, escape))
 	if err != nil {
@@ -113,7 +114,7 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 		return nil, fmt.Errorf("gitlab CreateWebHooks: marshal request body: %w", err)
 	}
 	logrus.Infof("gitlab CreateWebHooks json : %s", string(marshal))
-	request, err := http.NewRequest("POST", parse.String(), bytes.NewBuffer(marshal))
+	request, err := http.NewRequestWithContext(ctx, "POST", parse.String(), bytes.NewBuffer(marshal))
 	if err != nil {
 		return nil, fmt.Errorf("gitlab CreateWebHooks: create request: %w", err)
 	}
@@ -140,14 +141,14 @@ func (s *RepositoryService) CreateWebHooks(accessToken, owner, repo, backURL, pa
 	return convertHook(k), nil
 }
 
-func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]*thirdapi.RepositoryBranch, error) {
+func (s *RepositoryService) GetRepoBranches(ctx context.Context, accessToken, owner, repo string) ([]*thirdapi.RepositoryBranch, error) {
 	escape := url.QueryEscape(owner + "/" + repo)
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGitlabGetRepoBranches, escape))
 	if err != nil {
 		return nil, fmt.Errorf("gitlab GetRepoBranches: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitlab Api GetRepoBranches url : %v", parse)
-	req, err := http.NewRequest("GET", parse.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", parse.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("gitlab GetRepoBranches: create request: %w", err)
 	}
@@ -173,14 +174,14 @@ func (s *RepositoryService) GetRepoBranches(accessToken, owner, repo string) ([]
 	return convertBranchList(branchList), nil
 }
 
-func (s *RepositoryService) GetWebHooks(accessToken, owner, repo string, page, perPage int) ([]*thirdapi.RepositoryHook, error) {
+func (s *RepositoryService) GetWebHooks(ctx context.Context, accessToken, owner, repo string, page, perPage int) ([]*thirdapi.RepositoryHook, error) {
 	escape := url.QueryEscape(owner + "/" + repo)
 	parse, err := s.client.BaseURL.Parse(s.client.BaseURL.String() + fmt.Sprintf(ApiGitlabGetHooks, escape, page, perPage))
 	if err != nil {
 		return nil, fmt.Errorf("gitlab GetWebHooks: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitlab Api GetWebHooks url : %v", parse)
-	req, err := http.NewRequest("GET", parse.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", parse.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("gitlab GetWebHooks: create request: %w", err)
 	}

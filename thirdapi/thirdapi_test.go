@@ -1,6 +1,7 @@
 package thirdapi
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -187,19 +188,19 @@ func TestClientCreation(t *testing.T) {
 // mockRepoService implements RepositoryService for interface verification.
 type mockRepoService struct{}
 
-func (m *mockRepoService) GetRepos(accessToken, username, types, sort, direction string, page, perPage int) (*RepositoryPage, error) {
+func (m *mockRepoService) GetRepos(ctx context.Context, accessToken, username, types, sort, direction string, page, perPage int) (*RepositoryPage, error) {
 	return &RepositoryPage{TotalPages: 1, Ropes: []*Repository{{Id: "1"}}}, nil
 }
-func (m *mockRepoService) DeleteHooks(accessToken, owner, repo, hookId string) error {
+func (m *mockRepoService) DeleteHooks(ctx context.Context, accessToken, owner, repo, hookId string) error {
 	return nil
 }
-func (m *mockRepoService) CreateWebHooks(accessToken, owner, repo, backUrl, password string) (*RepositoryHook, error) {
+func (m *mockRepoService) CreateWebHooks(ctx context.Context, accessToken, owner, repo, backUrl, password string) (*RepositoryHook, error) {
 	return &RepositoryHook{Id: 1}, nil
 }
-func (m *mockRepoService) GetRepoBranches(accessToken, owner, repo string) ([]*RepositoryBranch, error) {
+func (m *mockRepoService) GetRepoBranches(ctx context.Context, accessToken, owner, repo string) ([]*RepositoryBranch, error) {
 	return []*RepositoryBranch{{Name: "main"}}, nil
 }
-func (m *mockRepoService) GetWebHooks(accessToken, owner, repo string, page, perPage int) ([]*RepositoryHook, error) {
+func (m *mockRepoService) GetWebHooks(ctx context.Context, accessToken, owner, repo string, page, perPage int) ([]*RepositoryHook, error) {
 	return []*RepositoryHook{{Id: 1}}, nil
 }
 
@@ -210,7 +211,7 @@ func TestRepositoryServiceInterface(t *testing.T) {
 	svc := &mockRepoService{}
 
 	// Test GetRepos
-	page, err := svc.GetRepos("token", "user", "", "", "", 1, 10)
+	page, err := svc.GetRepos(context.Background(), "token", "user", "", "", "", 1, 10)
 	if err != nil {
 		t.Fatalf("GetRepos failed: %v", err)
 	}
@@ -219,12 +220,12 @@ func TestRepositoryServiceInterface(t *testing.T) {
 	}
 
 	// Test DeleteHooks
-	if err := svc.DeleteHooks("token", "owner", "repo", "1"); err != nil {
+	if err := svc.DeleteHooks(context.Background(), "token", "owner", "repo", "1"); err != nil {
 		t.Fatalf("DeleteHooks failed: %v", err)
 	}
 
 	// Test CreateWebHooks
-	hook, err := svc.CreateWebHooks("token", "owner", "repo", "https://callback.com", "pass")
+	hook, err := svc.CreateWebHooks(context.Background(), "token", "owner", "repo", "https://callback.com", "pass")
 	if err != nil {
 		t.Fatalf("CreateWebHooks failed: %v", err)
 	}
@@ -233,7 +234,7 @@ func TestRepositoryServiceInterface(t *testing.T) {
 	}
 
 	// Test GetRepoBranches
-	branches, err := svc.GetRepoBranches("token", "owner", "repo")
+	branches, err := svc.GetRepoBranches(context.Background(), "token", "owner", "repo")
 	if err != nil {
 		t.Fatalf("GetRepoBranches failed: %v", err)
 	}
@@ -242,7 +243,7 @@ func TestRepositoryServiceInterface(t *testing.T) {
 	}
 
 	// Test GetWebHooks
-	hooks, err := svc.GetWebHooks("token", "owner", "repo", 1, 10)
+	hooks, err := svc.GetWebHooks(context.Background(), "token", "owner", "repo", 1, 10)
 	if err != nil {
 		t.Fatalf("GetWebHooks failed: %v", err)
 	}
@@ -264,7 +265,7 @@ func TestClientWithRepositoryService(t *testing.T) {
 		t.Fatal("expected Repositories to be set")
 	}
 
-	page, err := client.Repositories.GetRepos("token", "user", "", "", "", 1, 10)
+	page, err := client.Repositories.GetRepos(context.Background(), "token", "user", "", "", "", 1, 10)
 	if err != nil {
 		t.Fatalf("GetRepos via client failed: %v", err)
 	}
