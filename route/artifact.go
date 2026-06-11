@@ -148,6 +148,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "No Permission")
 		return
 	}
+	ctx := c.Request.Context()
 	var err error
 	ne := &model.TArtifactory{}
 	isup := service.GetIdOrAid(id, ne)
@@ -164,7 +165,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 			c.String(405, "No Permission")
 			return
 		}
-		_, err = comm.Db.Cols("name", "desc", "disabled", "updated").Where("id=?", ne.Id).Update(ne)
+		_, err = comm.Db.Context(ctx).Cols("name", "desc", "disabled", "updated").Where("id=?", ne.Id).Update(ne)
 	} else {
 		ne.Id = utils.NewXid()
 		ne.Uid = lgusr.Id
@@ -175,7 +176,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 		ne.Identifier = strings.ToLower(utils.RandomString(8))
 		for !hbtp.EndContext(c) {
 			ln++
-			n, _ := comm.Db.Where("identifier=?", ne.Identifier).Count(ne)
+			n, _ := comm.Db.Context(ctx).Where("identifier=?", ne.Identifier).Count(ne)
 			if n <= 0 {
 				break
 			}
@@ -190,7 +191,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 			}
 			ne.Identifier = strings.ToLower(utils.RandomString(i))
 		}
-		_, err = comm.Db.InsertOne(ne)
+		_, err = comm.Db.Context(ctx).InsertOne(ne)
 	}
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
@@ -219,7 +220,7 @@ func (ArtifactController) rm(c *gin.Context, m *hbtp.Map) {
 	art.Deleted = 1
 	art.DeletedTime = time.Now()
 	art.Updated = time.Now()
-	_, err := comm.Db.Cols("deleted", "deleted_time", "updated").Where("id=?", art.Id).Update(art)
+	_, err := comm.Db.Context(c.Request.Context()).Cols("deleted", "deleted_time", "updated").Where("id=?", art.Id).Update(art)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -235,7 +236,7 @@ func (ArtifactController) packageList(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 	var ls []*model.TArtifactPackage
-	ses := comm.Db.Where("deleted!=1 and repo_id=?", repoId).OrderBy("aid DESC")
+	ses := comm.Db.Context(c.Request.Context()).Where("deleted!=1 and repo_id=?", repoId).OrderBy("aid DESC")
 	if q != "" {
 		qs := "%" + q + "%"
 		ses.And("name like ? or display_name like ?", qs, qs)
@@ -268,7 +269,7 @@ func (ArtifactController) versionList(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 	var ls []*model.TArtifactVersion
-	ses := comm.Db.Where("package_id=?", packId).OrderBy("aid DESC")
+	ses := comm.Db.Context(c.Request.Context()).Where("package_id=?", packId).OrderBy("aid DESC")
 	if q != "" {
 		qs := "%" + q + "%"
 		ses.And("name like ? or display_name like ?", qs, qs)
@@ -386,7 +387,7 @@ func (ArtifactController) versionSave(c *gin.Context, m *hbtp.Map) {
 		artv.Preview = 0
 	}
 	artv.Updated = time.Now()
-	_, err := comm.Db.Cols("version", "desc", "preview", "updated").Where("id=?", artv.Id).Update(artv)
+	_, err := comm.Db.Context(c.Request.Context()).Cols("version", "desc", "preview", "updated").Where("id=?", artv.Id).Update(artv)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -413,7 +414,7 @@ func (ArtifactController) versionRm(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "No Permission")
 		return
 	}
-	_, err := comm.Db.Where("id=?", artv.Id).Delete(artv)
+	_, err := comm.Db.Context(c.Request.Context()).Where("id=?", artv.Id).Delete(artv)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
