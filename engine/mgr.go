@@ -3,12 +3,10 @@ package engine
 import (
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/gokins/core/common"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/runner/runners"
-	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,7 +30,6 @@ func Start() error {
 	Mgr.hrun = &HbtpRunner{}
 	// runners
 	comm.Cfg.Server.Shells = append(comm.Cfg.Server.Shells, "shell@ssh", "gokins@git")
-	// if len(comm.Cfg.Server.Shells) > 0 {
 	Mgr.shellRun = runners.NewEngine(runners.Config{
 		Name:      "mainRunner",
 		Workspace: filepath.Join(comm.WorkPath, common.PathRunner),
@@ -44,14 +41,11 @@ func Start() error {
 			logrus.Errorf("runner err:%v", err)
 		}
 	}()
-	// }
 
 	go func() {
 		_ = os.RemoveAll(filepath.Join(comm.WorkPath, common.PathTmp))
-		for !hbtp.EndContext(comm.Ctx) {
-			// Mgr.run()
-			time.Sleep(time.Millisecond * 100)
-		}
+		// Block until context is cancelled instead of busy-waiting.
+		<-comm.Ctx.Done()
 		Mgr.buildEgn.Stop()
 		if Mgr.shellRun != nil {
 			Mgr.shellRun.Stop()

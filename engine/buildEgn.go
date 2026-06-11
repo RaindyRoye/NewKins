@@ -46,12 +46,6 @@ func (c *BuildEngine) Stop() {
 	}
 }
 func (c *BuildEngine) init() {
-
-	/*// TODO: 调试不执行
-	if comm.Debugs {
-		return
-	}*/
-
 	cont := "server restart"
 	if _, err := comm.Db.Context(comm.Ctx).Exec(
 		"update `t_build` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",

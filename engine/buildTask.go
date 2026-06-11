@@ -185,7 +185,6 @@ func (c *BuildTask) runStage(stage *runtime.Stage) {
 	}()
 	stage.Started = time.Now()
 	stage.Status = common.BuildStatusRunning
-	// c.logfile.WriteString(fmt.Sprintf("\n****************Stage+ %s\n", stage.Name))
 	c.updateStage(stage)
 	c.staglk.RLock()
 	stg, ok := c.stages[stage.Name]
@@ -238,11 +237,6 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 		}
 	}()
 
-	/* if len(job.runjb.Commands) <= 0 {
-		job.status(common.BuildStatusError, "command format empty", common.BuildEventJobCmds)
-		return
-	} */
-
 	job.RLock()
 	dendons := job.step.Waits
 	job.RUnlock()
@@ -255,7 +249,6 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 			stage.RLock()
 			e, ok := stage.jobs[v]
 			stage.RUnlock()
-			// core.Log.Debugf("job(%s) depend %s(ok:%t)",job.step.Name,v,ok)
 			if !ok {
 				job.status(common.BuildStatusError, fmt.Sprintf("wait on %s not found", v))
 				return
@@ -321,17 +314,8 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 			job.status(common.BuildStatusCancel, "cancel")
 			break
 		}
-		/*if c.ctrlend && time.Since(c.ctrlendtm).Seconds() > 3 {
-			job.status(common.BuildStatusError, "cancel")
-			break
-		}*/
 		time.Sleep(time.Millisecond * 10)
 	}
-	/*job.Lock()
-	defer job.Unlock()
-	if c.ctrlend && job.step.Status == common.BuildStatusError {
-		job.step.Status = common.BuildStatusCancel
-	}*/
 }
 
 func (c *BuildTask) getRepo() error {
