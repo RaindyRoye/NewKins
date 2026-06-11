@@ -32,7 +32,7 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 		io.LimitReader(req.Body, 10000000),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gitea: read request body: %w", err)
 	}
 	var wb hook.WebHook
 	switch req.Header.Get(hook.GiteaEvent) {
@@ -46,7 +46,7 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 		return nil, fmt.Errorf("hook contains unknown header: %v", req.Header.Get(hook.GiteaEvent))
 	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gitea: %w", err)
 	}
 	sig := req.Header.Get("X-Gitea-Signature")
 	if !validatePrefix(data, []byte(secret), sig) {
@@ -85,7 +85,7 @@ func parseCommentHook(data []byte) (*hook.PullRequestCommentHook, error) {
 	gp := new(giteaCommentHook)
 	err := json.Unmarshal(data, gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal gitea comment hook: %w", err)
 	}
 	if !gp.IsPull {
 		return nil, errors.New("not pull_request comment")
@@ -97,7 +97,7 @@ func parsePullRequestHook(data []byte) (*hook.PullRequestHook, error) {
 	gp := new(giteaPRHook)
 	err := json.Unmarshal(data, gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal gitea PR hook: %w", err)
 	}
 	if gp.Action != "" {
 		switch gp.Action {
@@ -116,7 +116,7 @@ func parsePushHook(data []byte) (*hook.PushHook, error) {
 	gp := new(giteaPushHook)
 	err := json.Unmarshal(data, gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal gitea push hook: %w", err)
 	}
 	return convertPushHook(gp), nil
 }

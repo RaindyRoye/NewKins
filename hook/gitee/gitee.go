@@ -26,7 +26,7 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 		io.LimitReader(req.Body, 10000000),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gitee: read request body: %w", err)
 	}
 	var wb hook.WebHook
 	switch req.Header.Get(hook.GiteeEvent) {
@@ -43,7 +43,7 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 		return nil, fmt.Errorf("hook contains unknown header: %v", req.Header.Get(hook.GiteeEvent))
 	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gitee: %w", err)
 	}
 	sig := req.Header.Get("X-Gitee-Token")
 	if secret != sig {
@@ -56,7 +56,7 @@ func parseCommentHook(data []byte) (*hook.PullRequestCommentHook, error) {
 	gp := new(giteeCommentHook)
 	err := json.Unmarshal(data, gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal gitee comment hook: %w", err)
 	}
 	return convertCommentHook(gp), nil
 }
@@ -65,7 +65,7 @@ func parsePullRequestHook(data []byte) (*hook.PullRequestHook, error) {
 	gp := new(giteePRHook)
 	err := json.Unmarshal(data, gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal gitee PR hook: %w", err)
 	}
 	if gp.Action != "" {
 		if gp.Action != hook.ActionOpen && gp.Action != hook.ActionUpdate {
@@ -79,7 +79,7 @@ func parsePushHook(data []byte) (*hook.PushHook, error) {
 	gp := new(giteePushHook)
 	err := json.Unmarshal(data, gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal gitee push hook: %w", err)
 	}
 	return convertPushHook(gp), nil
 }

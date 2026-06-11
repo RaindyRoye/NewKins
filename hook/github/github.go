@@ -31,7 +31,7 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 		io.LimitReader(req.Body, 10000000),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("github: read request body: %w", err)
 	}
 	var wb hook.WebHook
 	switch req.Header.Get(hook.GithubEvent) {
@@ -45,7 +45,7 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 		return nil, fmt.Errorf("hook contains unknown header: %v", req.Header.Get(hook.GithubEvent))
 	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("github: %w", err)
 	}
 	sig := req.Header.Get("X-Hub-Signature")
 	if !validatePrefix(data, []byte(secret), sig) {
@@ -88,7 +88,7 @@ func parseCommentHook(data []byte) (*hook.PullRequestCommentHook, error) {
 	gp := new(githubCommentHook)
 	err := json.Unmarshal(data, gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal github comment hook: %w", err)
 	}
 	return convertCommentHook(gp)
 }
@@ -97,7 +97,7 @@ func parsePullRequestHook(data []byte) (*hook.PullRequestHook, error) {
 	gp := new(githubPRHook)
 	err := json.Unmarshal(data, gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal github PR hook: %w", err)
 	}
 	if gp.Action != "" {
 		switch gp.Action {
@@ -116,7 +116,7 @@ func parsePushHook(data []byte) (*hook.PushHook, error) {
 	gp := new(githubPushHook)
 	err := json.Unmarshal(data, gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal github push hook: %w", err)
 	}
 	return convertPushHook(gp), nil
 }

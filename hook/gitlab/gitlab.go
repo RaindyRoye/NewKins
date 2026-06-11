@@ -29,7 +29,7 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 		io.LimitReader(req.Body, 10000000),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gitlab: read request body: %w", err)
 	}
 	var wb hook.WebHook
 	switch req.Header.Get(hook.GitlabEvent) {
@@ -43,7 +43,7 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 		return nil, fmt.Errorf("hook contains unknown header: %v", req.Header.Get(hook.GitlabEvent))
 	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gitlab: %w", err)
 	}
 	sig := req.Header.Get("X-Gitlab-Token")
 	if secret != sig {
@@ -71,7 +71,7 @@ func parseCommentHook(data []byte) (*hook.PullRequestCommentHook, error) {
 	gp := new(gitlabCommentHook)
 	err := json.Unmarshal(data, gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal gitlab comment hook: %w", err)
 	}
 	return convertCommentHook(gp)
 }
@@ -80,7 +80,7 @@ func parsePullRequestHook(data []byte) (*hook.PullRequestHook, error) {
 	gp := new(gitlabPRHook)
 	err := json.Unmarshal(data, gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal gitlab PR hook: %w", err)
 	}
 	if gp.ObjectAttributes.Action != "" {
 		if gp.ObjectAttributes.Action != hook.ActionOpen && gp.ObjectAttributes.Action != hook.ActionUpdate {
@@ -94,7 +94,7 @@ func parsePushHook(data []byte) (*hook.PushHook, error) {
 	gp := new(gitlabPushHook)
 	err := json.Unmarshal(data, gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal gitlab push hook: %w", err)
 	}
 	return convertPushHook(gp), nil
 }
