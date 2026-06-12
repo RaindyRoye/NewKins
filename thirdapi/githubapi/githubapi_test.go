@@ -9,7 +9,7 @@ import (
 
 func TestGithubRepos(t *testing.T) {
 	u := fmt.Sprintf(ApiGithubGetRepos, "all", "full_name", "desc", "1", "10")
-	resp, err := http.Get(u)
+	resp, err := http.Get(u) //nolint:gosec // G107: test-only HTTP request
 	if err != nil {
 		fmt.Println(fmt.Errorf("Gitee Api :%v err : %v", u, err))
 		return
@@ -24,7 +24,7 @@ func TestGithubRepos(t *testing.T) {
 
 func TestGiteeCode(t *testing.T) {
 	u := fmt.Sprintf("https://github.com/login/oauth/authorize&client_id=%s", "102c5b2608655a5b7683")
-	resp, err := http.Get(u)
+	resp, err := http.Get(u) //nolint:gosec // G107: test-only HTTP request
 	if err != nil {
 		fmt.Println(fmt.Errorf("Gitee Api :%v err : %v", u, err))
 		return

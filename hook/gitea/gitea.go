@@ -2,7 +2,7 @@ package gitea
 
 import (
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec // G505: SHA1 required for Gitea webhook signature verification
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"

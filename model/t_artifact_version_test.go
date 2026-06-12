@@ -33,7 +33,7 @@ func TestTArtifactVersion_ReadFiles_Empty(t *testing.T) {
 	// Create the artifact directory (empty)
 	artId := "test-art-id"
 	artDir := filepath.Join(tmpDir, common.PathArtifacts, artId)
-	if err := os.MkdirAll(artDir, 0755); err != nil {
+	if err := os.MkdirAll(artDir, 0750); err != nil {
 		t.Fatalf("failed to create test dir: %v", err)
 	}
 
@@ -57,15 +57,15 @@ func TestTArtifactVersion_ReadFiles_WithFiles(t *testing.T) {
 
 	artId := "test-art-with-files"
 	artDir := filepath.Join(tmpDir, common.PathArtifacts, artId)
-	if err := os.MkdirAll(artDir, 0755); err != nil {
+	if err := os.MkdirAll(artDir, 0750); err != nil {
 		t.Fatalf("failed to create test dir: %v", err)
 	}
 
 	// Create some files
-	if err := os.WriteFile(filepath.Join(artDir, "file1.txt"), []byte("hello"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(artDir, "file1.txt"), []byte("hello"), 0600); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(artDir, "file2.bin"), []byte("binary"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(artDir, "file2.bin"), []byte("binary"), 0600); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
@@ -86,15 +86,15 @@ func TestTArtifactVersion_ReadFiles_WithSubdirs(t *testing.T) {
 	artId := "test-art-subdirs"
 	artDir := filepath.Join(tmpDir, common.PathArtifacts, artId)
 	subDir := filepath.Join(artDir, "subdir")
-	if err := os.MkdirAll(subDir, 0755); err != nil {
+	if err := os.MkdirAll(subDir, 0750); err != nil {
 		t.Fatalf("failed to create test dir: %v", err)
 	}
 
 	// Create file in root and subdirectory
-	if err := os.WriteFile(filepath.Join(artDir, "root.txt"), []byte("root"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(artDir, "root.txt"), []byte("root"), 0600); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(subDir, "nested.txt"), []byte("nested"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(subDir, "nested.txt"), []byte("nested"), 0600); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 

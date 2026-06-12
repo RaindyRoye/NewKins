@@ -9,7 +9,7 @@ import (
 
 func TestGiteeContents(t *testing.T) {
 	u := fmt.Sprintf(ApiGitlabGetRepos, "SuperHeroJim", "gokins-test", ".gokins", "1065cd3f8791b97224a823c954a0ec98")
-	resp, err := http.Get(u)
+	resp, err := http.Get(u) //nolint:gosec // G107: test-only HTTP request
 	if err != nil {
 		fmt.Println(fmt.Errorf("Gitee Api :%v err : %v", u, err))
 		return
@@ -24,7 +24,7 @@ func TestGiteeContents(t *testing.T) {
 
 func TestGiteeCode(t *testing.T) {
 	u := fmt.Sprintf("https://gitlab.com/login/oauth/authorize&client_id=%s", "102c5b2608655a5b7683")
-	resp, err := http.Get(u)
+	resp, err := http.Get(u) //nolint:gosec // G107: test-only HTTP request
 	if err != nil {
 		fmt.Println(fmt.Errorf("Gitee Api :%v err : %v", u, err))
 		return

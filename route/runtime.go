@@ -165,7 +165,7 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 	}*/
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, buildId, common.PathJobs, stepId)
 	logpth := filepath.Join(dir, "build.log")
-	fl, err := os.Open(logpth)
+	fl, err := os.Open(logpth) //nolint:gosec // G304: log path derived from controlled build paths
 	if err != nil {
 		c.String(404, "Not Found File")
 		return

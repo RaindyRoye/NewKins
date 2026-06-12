@@ -2,7 +2,7 @@ package github
 
 import (
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec // G505: SHA1 required for GitHub webhook signature verification (X-Hub-Signature)
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"

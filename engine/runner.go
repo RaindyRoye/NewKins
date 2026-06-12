@@ -101,10 +101,10 @@ func (c *baseRunner) PushOutLine(buildID, jobId, cmdId, bs string, iserr bool) e
 
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, job.step.BuildId, common.PathJobs, job.step.Id)
 	logpth := filepath.Join(dir, "build.log")
-	if err = os.MkdirAll(dir, 0755); err != nil {
+	if err = os.MkdirAll(dir, 0750); err != nil {
 		return fmt.Errorf("create log dir %s: %w", dir, err)
 	}
-	logfl, err := os.OpenFile(logpth, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+	logfl, err := os.OpenFile(logpth, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600) //nolint:gosec // G304: log path is derived from controlled build paths
 	if err != nil {
 		return fmt.Errorf("open log file %s: %w", logpth, err)
 	}
@@ -228,7 +228,7 @@ func (c *baseRunner) GetEnv(buildID, jobId, key string) (string, bool) {
 		return "", false
 	}
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, job.step.BuildId, common.PathJobs, job.step.Id)
-	bts, err := os.ReadFile(filepath.Join(dir, "build.env"))
+	bts, err := os.ReadFile(filepath.Join(dir, "build.env")) //nolint:gosec // G304: path is derived from controlled build paths
 	if err != nil {
 		return "", false
 	}
@@ -259,7 +259,7 @@ func (c *baseRunner) GenEnv(buildID, jobId string, env utils.EnvVal) error {
 		return fmt.Errorf("marshal env json: %w", err)
 	}
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, job.step.BuildId, common.PathJobs, job.step.Id)
-	err = os.WriteFile(filepath.Join(dir, "build.env"), bts, 0640)
+	err = os.WriteFile(filepath.Join(dir, "build.env"), bts, 0600)
 	if err != nil {
 		return fmt.Errorf("write env file: %w", err)
 	}
@@ -328,7 +328,7 @@ func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, 
 	if err := os.MkdirAll(dirs, 0750); err != nil {
 		return nil, fmt.Errorf("create upload dirs %s: %w", dirs, err)
 	}
-	fl, err := os.OpenFile(pths, os.O_CREATE|os.O_RDWR, 0640)
+	fl, err := os.OpenFile(pths, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("open upload file %s: %w", pths, err)
 	}

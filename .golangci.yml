@@ -10,8 +10,27 @@ linters:
     - ineffassign
     - unused
     - gocritic
+    - gosec
+    - errcheck
+    - misspell
+  exclusions:
+    rules:
+      # Exclude G104 (errors unhandled) for specific known-safe patterns
+      - linters: [gosec]
+        text: "G104"
+      # Exclude G115 (integer overflow conversion) which has many false positives
+      - linters: [gosec]
+        text: "G115"
+      # Exclude G402 (TLS MinVersion) - handled by dependencies
+      - linters: [gosec]
+        text: "G402"
   settings:
     errcheck:
       exclude-functions:
         - "(*github.com/mgr9525/HyperByte-Transfer-Protocol.Context).ResString"
         - "(*github.com/mgr9525/HyperByte-Transfer-Protocol.Context).ResJson"
+        - "(io.Closer).Close"
+        - "(*github.com/sirupsen/logrus.Entry).Error"
+        - "(*github.com/sirupsen/logrus.Entry).Warn"
+        - "(*github.com/sirupsen/logrus.Entry).Info"
+        - "(*github.com/sirupsen/logrus.Entry).Debug"

@@ -76,7 +76,7 @@ func initTestRepo(t *testing.T) (*git.Repository, func()) {
 
 	// Create a file and commit it
 	testFile := filepath.Join(dir, "test.txt")
-	if err := os.WriteFile(testFile, []byte("hello"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("hello"), 0600); err != nil {
 		t.Fatalf("write file: %v", err)
 	}
 

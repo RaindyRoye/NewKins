@@ -14,14 +14,19 @@ func bindata_read(data []byte, name string) ([]byte, error) {
 		return nil, fmt.Errorf("read %q: %w", name, err)
 	}
 
+	// Limit decompressed size to 10 MiB to prevent decompression bombs (G110).
+	const maxDecompressedSize = 10 << 20
 	var buf bytes.Buffer
-	_, err = io.Copy(&buf, gz)
+	_, err = io.Copy(&buf, io.LimitReader(gz, maxDecompressedSize+1))
 	if closeErr := gz.Close(); closeErr != nil && err == nil {
 		return nil, fmt.Errorf("read %q: %w", name, closeErr)
 	}
 
 	if err != nil {
 		return nil, fmt.Errorf("read %q: %w", name, err)
+	}
+	if int64(buf.Len()) > maxDecompressedSize {
+		return nil, fmt.Errorf("read %q: decompressed size exceeds %d bytes limit", name, maxDecompressedSize)
 	}
 
 	return buf.Bytes(), nil

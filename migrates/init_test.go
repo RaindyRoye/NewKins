@@ -89,7 +89,7 @@ func TestPostgresConnectionStringFormat(t *testing.T) {
 
 func TestMysqlConnectionStringFormat(t *testing.T) {
 	// Verify MySQL connection string format includes all parameters correctly
-	user, pass, host, dbs := "root", "secret", "127.0.0.1:3306", "gokins"
+	user, pass, host, dbs := "root", "secret", "127.0.0.1:3306", "gokins" //nolint:gosec // G101: test credentials only
 	ul := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&multiStatements=true",
 		user, pass, host, dbs)
 
