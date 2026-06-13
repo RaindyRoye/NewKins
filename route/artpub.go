@@ -55,13 +55,14 @@ func (cs *ArtPublicController) down(c *gin.Context) {
 	}
 
 	artv := &model.TArtifactVersion{}
-	ok := service.GetIdOrAid(id, artv)
+	ctx := c.Request.Context()
+	ok := service.GetIdOrAidCtx(ctx, id, artv)
 	if !ok {
 		c.String(404, "Not Found")
 		return
 	}
 	arty := &model.TArtifactory{}
-	ok = service.GetIdOrAid(artv.RepoId, arty)
+	ok = service.GetIdOrAidCtx(ctx, artv.RepoId, arty)
 	if !ok || arty.Deleted == 1 {
 		c.String(404, "Not Found repo")
 		return
@@ -98,7 +99,7 @@ func (cs *ArtPublicController) downs(c *gin.Context) {
 	}
 
 	job := &model.TStep{}
-	ok := service.GetIdOrAid(id, job)
+	ok := service.GetIdOrAidCtx(c.Request.Context(), id, job)
 	if !ok {
 		c.String(404, "Not Found")
 		return

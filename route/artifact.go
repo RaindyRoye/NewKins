@@ -151,7 +151,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 	ctx := c.Request.Context()
 	var err error
 	ne := &model.TArtifactory{}
-	isup := service.GetIdOrAid(id, ne)
+	isup := service.GetIdOrAidCtx(ctx, id, ne)
 	ne.Name = name
 	ne.Desc = desc
 	if disabled {
@@ -202,7 +202,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 func (ArtifactController) rm(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	art := &model.TArtifactory{}
-	ok := service.GetIdOrAid(id, art)
+	ok := service.GetIdOrAidCtx(c.Request.Context(), id, art)
 	if !ok {
 		c.String(404, "Not Found")
 		return
@@ -293,13 +293,14 @@ func (ArtifactController) versionList(c *gin.Context, m *hbtp.Map) {
 func (ArtifactController) versionInfos(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	artv := &model.TArtifactVersion{}
-	ok := service.GetIdOrAid(id, artv)
+	ctx := c.Request.Context()
+	ok := service.GetIdOrAidCtx(ctx, id, artv)
 	if !ok {
 		c.String(404, "Not Found")
 		return
 	}
 	arty := &model.TArtifactory{}
-	ok = service.GetIdOrAid(artv.RepoId, arty)
+	ok = service.GetIdOrAidCtx(ctx, artv.RepoId, arty)
 	if !ok || arty.Deleted == 1 {
 		c.String(404, "Not Found repo")
 		return
@@ -328,13 +329,14 @@ func (ArtifactController) versionUrl(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	pth := m.GetString("path")
 	artv := &model.TArtifactVersion{}
-	ok := service.GetIdOrAid(id, artv)
+	ctx := c.Request.Context()
+	ok := service.GetIdOrAidCtx(ctx, id, artv)
 	if !ok {
 		c.String(404, "Not Found")
 		return
 	}
 	arty := &model.TArtifactory{}
-	ok = service.GetIdOrAid(artv.RepoId, arty)
+	ok = service.GetIdOrAidCtx(ctx, artv.RepoId, arty)
 	if !ok || arty.Deleted == 1 {
 		c.String(404, "Not Found repo")
 		return
@@ -362,13 +364,14 @@ func (ArtifactController) versionUrl(c *gin.Context, m *hbtp.Map) {
 func (ArtifactController) versionSave(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	artv := &model.TArtifactVersion{}
-	ok := service.GetIdOrAid(id, artv)
+	ctx := c.Request.Context()
+	ok := service.GetIdOrAidCtx(ctx, id, artv)
 	if !ok {
 		c.String(404, "Not Found")
 		return
 	}
 	arty := &model.TArtifactory{}
-	ok = service.GetIdOrAid(artv.RepoId, arty)
+	ok = service.GetIdOrAidCtx(ctx, artv.RepoId, arty)
 	if !ok || arty.Deleted == 1 {
 		c.String(404, "Not Found repo")
 		return
@@ -397,13 +400,14 @@ func (ArtifactController) versionSave(c *gin.Context, m *hbtp.Map) {
 func (ArtifactController) versionRm(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	artv := &model.TArtifactVersion{}
-	ok := service.GetIdOrAid(id, artv)
+	ctx := c.Request.Context()
+	ok := service.GetIdOrAidCtx(ctx, id, artv)
 	if !ok {
 		c.String(404, "Not Found")
 		return
 	}
 	arty := &model.TArtifactory{}
-	ok = service.GetIdOrAid(artv.RepoId, arty)
+	ok = service.GetIdOrAidCtx(ctx, artv.RepoId, arty)
 	if !ok || arty.Deleted == 1 {
 		c.String(404, "Not Found repo")
 		return

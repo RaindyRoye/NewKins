@@ -52,10 +52,7 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 	}
 	ctx := c.Request.Context()
 	ls := make([]*model.TTrigger, 0)
-	session := comm.Db.Context(ctx)
-	if pipelineId != "" {
-		session.And("pipeline_id = ?", pipelineId)
-	}
+	session := comm.Db.Context(ctx).And("pipeline_id = ?", pipelineId)
 	if types != "" {
 		session.And("types = ?", types)
 	}
