@@ -1,43 +1,47 @@
-# NewKins CI/CD 配置文件示例
-# 复制此文件为 config.yml 并根据实际环境修改
+# NewKins CI/CD - Example Configuration
+# Copy this file to app.yml (or app.yaml) in your GOKINS_WORKPATH directory.
+# Default workpath: ~/.gokins (override with GOKINS_WORKPATH env var)
 
 server:
-  # 外网访问地址（用于生成链接和 webhook 回调）
+  # External access URL for the web interface
   host: "http://localhost:8080"
-
-  # JWT 登录密钥（请修改为随机字符串，至少 32 位）
-  # 可使用: openssl rand -hex 32 生成
-  loginKey: "your-secret-login-key-change-me"
-
-  # 并发运行限制（同时运行的流水线数量，默认 0 表示不限制）
-  runLimit: 10
-
-  # HyperByte 传输协议监听地址
-  hbtpHost: "0.0.0.0:8082"
-
-  # 服务密钥（用于 runner 与 server 之间的通信认证）
-  secret: "your-server-secret-change-me"
-
-  # 支持的 shell 类型
+  
+  # Secret key for JWT token signing and HBTP authentication.
+  # IMPORTANT: Change this to a random string in production!
+  # Generate with: openssl rand -hex 32
+  secret: "change-me-to-a-random-secret"
+  
+  # Login encryption key (optional, for enhanced security)
+  # loginKey: ""
+  
+  # Maximum number of concurrent pipeline runs (0 = unlimited)
+  runLimit: 0
+  
+  # HBTP (HyperByte Transfer Protocol) listening address.
+  # Used for communication with remote runners.
+  hbtpHost: "0.0.0.0:9711"
+  
+  # Download token for artifact access (optional, auto-generated if empty)
+  # DownToken: ""
+  
+  # Additional runner shell plugins to load.
+  # Built-in: "shell@ssh" (SSH runner), "gokins@git" (Git runner)
   shells:
-    - "bash"
-    - "sh"
-
-  # 制品下载 token（用于认证制品下载请求）
-  DownToken: ""
+    - "shell@ssh"
+    - "gokins@git"
 
 datasource:
-  # 数据库驱动: sqlite | mysql | postgres
+  # Database driver: "sqlite", "mysql", or "postgres"
   driver: "sqlite"
-
-  # 数据库连接地址
-  # SQLite 示例:
-  url: "gokins.db"
-
-  # MySQL 示例:
+  
+  # Database connection URL.
+  # SQLite example:
+  url: "./gokins.db"
+  
+  # MySQL example:
   # driver: "mysql"
-  # url: "user:password@tcp(127.0.0.1:3306)/gokins?charset=utf8mb4&parseTime=true&loc=Local"
-
-  # PostgreSQL 示例:
+  # url: "root:password@tcp(localhost:3306)/gokins?charset=utf8mb4&parseTime=true"
+  
+  # PostgreSQL example:
   # driver: "postgres"
-  # url: "host=127.0.0.1 user=gokins password=secret dbname=gokins port=5432 sslmode=disable"
+  # url: "postgres://user:password@localhost:5432/gokins?sslmode=disable"

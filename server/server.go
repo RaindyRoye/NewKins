@@ -86,5 +86,8 @@ func parseConfig() error {
 	if err := yaml.Unmarshal(bts, &comm.Cfg); err != nil {
 		return fmt.Errorf("parse config yaml: %w", err)
 	}
+	if err := comm.Cfg.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
 	return nil
 }

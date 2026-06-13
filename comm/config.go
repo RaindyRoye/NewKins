@@ -1,5 +1,8 @@
 package comm
 
+import "fmt"
+
+// Config holds the application configuration loaded from app.yml / app.yaml.
 type Config struct {
 	Server struct {
 		Host      string   `yaml:"host"` // 外网访问地址
@@ -14,6 +17,27 @@ type Config struct {
 		Driver string `yaml:"driver"`
 		Url    string `yaml:"url"`
 	} `yaml:"datasource"`
+}
+
+// Validate checks the configuration for common misconfiguration issues.
+// It returns an error describing the first problem found, or nil if valid.
+func (c *Config) Validate() error {
+	if c.Datasource.Driver == "" {
+		return fmt.Errorf("config validation: datasource.driver is required")
+	}
+	switch c.Datasource.Driver {
+	case DatasourceDriverMySQL, DatasourceDriverPostgres, DatasourceDriverSQLite:
+		// valid
+	default:
+		return fmt.Errorf("config validation: unsupported datasource driver %q (must be one of: mysql, postgres, sqlite)", c.Datasource.Driver)
+	}
+	if c.Datasource.Url == "" {
+		return fmt.Errorf("config validation: datasource.url is required")
+	}
+	if c.Server.RunLimit < 0 {
+		return fmt.Errorf("config validation: server.runLimit must be non-negative, got %d", c.Server.RunLimit)
+	}
+	return nil
 }
 
 // Idiomatic Go constant names for datasource drivers.
