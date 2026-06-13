@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM golang:1.22-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /build
 
@@ -28,18 +28,36 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -o /gokins ./cmd/...
 
 # Stage 2: Run
-FROM alpine:3.18
+FROM alpine:3.21
 
 WORKDIR /app
 
 # Install runtime dependencies (git is needed for CI/CD operations)
 RUN apk add --no-cache ca-certificates git tzdata
 
+# Create non-root user for security
+RUN addgroup -S gokins && adduser -S gokins -G gokins
+
 # Copy binary from builder
 COPY --from=builder /gokins /app/gokins
 
-# Expose port
-EXPOSE 8030
+# Create data directory with proper ownership
+RUN mkdir -p /data && chown gokins:gokins /data
+
+# Switch to non-root user
+USER gokins
+
+# Expose ports (web + hbtp)
+EXPOSE 8030 9711
+
+# Health check using the /healthz endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget -q --spider http://localhost:8030/healthz || exit 1
+
+# Labels
+LABEL org.opencontainers.image.title="NewKins" \
+      org.opencontainers.image.description="NewKins CI/CD Platform" \
+      org.opencontainers.image.version="${VERSION}"
 
 # Run
 ENTRYPOINT ["/app/gokins", "run", "--web", ":8030"]
