@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ['1.22']
+        go: ['1.25']
 
     steps:
     - uses: actions/checkout@v4
@@ -24,19 +24,22 @@ jobs:
     - name: Download dependencies
       run: go mod download
 
+    - name: Vet
+      run: go vet ./...
+
     - name: Lint
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v6
       with:
         version: latest
 
     - name: Test
-      run: go test -v -coverprofile=coverage.out ./...
+      run: go test -race -v -coverprofile=coverage.out ./...
 
     - name: Build
       run: go build -v -o bin/gokins ./cmd/...
 
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         files: ./coverage.out
         fail_ci_if_error: false
