@@ -30,10 +30,10 @@ func TestTriggerParamCheck(t *testing.T) {
 				Params:     `{"hookType":"github"}`,
 			},
 			wantErr: true,
-		errMsg:  "pipeline ID is required",
-	},
-	{
-		name: "empty types",
+			errMsg:  "pipeline ID is required",
+		},
+		{
+			name: "empty types",
 			param: TriggerParam{
 				PipelineId: "pipe-1",
 				Types:      "",
@@ -41,10 +41,10 @@ func TestTriggerParamCheck(t *testing.T) {
 				Params:     `{"hookType":"github"}`,
 			},
 			wantErr: true,
-		errMsg:  "trigger type is required",
-	},
-	{
-		name: "empty name",
+			errMsg:  "trigger type is required",
+		},
+		{
+			name: "empty name",
 			param: TriggerParam{
 				PipelineId: "pipe-1",
 				Types:      "webhook",
@@ -52,10 +52,10 @@ func TestTriggerParamCheck(t *testing.T) {
 				Params:     `{"hookType":"github"}`,
 			},
 			wantErr: true,
-		errMsg:  "trigger name is required",
-	},
-	{
-		name: "empty params",
+			errMsg:  "trigger name is required",
+		},
+		{
+			name: "empty params",
 			param: TriggerParam{
 				PipelineId: "pipe-1",
 				Types:      "webhook",
@@ -63,14 +63,14 @@ func TestTriggerParamCheck(t *testing.T) {
 				Params:     "",
 			},
 			wantErr: true,
-		errMsg:  "trigger params is required",
-	},
-	{
-		name:    "all fields empty",
-		param:   TriggerParam{},
-		wantErr: true,
-		errMsg:  "pipeline ID is required",
-	},
+			errMsg:  "trigger params is required",
+		},
+		{
+			name:    "all fields empty",
+			param:   TriggerParam{},
+			wantErr: true,
+			errMsg:  "pipeline ID is required",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -105,18 +105,18 @@ func TestPipelineCheck(t *testing.T) {
 				Stages: nil,
 			},
 			wantErr: true,
-		errMsg:  "stages is empty",
-	},
-	{
-		name: "empty stages slice",
+			errMsg:  "stages is empty",
+		},
+		{
+			name: "empty stages slice",
 			pipeline: &Pipeline{
 				Stages: []*Stage{},
 			},
 			wantErr: true,
-		errMsg:  "stages is empty",
-	},
-	{
-		name: "stage with empty name",
+			errMsg:  "stages is empty",
+		},
+		{
+			name: "stage with empty name",
 			pipeline: &Pipeline{
 				Stages: []*Stage{
 					{
@@ -126,10 +126,10 @@ func TestPipelineCheck(t *testing.T) {
 				},
 			},
 			wantErr: true,
-		errMsg:  "stage name is empty",
-	},
-	{
-		name: "stage with empty steps",
+			errMsg:  "stage name is empty",
+		},
+		{
+			name: "stage with empty steps",
 			pipeline: &Pipeline{
 				Stages: []*Stage{
 					{
@@ -139,10 +139,10 @@ func TestPipelineCheck(t *testing.T) {
 				},
 			},
 			wantErr: true,
-		errMsg:  "steps is empty",
-	},
-	{
-		name: "stage with nil steps",
+			errMsg:  "steps is empty",
+		},
+		{
+			name: "stage with nil steps",
 			pipeline: &Pipeline{
 				Stages: []*Stage{
 					{
@@ -152,10 +152,10 @@ func TestPipelineCheck(t *testing.T) {
 				},
 			},
 			wantErr: true,
-		errMsg:  "steps is empty",
-	},
-	{
-		name: "duplicate stage names",
+			errMsg:  "steps is empty",
+		},
+		{
+			name: "duplicate stage names",
 			pipeline: &Pipeline{
 				Stages: []*Stage{
 					{
@@ -169,10 +169,10 @@ func TestPipelineCheck(t *testing.T) {
 				},
 			},
 			wantErr: true,
-		errMsg:  "duplicate stage name: build",
-	},
-	{
-		name: "step with empty plugin",
+			errMsg:  "duplicate stage name: build",
+		},
+		{
+			name: "step with empty plugin",
 			pipeline: &Pipeline{
 				Stages: []*Stage{
 					{
@@ -184,10 +184,10 @@ func TestPipelineCheck(t *testing.T) {
 				},
 			},
 			wantErr: true,
-		errMsg:  "step plugin is empty",
-	},
-	{
-		name: "step with whitespace-only plugin",
+			errMsg:  "step plugin is empty",
+		},
+		{
+			name: "step with whitespace-only plugin",
 			pipeline: &Pipeline{
 				Stages: []*Stage{
 					{
@@ -199,10 +199,10 @@ func TestPipelineCheck(t *testing.T) {
 				},
 			},
 			wantErr: true,
-		errMsg:  "step plugin is empty",
-	},
-	{
-		name: "step with empty name",
+			errMsg:  "step plugin is empty",
+		},
+		{
+			name: "step with empty name",
 			pipeline: &Pipeline{
 				Stages: []*Stage{
 					{
@@ -214,10 +214,10 @@ func TestPipelineCheck(t *testing.T) {
 				},
 			},
 			wantErr: true,
-		errMsg:  "step name is empty",
-	},
-	{
-		name: "duplicate step names within same stage",
+			errMsg:  "step name is empty",
+		},
+		{
+			name: "duplicate step names within same stage",
 			pipeline: &Pipeline{
 				Stages: []*Stage{
 					{

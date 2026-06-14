@@ -1,6 +1,7 @@
 package gitlabapi
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,14 +10,19 @@ import (
 
 func TestGiteeContents(t *testing.T) {
 	u := fmt.Sprintf(ApiGitlabGetRepos, "SuperHeroJim", "gokins-test", ".gokins", "1065cd3f8791b97224a823c954a0ec98")
-	resp, err := http.Get(u) //nolint:gosec // G107: test-only HTTP request
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u, nil) //nolint:noctx // test-only HTTP request
 	if err != nil {
-		fmt.Println(fmt.Errorf("Gitee Api :%v err : %v", u, err))
+		fmt.Println(fmt.Errorf("GitLab Api :%v err : %v", u, err))
+		return
+	}
+	resp, err := http.DefaultClient.Do(req) //nolint:gosec // G107: test-only HTTP request
+	if err != nil {
+		fmt.Println(fmt.Errorf("GitLab Api :%v err : %v", u, err))
 		return
 	}
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(fmt.Errorf("Gitee ReadAll :%v err : %v", u, err))
+		fmt.Println(fmt.Errorf("GitLab ReadAll :%v err : %v", u, err))
 		return
 	}
 	fmt.Println(string(all))
@@ -24,14 +30,19 @@ func TestGiteeContents(t *testing.T) {
 
 func TestGiteeCode(t *testing.T) {
 	u := fmt.Sprintf("https://gitlab.com/login/oauth/authorize&client_id=%s", "102c5b2608655a5b7683")
-	resp, err := http.Get(u) //nolint:gosec // G107: test-only HTTP request
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u, nil) //nolint:noctx // test-only HTTP request
 	if err != nil {
-		fmt.Println(fmt.Errorf("Gitee Api :%v err : %v", u, err))
+		fmt.Println(fmt.Errorf("GitLab Api :%v err : %v", u, err))
+		return
+	}
+	resp, err := http.DefaultClient.Do(req) //nolint:gosec // G107: test-only HTTP request
+	if err != nil {
+		fmt.Println(fmt.Errorf("GitLab Api :%v err : %v", u, err))
 		return
 	}
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(fmt.Errorf("Gitee ReadAll :%v err : %v", u, err))
+		fmt.Println(fmt.Errorf("GitLab ReadAll :%v err : %v", u, err))
 		return
 	}
 	fmt.Println(string(all))

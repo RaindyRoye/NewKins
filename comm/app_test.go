@@ -78,10 +78,10 @@ func TestResetCtx_CreatesNewContext(t *testing.T) {
 	if cncl == nil {
 		t.Fatal("ResetCtx should create a non-nil cancel function")
 	}
-	// Context should not be cancelled
+	// Context should not be canceled
 	select {
 	case <-Ctx.Done():
-		t.Error("new context should not be cancelled")
+		t.Error("new context should not be canceled")
 	default:
 		// ok
 	}
@@ -94,7 +94,7 @@ func TestResetCtx_CancelsPreviousContext(t *testing.T) {
 	ResetCtx() // should cancel prevCtx
 	select {
 	case <-prevCtx.Done():
-		// ok, previous context was cancelled
+		// ok, previous context was canceled
 	default:
 		t.Error("ResetCtx should cancel the previous context")
 	}

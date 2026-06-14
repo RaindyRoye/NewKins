@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -25,7 +26,7 @@ func TestHealthzEndpoint(t *testing.T) {
 	router := setupTestRouter(t)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/healthz", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/healthz", nil)
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -59,7 +60,7 @@ func TestReadyzEndpoint_NotReady(t *testing.T) {
 	router := setupTestRouter(t)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/readyz", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/readyz", nil)
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusServiceUnavailable {
@@ -84,7 +85,7 @@ func TestPprofEndpoints_DisabledInReleaseMode(t *testing.T) {
 	router := setupTestRouter(t)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/debug/pprof/", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/debug/pprof/", nil)
 	router.ServeHTTP(w, req)
 
 	// Should get 404 since pprof is not registered in release mode
@@ -119,7 +120,7 @@ func TestPprofEndpoints_EnabledInDebugMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("GET", tt.path, nil)
+			req, _ := http.NewRequestWithContext(context.Background(), "GET", tt.path, nil)
 			router.ServeHTTP(w, req)
 
 			if w.Code != tt.wantStatus {
@@ -133,7 +134,7 @@ func TestApiHelloEndpoint(t *testing.T) {
 	router := setupTestRouter(t)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/api/", nil)
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -148,7 +149,7 @@ func TestApiVersionEndpoint(t *testing.T) {
 	router := setupTestRouter(t)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/version", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/api/version", nil)
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

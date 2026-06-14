@@ -92,10 +92,10 @@ func TestCondition_Excludes(t *testing.T) {
 
 func TestCondition_Match(t *testing.T) {
 	tests := []struct {
-		name    string
-		cond    *Condition
-		val     string
-		want    bool
+		name string
+		cond *Condition
+		val  string
+		want bool
 	}{
 		{
 			name: "include only, match",

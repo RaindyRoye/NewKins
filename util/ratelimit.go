@@ -69,7 +69,7 @@ func (rl *RateLimiter) Allow(key string) bool {
 	return true
 }
 
-// cleanup periodically removes stale entries until the context is cancelled.
+// cleanup periodically removes stale entries until the context is canceled.
 func (rl *RateLimiter) cleanup(ctx context.Context) {
 	ticker := time.NewTicker(rl.window * 2)
 	defer ticker.Stop()

@@ -14,6 +14,7 @@ import (
 )
 
 const testSecret = "testsecret"
+
 func computeSignature(secret, body []byte) string {
 	mac := hmac.New(sha256.New, secret)
 	mac.Write(body)

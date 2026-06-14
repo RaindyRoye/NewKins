@@ -141,5 +141,3 @@ func TestInitConfig_InvalidWorkPath(t *testing.T) {
 		t.Error("initConfig should fail with invalid WorkPath")
 	}
 }
-
-

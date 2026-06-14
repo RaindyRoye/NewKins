@@ -25,8 +25,8 @@ func ensureIndexes() {
 	}
 
 	type indexDef struct {
-		table  string
-		name   string
+		table   string
+		name    string
 		columns string
 	}
 

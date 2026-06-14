@@ -244,7 +244,7 @@ func TestUpJobCmd_CancelStatus(t *testing.T) {
 		t.Errorf("code = %d, want 137", cmd.code)
 	}
 	if cmd.finished.IsZero() {
-		t.Error("finished should be set for cancelled cmd")
+		t.Error("finished should be set for canceled cmd")
 	}
 }
 

@@ -60,7 +60,7 @@ func TestGetsParamCtx_CancelledContext(t *testing.T) {
 	var data map[string]string
 	err := GetsParamCtx(ctx, "test-key", &data)
 	if err == nil {
-		t.Fatal("GetsParamCtx with cancelled context should return error")
+		t.Fatal("GetsParamCtx with canceled context should return error")
 	}
 }
 
@@ -73,6 +73,6 @@ func TestGetParamCtx_CancelledContext(t *testing.T) {
 	cancel() // cancel immediately
 	_, err := GetParamCtx(ctx, "test-key")
 	if err == nil {
-		t.Fatal("GetParamCtx with cancelled context should return error")
+		t.Fatal("GetParamCtx with canceled context should return error")
 	}
 }

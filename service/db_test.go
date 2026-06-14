@@ -76,10 +76,10 @@ func TestGetIdOrAidECtx_NilBoth(t *testing.T) {
 func TestGetIdOrAidCtx_CanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // cancel immediately
-	// With a cancelled context and nil inputs, should still return false (short-circuit)
+	// With a canceled context and nil inputs, should still return false (short-circuit)
 	ok := GetIdOrAidCtx(ctx, nil, &struct{}{})
 	if ok {
-		t.Error("GetIdOrAidCtx with cancelled context and nil id should return false")
+		t.Error("GetIdOrAidCtx with canceled context and nil id should return false")
 	}
 }
 
@@ -88,10 +88,10 @@ func TestGetIdOrAidECtx_CanceledContext(t *testing.T) {
 	cancel() // cancel immediately
 	ok, err := GetIdOrAidECtx(ctx, "", &struct{}{})
 	if ok {
-		t.Error("GetIdOrAidECtx with cancelled context and empty id should return false")
+		t.Error("GetIdOrAidECtx with canceled context and empty id should return false")
 	}
 	if err != nil {
-		t.Errorf("GetIdOrAidECtx with cancelled context and empty id should not error, got: %v", err)
+		t.Errorf("GetIdOrAidECtx with canceled context and empty id should not error, got: %v", err)
 	}
 }
 

@@ -68,9 +68,9 @@ func Run() error {
 
 	go runHbtp()
 	hbtp.Infof("gokins running in %s", comm.WorkPath)
-	// Block until context is cancelled (signal received)
+	// Block until context is canceled (signal received)
 	<-comm.Ctx.Done()
-	logrus.Info("Context cancelled, initiating shutdown...")
+	logrus.Info("Context canceled, initiating shutdown...")
 	// Give background goroutines time to clean up
 	time.Sleep(time.Second)
 	return nil

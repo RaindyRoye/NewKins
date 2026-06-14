@@ -44,7 +44,7 @@ func Start() error {
 
 	go func() {
 		_ = os.RemoveAll(filepath.Join(comm.WorkPath, common.PathTmp))
-		// Block until context is cancelled instead of busy-waiting.
+		// Block until context is canceled instead of busy-waiting.
 		<-comm.Ctx.Done()
 		Mgr.buildEgn.Stop()
 		if Mgr.shellRun != nil {

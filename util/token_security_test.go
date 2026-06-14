@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	testSecretKey = "test-secret-key"
+	testSecretKey  = "test-secret-key"
 	testCookieName = "gokinstk"
 )
 

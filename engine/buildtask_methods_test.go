@@ -87,7 +87,7 @@ func TestBuildTaskStopd_CancelledContext(t *testing.T) {
 	cancel()
 	bt := &BuildTask{build: &runtime.Build{}, ctx: ctx}
 	if !bt.stopd() {
-		t.Error("stopd() should return true for cancelled context")
+		t.Error("stopd() should return true for canceled context")
 	}
 }
 
@@ -97,7 +97,7 @@ func TestBuildTaskStop(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	bt := &BuildTask{build: &runtime.Build{}, ctx: ctx, cncl: cancel}
 	bt.stop()
-	// After stop, context should be cancelled
+	// After stop, context should be canceled
 	if !bt.stopd() {
 		t.Error("stop() should cancel the context")
 	}
@@ -126,7 +126,7 @@ func TestBuildTaskCancel(t *testing.T) {
 	if time.Since(bt.ctrlendtm) > time.Second {
 		t.Error("Cancel() should set ctrlendtm to now")
 	}
-	// Context should be cancelled
+	// Context should be canceled
 	if !bt.stopd() {
 		t.Error("Cancel() should cancel the context")
 	}
@@ -416,7 +416,7 @@ func TestBuildEngineStop_StopsAllTasks(t *testing.T) {
 		}
 	}
 	c.Stop()
-	// All tasks should have cancelled contexts
+	// All tasks should have canceled contexts
 	for id, task := range c.tasks {
 		if !task.stopd() {
 			t.Errorf("task %q should be stopped after Stop()", id)

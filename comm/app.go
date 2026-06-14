@@ -33,6 +33,7 @@ func MarkInstalled() {
 		close(InstalledCh)
 	})
 }
+
 var (
 	Cfg       = Config{}
 	Db        *xorm.Engine

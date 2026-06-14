@@ -179,18 +179,18 @@ type _bintree_t struct {
 }
 
 var _bintree = &_bintree_t{nil, map[string]*_bintree_t{
-	"mysql": &_bintree_t{nil, map[string]*_bintree_t{
-		"000001_gokins.down.sql": &_bintree_t{mysql_000001_gokins_down_sql, map[string]*_bintree_t{}},
-		"000001_gokins.up.sql":   &_bintree_t{mysql_000001_gokins_up_sql, map[string]*_bintree_t{}},
-		"000002_gokins.down.sql": &_bintree_t{mysql_000002_gokins_down_sql, map[string]*_bintree_t{}},
-		"000002_gokins.up.sql":   &_bintree_t{mysql_000002_gokins_up_sql, map[string]*_bintree_t{}},
+	"mysql": {nil, map[string]*_bintree_t{
+		"000001_gokins.down.sql": {mysql_000001_gokins_down_sql, map[string]*_bintree_t{}},
+		"000001_gokins.up.sql":   {mysql_000001_gokins_up_sql, map[string]*_bintree_t{}},
+		"000002_gokins.down.sql": {mysql_000002_gokins_down_sql, map[string]*_bintree_t{}},
+		"000002_gokins.up.sql":   {mysql_000002_gokins_up_sql, map[string]*_bintree_t{}},
 	}},
-	"postgres": &_bintree_t{nil, map[string]*_bintree_t{
-		"000001_gokins.down.sql": &_bintree_t{postgres_000001_gokins_down_sql, map[string]*_bintree_t{}},
-		"000001_gokins.up.sql":   &_bintree_t{postgres_000001_gokins_up_sql, map[string]*_bintree_t{}},
+	"postgres": {nil, map[string]*_bintree_t{
+		"000001_gokins.down.sql": {postgres_000001_gokins_down_sql, map[string]*_bintree_t{}},
+		"000001_gokins.up.sql":   {postgres_000001_gokins_up_sql, map[string]*_bintree_t{}},
 	}},
-	"sqlite": &_bintree_t{nil, map[string]*_bintree_t{
-		"000001_gokins.down.sql": &_bintree_t{sqlite_000001_gokins_down_sql, map[string]*_bintree_t{}},
-		"000001_gokins.up.sql":   &_bintree_t{sqlite_000001_gokins_up_sql, map[string]*_bintree_t{}},
+	"sqlite": {nil, map[string]*_bintree_t{
+		"000001_gokins.down.sql": {sqlite_000001_gokins_down_sql, map[string]*_bintree_t{}},
+		"000001_gokins.up.sql":   {sqlite_000001_gokins_up_sql, map[string]*_bintree_t{}},
 	}},
 }}

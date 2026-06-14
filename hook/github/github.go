@@ -1,8 +1,9 @@
 package github
 
 import (
+	"context"
 	"crypto/hmac"
-	"crypto/sha1" //nolint:gosec // G505: SHA1 required for GitHub webhook signature verification (X-Hub-Signature)
+	"crypto/sha1" //nolint:gosec // G505: SHA1 is required for GitHub webhook signature verification (X-Hub-Signature)
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -236,7 +237,7 @@ func convertPullRequestURL(u string) (*githubPullRequestURL, error) {
 	client := &http.Client{
 		Timeout: time.Second * 8,
 	}
-	request, err := http.NewRequest("GET", u, nil)
+	request, err := http.NewRequestWithContext(context.Background(), "GET", u, nil)
 	if err != nil {
 		logrus.Errorf("github convertPullRequestURL CommentsUrl err %v", err)
 		return nil, err

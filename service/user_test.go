@@ -588,5 +588,3 @@ func TestPipePerm_Accessors(t *testing.T) {
 		t.Errorf("Pipeline() returned wrong pipeline")
 	}
 }
-
-

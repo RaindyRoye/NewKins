@@ -165,7 +165,7 @@ func (c *baseRunner) ReadDir(fs int, buildID string, pth string) ([]*runners.Dir
 		}
 		return nil, fmt.Errorf("read dir %s: %w", pths, err)
 	}
-	var ls []*runners.DirEntry
+	ls := make([]*runners.DirEntry, 0, len(fls))
 	for _, v := range fls {
 		e := &runners.DirEntry{
 			Name:  v.Name(),

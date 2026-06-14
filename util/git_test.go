@@ -143,7 +143,7 @@ func TestCloneRepo_CancelledContext(t *testing.T) {
 		URL: "https://github.com/gokins/gokins.git",
 	}, ctx)
 	if err == nil {
-		t.Error("expected error for cancelled context")
+		t.Error("expected error for canceled context")
 	}
 }
 

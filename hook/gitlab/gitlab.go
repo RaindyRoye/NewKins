@@ -486,7 +486,7 @@ type gitlabCommentHook struct {
 		Id               int         `json:"id"`
 		LineCode         interface{} `json:"line_code"`
 		Note             string      `json:"note"`
-		NoteableId       int         `json:"noteable_id"`      //nolint:misspell // GitLab API uses "noteable"
+		NoteableId       int         `json:"noteable_id"`   //nolint:misspell // GitLab API uses "noteable"
 		NoteableType     string      `json:"noteable_type"` //nolint:misspell // GitLab API uses "noteable"
 		OriginalPosition interface{} `json:"original_position"`
 		Position         interface{} `json:"position"`

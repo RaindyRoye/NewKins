@@ -172,7 +172,7 @@ func TestPostCtx_ContextCancellation(t *testing.T) {
 
 	_, err := PostCtx(ctx, server.URL, nil, 10*time.Second)
 	if err == nil {
-		t.Fatal("PostCtx with cancelled context expected error, got nil")
+		t.Fatal("PostCtx with canceled context expected error, got nil")
 	}
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
@@ -191,7 +191,7 @@ func TestPostsCtx_ContextCancellation(t *testing.T) {
 
 	_, _, err := PostsCtx(ctx, server.URL, nil, 10*time.Second)
 	if err == nil {
-		t.Fatal("PostsCtx with cancelled context expected error, got nil")
+		t.Fatal("PostsCtx with canceled context expected error, got nil")
 	}
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
@@ -210,7 +210,7 @@ func TestPostJSONCtx_ContextCancellation(t *testing.T) {
 
 	_, err := PostJSONCtx(ctx, server.URL, map[string]string{"k": "v"}, 10*time.Second)
 	if err == nil {
-		t.Fatal("PostJSONCtx with cancelled context expected error, got nil")
+		t.Fatal("PostJSONCtx with canceled context expected error, got nil")
 	}
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
@@ -253,7 +253,7 @@ func TestPostResultCtx_ContextCancellation(t *testing.T) {
 	var result map[string]string
 	_, _, err := PostResultCtx(ctx, server.URL, nil, &result, 10*time.Second)
 	if err == nil {
-		t.Fatal("PostResultCtx with cancelled context expected error, got nil")
+		t.Fatal("PostResultCtx with canceled context expected error, got nil")
 	}
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
@@ -296,7 +296,7 @@ func TestPostJSONResultCtx_ContextCancellation(t *testing.T) {
 	var result map[string]int
 	_, _, err := PostJSONResultCtx(ctx, server.URL, nil, &result, 10*time.Second)
 	if err == nil {
-		t.Fatal("PostJSONResultCtx with cancelled context expected error, got nil")
+		t.Fatal("PostJSONResultCtx with canceled context expected error, got nil")
 	}
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)

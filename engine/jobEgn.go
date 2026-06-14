@@ -173,7 +173,7 @@ func (c *JobEngine) Pull(name string, plugs []string) *runners.RunJob {
 }
 
 func (c *JobEngine) Plugins() []string {
-	var rts []string
+	rts := make([]string, 0, len(c.execs))
 	c.exelk.RLock()
 	defer c.exelk.RUnlock()
 	for _, v := range c.execs {

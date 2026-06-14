@@ -14,6 +14,7 @@ import (
 )
 
 const testSecret = "testsecret"
+
 func computeSignature(secret, body []byte) string {
 	mac := hmac.New(sha256.New, secret)
 	mac.Write(body)
@@ -148,8 +149,8 @@ func TestParsePullRequestHook(t *testing.T) {
 	payload := map[string]interface{}{
 		"action": "opened",
 		"pull_request": map[string]interface{}{
-			"id":    1,
-			"title": "Test PR",
+			"id":     1,
+			"title":  "Test PR",
 			"number": 42,
 			"head": map[string]interface{}{
 				"ref": "feature-branch",
