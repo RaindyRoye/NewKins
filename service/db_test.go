@@ -109,3 +109,44 @@ func TestGetIdOrAidCtx_NonStringNonNilId(t *testing.T) {
 	_ = GetIdOrAidCtx(context.Background(), 123, &struct{}{})
 	// If no panic, Db might be initialized; that's also fine.
 }
+
+func TestBatchOrgPipeCounts_Empty(t *testing.T) {
+	result, err := BatchOrgPipeCounts(context.Background(), nil)
+	if err != nil {
+		t.Errorf("BatchOrgPipeCounts(nil) should not error, got: %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchOrgPipeCounts(nil) should return empty map, got %d entries", len(result))
+	}
+}
+
+func TestBatchOrgPipeCounts_EmptySlice(t *testing.T) {
+	result, err := BatchOrgPipeCounts(context.Background(), []string{})
+	if err != nil {
+		t.Errorf("BatchOrgPipeCounts([]) should not error, got: %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchOrgPipeCounts([]) should return empty map, got %d entries", len(result))
+	}
+}
+
+func TestBatchOrgUserCounts_Empty(t *testing.T) {
+	result, err := BatchOrgUserCounts(context.Background(), nil)
+	if err != nil {
+		t.Errorf("BatchOrgUserCounts(nil) should not error, got: %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchOrgUserCounts(nil) should return empty map, got %d entries", len(result))
+	}
+}
+
+func TestBatchOrgUserCounts_EmptySlice(t *testing.T) {
+	result, err := BatchOrgUserCounts(context.Background(), []string{})
+	if err != nil {
+		t.Errorf("BatchOrgUserCounts([]) should not error, got: %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchOrgUserCounts([]) should return empty map, got %d entries", len(result))
+	}
+}
+

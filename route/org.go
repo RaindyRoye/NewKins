@@ -87,20 +87,34 @@ func (OrgController) list(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	ctx := c.Request.Context()
+	// Batch queries to eliminate N+1 problem in org listing
+	orgIds := make([]string, len(ls))
+	uids := make([]string, 0, len(ls))
+	for i, v := range ls {
+		orgIds[i] = v.Id
+		if v.Uid != "" {
+			uids = append(uids, v.Uid)
+		}
+	}
+	pipeCounts, err := service.BatchOrgPipeCounts(ctx, orgIds)
+	if err != nil {
+		logrus.Warnf("org list: batch pipe counts: %v", err)
+	}
+	userCounts, err := service.BatchOrgUserCounts(ctx, orgIds)
+	if err != nil {
+		logrus.Warnf("org list: batch user counts: %v", err)
+	}
+	users, err := service.BatchGetUsers(ctx, uids)
+	if err != nil {
+		logrus.Warnf("org list: batch get users: %v", err)
+	}
 	for _, v := range ls {
-		usr, ok := service.GetUserCtx(ctx, v.Uid)
-		if ok {
+		if usr, ok := users[v.Uid]; ok {
 			v.Nick = usr.Nick
 			v.Avat = usr.Avatar
 		}
-		v.Pipeln, err = comm.Db.Context(ctx).Where("org_id=?", v.Id).Count(model.TOrgPipe{})
-		if err != nil {
-			logrus.Warnf("org list: count org pipes (org=%s): %v", v.Id, err)
-		}
-		v.Userln, err = comm.Db.Context(ctx).Where("org_id=?", v.Id).Count(model.TUserOrg{})
-		if err != nil {
-			logrus.Warnf("org list: count org users (org=%s): %v", v.Id, err)
-		}
+		v.Pipeln = pipeCounts[v.Id]
+		v.Userln = userCounts[v.Id]
 	}
 	c.JSON(200, page)
 }
@@ -113,8 +127,9 @@ func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
+	ctx := c.Request.Context()
 	if !service.IsAdmin(lgusr) {
-		uf, ok := service.GetUserInfo(lgusr.Id)
+		uf, ok := service.GetUserInfoCtx(ctx, lgusr.Id)
 		if !ok || uf.PermOrg != 1 {
 			c.String(405, "no permission")
 			return
@@ -156,7 +171,7 @@ func (OrgController) info(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "not found org")
 		return
 	}
-	perm := service.NewOrgPerm(service.GetMidLgUser(c), org.Id)
+	perm := service.NewOrgPermCtx(ctx, service.GetMidLgUser(c), org.Id)
 	if !perm.CanRead() {
 		c.String(405, "no permission")
 		return
@@ -186,7 +201,7 @@ func (OrgController) users(c *gin.Context, m *hbtp.Map) {
 		c.String(500, "param err")
 		return
 	}
-	perm := service.NewOrgPerm(service.GetMidLgUser(c), id)
+	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if !perm.CanRead() {
 		c.String(405, "no permission")
 		return
@@ -232,7 +247,7 @@ func (OrgController) save(c *gin.Context, m *hbtp.Map) {
 		c.String(500, "param err")
 		return
 	}
-	perm := service.NewOrgPerm(service.GetMidLgUser(c), id)
+	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
 		c.String(404, "not found org")
 		return
@@ -262,7 +277,7 @@ func (OrgController) save(c *gin.Context, m *hbtp.Map) {
 }
 func (OrgController) rm(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
-	perm := service.NewOrgPerm(service.GetMidLgUser(c), id)
+	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
 		c.String(404, "not found org")
 		return
@@ -292,7 +307,7 @@ func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 	ex := m.GetBool("ex")
 	dw := m.GetBool("dw")
 	isadd := m.GetBool("add")
-	perm := service.NewOrgPerm(service.GetMidLgUser(c), id)
+	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
 		c.String(404, "not found org")
 		return
@@ -365,7 +380,7 @@ func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	uid := m.GetString("uid")
-	perm := service.NewOrgPerm(service.GetMidLgUser(c), id)
+	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
 		c.String(404, "not found org")
 		return
@@ -405,7 +420,7 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 func (OrgController) pipeAdd(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	pipeId := m.GetString("pipeId")
-	perm := service.NewOrgPerm(service.GetMidLgUser(c), id)
+	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
 		c.String(404, "not found org")
 		return
@@ -438,7 +453,7 @@ func (OrgController) pipeAdd(c *gin.Context, m *hbtp.Map) {
 func (OrgController) pipeRm(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	pipeId := m.GetString("pipeId")
-	perm := service.NewOrgPerm(service.GetMidLgUser(c), id)
+	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
 		c.String(404, "not found org")
 		return
@@ -464,7 +479,7 @@ func (OrgController) vars(c *gin.Context, m *hbtp.Map) {
 		c.String(500, "param err")
 		return
 	}
-	perm := service.NewOrgPerm(service.GetMidLgUser(c), orgId)
+	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), orgId)
 	if perm.Org() == nil {
 		c.String(404, "not found org")
 		return
@@ -499,7 +514,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 		c.String(500, "param err")
 		return
 	}
-	perm := service.NewOrgPerm(service.GetMidLgUser(c), pv.OrgId)
+	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), pv.OrgId)
 	if perm.Org() == nil {
 		c.String(404, "not found org")
 		return
@@ -563,7 +578,7 @@ func (OrgController) varDel(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "not found pipe_var")
 		return
 	}
-	perm := service.NewOrgPerm(service.GetMidLgUser(c), orgVar.OrgId)
+	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), orgVar.OrgId)
 	if perm.Org() == nil {
 		c.String(404, "not found org")
 		return

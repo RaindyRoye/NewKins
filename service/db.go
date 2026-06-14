@@ -66,3 +66,53 @@ func GetIdOrAidECtx(ctx context.Context, id interface{}, e interface{}) (bool, e
 	}
 	return ok, nil
 }
+
+// BatchOrgPipeCounts returns the number of pipelines for each org ID in a single query,
+// eliminating N+1 queries when listing organizations.
+func BatchOrgPipeCounts(ctx context.Context, orgIds []string) (map[string]int64, error) {
+	if len(orgIds) == 0 {
+		return map[string]int64{}, nil
+	}
+	type orgCount struct {
+		OrgId string `xorm:"org_id"`
+		Cnt   int64  `xorm:"cnt"`
+	}
+	var counts []orgCount
+	err := comm.Db.Context(ctx).SQL(
+		"SELECT org_id, COUNT(*) as cnt FROM t_org_pipe WHERE org_id IN (?) GROUP BY org_id",
+		orgIds,
+	).Find(&counts)
+	if err != nil {
+		return nil, fmt.Errorf("batch org pipe counts: %w", err)
+	}
+	result := make(map[string]int64, len(counts))
+	for _, c := range counts {
+		result[c.OrgId] = c.Cnt
+	}
+	return result, nil
+}
+
+// BatchOrgUserCounts returns the number of users for each org ID in a single query,
+// eliminating N+1 queries when listing organizations.
+func BatchOrgUserCounts(ctx context.Context, orgIds []string) (map[string]int64, error) {
+	if len(orgIds) == 0 {
+		return map[string]int64{}, nil
+	}
+	type orgCount struct {
+		OrgId string `xorm:"org_id"`
+		Cnt   int64  `xorm:"cnt"`
+	}
+	var counts []orgCount
+	err := comm.Db.Context(ctx).SQL(
+		"SELECT org_id, COUNT(*) as cnt FROM t_user_org WHERE org_id IN (?) GROUP BY org_id",
+		orgIds,
+	).Find(&counts)
+	if err != nil {
+		return nil, fmt.Errorf("batch org user counts: %w", err)
+	}
+	result := make(map[string]int64, len(counts))
+	for _, c := range counts {
+		result[c.OrgId] = c.Cnt
+	}
+	return result, nil
+}
