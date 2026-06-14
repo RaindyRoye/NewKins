@@ -19,6 +19,8 @@ linters:
     - bodyclose      # Check for HTTP response body close
     - noctx          # Find HTTP requests without context
     - prealloc       # Find slice declarations that could be preallocated
+    - errorlint      # Check for error wrapping best practices (errors.Is, %w)
+    - gosec          # Inspect source code for security problems
 
 linters-settings:
   errcheck:

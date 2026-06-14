@@ -178,7 +178,7 @@ func TestCacheGet_NotFound(t *testing.T) {
 	defer cleanup()
 
 	_, err := CacheGet("nonexistent")
-	if err != ErrKeyNotFound {
+	if !errors.Is(err, ErrKeyNotFound) {
 		t.Errorf("expected ErrKeyNotFound, got: %v", err)
 	}
 }
@@ -204,7 +204,7 @@ func TestCacheGet_ExpiredKeyCleanup(t *testing.T) {
 
 	// CacheGet should return ErrKeyTimeout
 	_, err := CacheGet("expired-key")
-	if err != ErrKeyTimeout {
+	if !errors.Is(err, ErrKeyTimeout) {
 		t.Errorf("expected ErrKeyTimeout, got: %v", err)
 	}
 
@@ -265,7 +265,7 @@ func TestCacheSet_DeleteWithNilData(t *testing.T) {
 
 	// Should be gone
 	_, err := CacheGet("del-key")
-	if err != ErrKeyNotFound {
+	if !errors.Is(err, ErrKeyNotFound) {
 		t.Errorf("expected ErrKeyNotFound after delete, got: %v", err)
 	}
 }
@@ -302,7 +302,7 @@ func TestCacheFlush_Integration(t *testing.T) {
 
 	// Keys should be gone (bucket deleted)
 	_, err := CacheGet("k1")
-	if err != ErrKeyNotFound {
+	if !errors.Is(err, ErrKeyNotFound) {
 		t.Errorf("expected ErrKeyNotFound after flush, got: %v", err)
 	}
 }
@@ -355,7 +355,7 @@ func TestMainCacheClear_RemovesExpiredKeepsValid(t *testing.T) {
 
 	// Expired key should be gone
 	_, err := CacheGet("expired-key")
-	if err != ErrKeyNotFound {
+	if !errors.Is(err, ErrKeyNotFound) {
 		t.Errorf("expected ErrKeyNotFound for expired key after mainCacheClear, got: %v", err)
 	}
 

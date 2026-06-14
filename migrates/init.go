@@ -97,7 +97,7 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 	}
 	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		_ = mgt.Down()
 		errs = fmt.Errorf("run mysql migration: %w", err)
 		return
@@ -148,7 +148,7 @@ func InitSqliteMigrate() (rtul string, errs error) {
 	}
 	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		_ = mgt.Down()
 		errs = fmt.Errorf("run sqlite migration: %w", err)
 		return
@@ -212,7 +212,7 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 	}
 	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		_ = mgt.Down()
 		errs = fmt.Errorf("run postgres migration: %w", err)
 		return

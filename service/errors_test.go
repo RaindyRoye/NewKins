@@ -99,8 +99,8 @@ func TestSentinelErrors_DirectComparison(t *testing.T) {
 	if !errors.Is(ErrPipelineNotFound, ErrPipelineNotFound) {
 		t.Error("ErrPipelineNotFound should equal itself via errors.Is")
 	}
-	if ErrTriggerNoParams == ErrPipelineNotFound {
-		t.Error("different sentinel errors should not be equal with ==")
+	if errors.Is(ErrTriggerNoParams, ErrPipelineNotFound) {
+		t.Error("different sentinel errors should not be equal")
 	}
 }
 

@@ -62,7 +62,7 @@ func UpMysqlMigrate(ul string) error {
 	}
 	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		_ = mgt.Down()
 		return fmt.Errorf("run mysql migration: %w", err)
 	}
@@ -116,7 +116,7 @@ func UpPostgresMigrate(ul string) error {
 	}
 	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		_ = mgt.Down()
 		return fmt.Errorf("run postgres migration: %w", err)
 	}
@@ -169,7 +169,7 @@ func UpSqliteMigrate(ul string) error {
 	}
 	defer func() { _, _ = mgt.Close() }()
 	err = mgt.Up()
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		_ = mgt.Down()
 		return fmt.Errorf("run sqlite migration: %w", err)
 	}
