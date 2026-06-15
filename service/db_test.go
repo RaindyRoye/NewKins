@@ -149,4 +149,3 @@ func TestBatchOrgUserCounts_EmptySlice(t *testing.T) {
 		t.Errorf("BatchOrgUserCounts([]) should return empty map, got %d entries", len(result))
 	}
 }
-
