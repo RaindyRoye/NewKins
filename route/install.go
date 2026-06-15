@@ -117,12 +117,12 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 		dataul, err = migrates.InitSqliteMigrate()
 	}
 	if err != nil {
-		c.String(512, "%v", err)
+		util.RespInternalErr(c, "database migration init", err)
 		return
 
 	}
 	if dataul == "" {
-		c.String(513, "datasource info err")
+		c.String(400, "datasource configuration is invalid")
 		return
 	}
 

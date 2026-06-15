@@ -175,7 +175,7 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 	if offset > 0 {
 		off, err = fl.Seek(offset, 0)
 		if err != nil {
-			c.String(510, "err:%v", err)
+			util.RespInternalErr(c, "file seek", err)
 			return
 		}
 	}
