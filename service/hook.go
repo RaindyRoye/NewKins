@@ -43,7 +43,7 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 	if tt.Params == "" {
 		return nil, ErrTriggerNoParams
 	}
-	err = TriggerPerm(tt)
+	err = TriggerPermCtx(req.Context(), tt)
 	if err != nil {
 		return nil, fmt.Errorf("check trigger permissions (trigger=%s): %w", tt.Id, err)
 	}
@@ -128,7 +128,7 @@ func TriggerWeb(ctx context.Context, tt *model.TTrigger, secret string) (rb *run
 	if tt.Params == "" {
 		return nil, ErrTriggerNoParams
 	}
-	err = TriggerPerm(tt)
+	err = TriggerPermCtx(ctx, tt)
 	if err != nil {
 		return nil, fmt.Errorf("check trigger permissions (trigger=%s): %w", tt.Id, err)
 	}
@@ -173,7 +173,7 @@ func TriggerTimer(ctx context.Context, tt *model.TTrigger) (rb *runtime.Build, e
 			logrus.Errorf("TriggerTimer: failed to save trigger run: %v", err)
 		}
 	}()
-	err = TriggerPerm(tt)
+	err = TriggerPermCtx(ctx, tt)
 	if err != nil {
 		return nil, fmt.Errorf("check trigger permissions (trigger=%s): %w", tt.Id, err)
 	}
