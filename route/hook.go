@@ -28,7 +28,7 @@ func (c *HookController) Routes(g gin.IRoutes) {
 func (HookController) hooks(c *gin.Context) {
 	triggerId := c.Param("triggerId")
 	if triggerId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	tt := &model.TTrigger{}
@@ -56,7 +56,7 @@ func (HookController) web(c *gin.Context, m *hbtp.Map) {
 	triggerId := c.Param("triggerId")
 	secret := m.GetString("secret")
 	if triggerId == "" || secret == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	tt := &model.TTrigger{}

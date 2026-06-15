@@ -34,17 +34,17 @@ func (cs *ArtPublicController) down(c *gin.Context) {
 	random := c.Query("random")
 	sign := c.Query("sign")
 	if tms == "" || random == "" || sign == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 
 	tm, err := time.Parse(time.RFC3339Nano, tms)
 	if err != nil {
-		c.String(500, "param err:times")
+		c.String(400, "param err:times")
 		return
 	}
 	if time.Since(tm).Hours() > 20 {
-		c.String(500, "the url timeout")
+		c.String(408, "request timeout")
 		return
 	}
 
@@ -78,17 +78,17 @@ func (cs *ArtPublicController) downs(c *gin.Context) {
 	random := c.Query("random")
 	sign := c.Query("sign")
 	if tms == "" || random == "" || sign == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 
 	tm, err := time.Parse(time.RFC3339Nano, tms)
 	if err != nil {
-		c.String(500, "param err:times")
+		c.String(400, "param err:times")
 		return
 	}
 	if time.Since(tm).Hours() > 20 {
-		c.String(500, "the url timeout")
+		c.String(408, "request timeout")
 		return
 	}
 

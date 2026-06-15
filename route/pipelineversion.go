@@ -22,7 +22,7 @@ func (c *PipelineVersionController) Routes(g gin.IRoutes) {
 func (PipelineVersionController) delete(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	ctx := c.Request.Context()

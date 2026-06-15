@@ -78,7 +78,7 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 		m.Server.Host = strings.TrimRight(m.Server.Host, "/")
 	}
 	if !common.RegUrl.MatchString(m.Server.Host) {
-		c.String(500, "host err:%s", m.Server.Host)
+		c.String(400, "invalid host format: %s", m.Server.Host)
 		return
 	}
 	if !checkUrl(m.Server.Host) {
@@ -86,20 +86,20 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 		return
 	}
 	if m.Server.HbtpHost != "" && !common.RegHost1.MatchString(m.Server.HbtpHost) {
-		c.String(500, "hbtp host err:%s", m.Server.HbtpHost)
+		c.String(400, "invalid hbtp host format: %s", m.Server.HbtpHost)
 		return
 	}
 	if m.Datasource.Driver == comm.DatasourceDriverMySQL || m.Datasource.Driver == comm.DatasourceDriverPostgres {
 		if !common.RegHost2.MatchString(m.Datasource.Host) {
-			c.String(500, "dbhost err:%s", m.Datasource.Host)
+			c.String(400, "invalid db host format: %s", m.Datasource.Host)
 			return
 		}
 		if m.Datasource.Name == "" {
-			c.String(500, "dbname err:%s", m.Datasource.Name)
+			c.String(400, "database name is required")
 			return
 		}
 		if strings.Contains(m.Datasource.Name, ":") || strings.Contains(m.Datasource.Pass, ":") {
-			c.String(500, "(dbname & dbport) can't contains ':'")
+			c.String(400, "database name and port must not contain ':'")
 			return
 		}
 	} else {
@@ -142,7 +142,7 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 	comm.Cfg.Datasource.Url = dataul
 	err = initConfig()
 	if err != nil {
-		c.String(500, "init config err:%v", err)
+		util.RespInternalErr(c, "init config", err)
 		return
 	}
 	comm.MarkInstalled()

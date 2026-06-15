@@ -34,7 +34,7 @@ func (c *RuntimeController) Routes(g gin.IRoutes) {
 func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 	pvId := m.GetString("pvId")
 	if pvId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	ctx := c.Request.Context()
@@ -74,7 +74,7 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 func (RuntimeController) cmds(c *gin.Context, m *hbtp.Map) {
 	stepId := m.GetString("stepId")
 	if stepId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	var ls []*model.TCmdLine
@@ -101,7 +101,7 @@ func (RuntimeController) cmds(c *gin.Context, m *hbtp.Map) {
 func (RuntimeController) build(c *gin.Context, m *hbtp.Map) {
 	bdid := m.GetString("buildId")
 	if bdid == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	v, ok := engine.Mgr.BuildEgn().Get(bdid)
@@ -122,7 +122,7 @@ func (RuntimeController) build(c *gin.Context, m *hbtp.Map) {
 func (RuntimeController) cancel(c *gin.Context, m *hbtp.Map) {
 	bdid := m.GetString("buildId")
 	if bdid == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	build := &model.TBuild{}
@@ -154,7 +154,7 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 	offset, _ := m.GetInt("offset")
 	limit, _ := m.GetInt("limit")
 	if stepId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	/*tstp := &model.TStep{}

@@ -58,7 +58,7 @@ func (UserController) new(c *gin.Context, m *hbtp.Map) {
 	// pmOrg:=m.GetBool("pmOrg")
 	// pmPipe:=m.GetBool("pmPipe")
 	if name == "" || nick == "" || pass == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
@@ -103,7 +103,7 @@ func (UserController) new(c *gin.Context, m *hbtp.Map) {
 func (UserController) info(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	usr := &model.TUser{}
@@ -125,7 +125,7 @@ func (UserController) upinfo(c *gin.Context, m *hbtp.Map) {
 	email := m.GetString("email")
 	remark := m.GetString("remark")
 	if id == "" || nick == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	usr := &model.TUser{}
@@ -168,7 +168,7 @@ func (UserController) upass(c *gin.Context, m *hbtp.Map) {
 	olds := m.GetString("olds")
 	pass := m.GetString("pass")
 	if id == "" || pass == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
@@ -214,7 +214,7 @@ func (UserController) active(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	act := m.GetString("act")
 	if id == "" || act == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
@@ -247,7 +247,7 @@ func (UserController) perm(c *gin.Context, m *hbtp.Map) {
 	permOrg := m.GetBool("permOrg")
 	permPipe := m.GetBool("permPipe")
 	if id == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)

@@ -35,7 +35,7 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 	if pipelineId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)

@@ -52,7 +52,7 @@ func (LoginController) info(c *gin.Context) {
 func (LoginController) login(c *gin.Context, m *bean.LoginReq) {
 	m.Name = strings.TrimSpace(m.Name)
 	if m.Name == "" || m.Pass == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	usr, ok := service.FindUserName(m.Name)
@@ -77,7 +77,7 @@ func (LoginController) login(c *gin.Context, m *bean.LoginReq) {
 		"uid": usr.Id,
 	}, key, time.Hour*24*5)
 	if err != nil {
-		c.String(500, "create token err:%v", err)
+		util.RespInternalErr(c, "create auth token", err)
 		return
 	}
 	rt := &bean.LoginRes{

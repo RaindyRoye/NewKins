@@ -123,7 +123,7 @@ func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 	desc := m.GetString("desc")
 	pub := m.GetBool("public")
 	if name == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
@@ -161,7 +161,7 @@ func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 func (OrgController) info(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	org := &model.TOrg{}
@@ -198,7 +198,7 @@ func (OrgController) info(c *gin.Context, m *hbtp.Map) {
 func (OrgController) users(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
@@ -244,7 +244,7 @@ func (OrgController) save(c *gin.Context, m *hbtp.Map) {
 	desc := m.GetString("desc")
 	pub := m.GetBool("public")
 	if name == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
@@ -476,7 +476,7 @@ func (OrgController) vars(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 	if orgId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), orgId)
@@ -511,7 +511,7 @@ func (OrgController) vars(c *gin.Context, m *hbtp.Map) {
 }
 func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 	if pv.Value == "" || pv.Name == "" || pv.OrgId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), pv.OrgId)
@@ -540,7 +540,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 	}
 	if pv.Aid > 0 {
 		if ok && tpv.Aid != pv.Aid {
-			c.String(500, "变量名重复")
+			c.String(409, "duplicate variable name")
 			return
 		}
 		_, err = comm.Db.Context(c.Request.Context()).Cols("name,value,remarks,public").Where("aid = ?", pv.Aid).Update(orgVar)
@@ -552,7 +552,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 		return
 	}
 	if ok {
-		c.String(500, "变量名重复")
+		c.String(409, "duplicate variable name")
 		return
 	}
 	_, err = comm.Db.Context(c.Request.Context()).InsertOne(orgVar)
@@ -565,7 +565,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 func (OrgController) varDel(c *gin.Context, m *hbtp.Map) {
 	aId, err := m.GetInt("aid")
 	if err != nil || aId <= 0 {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	orgVar := &model.TOrgVar{}

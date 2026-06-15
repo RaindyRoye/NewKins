@@ -45,7 +45,7 @@ func (ArtifactController) orgList(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 	if orgId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
@@ -135,7 +135,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 	desc := strings.TrimSpace(m.GetString("desc"))
 	disabled := m.GetBool("disabled")
 	if name == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
@@ -230,7 +230,7 @@ func (ArtifactController) rm(c *gin.Context, m *hbtp.Map) {
 func (ArtifactController) packageList(c *gin.Context, m *hbtp.Map) {
 	repoId := m.GetString("repoId")
 	if repoId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	q := m.GetString("q")
@@ -263,7 +263,7 @@ func (ArtifactController) packageList(c *gin.Context, m *hbtp.Map) {
 func (ArtifactController) versionList(c *gin.Context, m *hbtp.Map) {
 	packId := m.GetString("packId")
 	if packId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	q := m.GetString("q")

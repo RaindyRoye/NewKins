@@ -48,7 +48,7 @@ func (PipelineController) orgPipelines(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 	if orgId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
@@ -137,7 +137,7 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 	username := m.GetString("username")
 	displayName := m.GetString("displayName")
 	if pipelineId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	usr := service.GetMidLgUser(c)
@@ -181,7 +181,7 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 func (PipelineController) delete(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	usr := service.GetMidLgUser(c)
@@ -215,7 +215,7 @@ func (PipelineController) delete(c *gin.Context, m *hbtp.Map) {
 }
 func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 	if !npipe.Check() {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	y := &bean.Pipeline{}
@@ -310,7 +310,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 func (PipelineController) info(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
@@ -364,7 +364,7 @@ func (PipelineController) run(c *gin.Context, m *hbtp.Map) {
 	pipelineId := m.GetString("pipelineId")
 	sha := m.GetString("sha")
 	if pipelineId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
@@ -389,7 +389,7 @@ func (PipelineController) run(c *gin.Context, m *hbtp.Map) {
 func (PipelineController) copy(c *gin.Context, m *hbtp.Map) {
 	pipelineId := m.GetString("pipelineId")
 	if pipelineId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
@@ -445,7 +445,7 @@ func (PipelineController) copy(c *gin.Context, m *hbtp.Map) {
 func (PipelineController) rebuild(c *gin.Context, m *hbtp.Map) {
 	pipelineVersionId := m.GetString("pipelineVersionId")
 	if pipelineVersionId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	tvp := &model.TPipelineVersion{}
@@ -550,7 +550,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 func (PipelineController) pipelineVersion(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	ctx := c.Request.Context()
@@ -615,7 +615,7 @@ func (PipelineController) searchSha(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	q := m.GetString("q")
 	if id == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	perm := service.NewPipePerm(service.GetMidLgUser(c), id)
@@ -655,7 +655,7 @@ func (PipelineController) vars(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 	if pipelineId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	perm := service.NewPipePerm(service.GetMidLgUser(c), pipelineId)
@@ -690,7 +690,7 @@ func (PipelineController) vars(c *gin.Context, m *hbtp.Map) {
 }
 func (PipelineController) varSave(c *gin.Context, pv *bean.PipelineVar) {
 	if pv.Value == "" || pv.Name == "" || pv.PipelineId == "" {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	perm := service.NewPipePerm(service.GetMidLgUser(c), pv.PipelineId)
@@ -719,7 +719,7 @@ func (PipelineController) varSave(c *gin.Context, pv *bean.PipelineVar) {
 	}
 	if pv.Aid > 0 {
 		if ok && tpv.Aid != pv.Aid {
-			c.String(500, "变量名重复")
+			c.String(409, "duplicate variable name")
 			return
 		}
 		_, err = comm.Db.Context(c.Request.Context()).Cols("name,value,remarks,public").Where("aid = ?", pv.Aid).Update(pipelineVar)
@@ -731,7 +731,7 @@ func (PipelineController) varSave(c *gin.Context, pv *bean.PipelineVar) {
 		return
 	}
 	if ok {
-		c.String(500, "变量名重复")
+		c.String(409, "duplicate variable name")
 		return
 	}
 	_, err = comm.Db.Context(c.Request.Context()).InsertOne(pipelineVar)
@@ -744,7 +744,7 @@ func (PipelineController) varSave(c *gin.Context, pv *bean.PipelineVar) {
 func (PipelineController) varDel(c *gin.Context, m *hbtp.Map) {
 	aId, err := m.GetInt("aid")
 	if err != nil || aId <= 0 {
-		c.String(500, "param err")
+		c.String(400, "param err")
 		return
 	}
 	pipelineVar := &model.TPipelineVar{}
