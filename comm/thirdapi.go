@@ -1,6 +1,8 @@
 package comm
 
 import (
+	"fmt"
+
 	"github.com/gokins/gokins/thirdapi"
 	"github.com/gokins/gokins/thirdapi/giteaapi"
 	"github.com/gokins/gokins/thirdapi/giteeapi"
@@ -21,22 +23,22 @@ func GetThirdApi(s string, host string) (*thirdapi.Client, error) {
 			apiClient = giteeapi.NewDefault()
 		case "github":
 			apiClient = githubapi.NewDefault()
-		case "gitalb":
+		case "gitlab":
 			client, err := gitlabapi.New(host + "/api/v4")
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("create gitlab client (host=%s): %w", host, err)
 			}
 			apiClient = client
 		case "giteepremium":
 			client, err := giteepremiumapi.New(host + "/api/v5")
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("create giteepremium client (host=%s): %w", host, err)
 			}
 			apiClient = client
 		case "gitea":
 			client, err := giteaapi.New(host + "/api/v1")
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("create gitea client (host=%s): %w", host, err)
 			}
 			apiClient = client
 		default:

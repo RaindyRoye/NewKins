@@ -45,7 +45,7 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 	}
 	err = TriggerPerm(tt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("check trigger permissions (trigger=%s): %w", tt.Id, err)
 	}
 	m := map[string]string{}
 	err = json.Unmarshal([]byte(tt.Params), &m)
@@ -72,7 +72,7 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 	}
 	h, err := parseHook(hookType, req, secret)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse webhook (type=%s): %w", hookType, err)
 	}
 	sha := ""
 	events := ""
@@ -102,7 +102,7 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 
 	tvp, rb, err := Run(req.Context(), tt.Uid, tt.PipelineId, sha, "webHook")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("run pipeline (trigger=%s, pipeline=%s): %w", tt.Id, tt.PipelineId, err)
 	}
 	tvpId = tvp.Id
 	return rb, nil
@@ -130,7 +130,7 @@ func TriggerWeb(ctx context.Context, tt *model.TTrigger, secret string) (rb *run
 	}
 	err = TriggerPerm(tt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("check trigger permissions (trigger=%s): %w", tt.Id, err)
 	}
 	m := map[string]string{}
 	err = json.Unmarshal([]byte(tt.Params), &m)
@@ -153,7 +153,7 @@ func TriggerWeb(ctx context.Context, tt *model.TTrigger, secret string) (rb *run
 	}
 	tvp, rb, err := Run(ctx, tt.Uid, tt.PipelineId, branch, "web")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("run pipeline (trigger=%s, pipeline=%s): %w", tt.Id, tt.PipelineId, err)
 	}
 	tvpId = tvp.Id
 	return rb, nil
@@ -175,11 +175,11 @@ func TriggerTimer(ctx context.Context, tt *model.TTrigger) (rb *runtime.Build, e
 	}()
 	err = TriggerPerm(tt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("check trigger permissions (trigger=%s): %w", tt.Id, err)
 	}
 	tvp, rb, err := Run(ctx, tt.Uid, tt.PipelineId, "", "timer")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("run pipeline (trigger=%s, pipeline=%s): %w", tt.Id, tt.PipelineId, err)
 	}
 	ttr.PipeVersionId = tvp.Id
 	return rb, err
