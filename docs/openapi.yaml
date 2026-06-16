@@ -1,0 +1,1070 @@
+openapi: "3.0.3"
+info:
+  title: NewKins CI/CD API
+  description: |
+    REST API for NewKins (Gokins), a lightweight self-hosted CI/CD pipeline tool.
+    
+    ## Authentication
+    Most endpoints require a JWT token passed via the `token` cookie or
+    `Authorization` header. Obtain a token via `POST /api/lg/login`.
+    
+    ## Rate Limiting
+    - General API: 120 requests/minute per IP
+    - Login: 10 attempts/minute per IP
+    - Webhooks: 30 requests/minute per IP
+    
+    ## Pagination
+    List endpoints accept `page` and `size` parameters and return a `Page` envelope.
+  version: "1.3.7"
+  contact:
+    url: https://github.com/gokins/gokins
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8030
+    description: Local development server
+
+tags:
+  - name: Health
+    description: Server health and readiness probes
+  - name: Auth
+    description: Authentication and session management
+  - name: Install
+    description: First-time setup
+  - name: User
+    description: User management
+  - name: Organization
+    description: Organization management
+  - name: Pipeline
+    description: Pipeline CRUD and execution
+  - name: PipelineVersion
+    description: Pipeline version management
+  - name: Runtime
+    description: Build runtime information (stages, commands, logs)
+  - name: Trigger
+    description: Webhook trigger configuration
+  - name: Webhook
+    description: Incoming webhook receivers
+  - name: Artifact
+    description: Build artifact management
+  - name: ArtifactPublic
+    description: Public artifact downloads
+  - name: YAML
+    description: Pipeline YAML templates and plugins
+  - name: Meta
+    description: API metadata
+
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      description: Returns 200 if the server process is alive.
+      responses:
+        "200":
+          description: Server is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: "1.3.7"
+
+  /readyz:
+    get:
+      tags: [Health]
+      summary: Readiness probe
+      description: Returns 200 if the server is ready to serve traffic (DB and cache connected).
+      responses:
+        "200":
+          description: Server is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ready
+                  db:
+                    type: string
+                    example: connected
+                  cache:
+                    type: string
+                    example: connected
+        "503":
+          description: Server is not ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: not_ready
+
+  /api/:
+    get:
+      tags: [Meta]
+      summary: API hello
+      responses:
+        "200":
+          description: Hello message
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: hello world
+
+  /api/version:
+    get:
+      tags: [Meta]
+      summary: API version
+      responses:
+        "200":
+          description: Version string
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "1.3.7"
+
+  # ─── Auth ────────────────────────────────────────────
+  /api/lg/info:
+    post:
+      tags: [Auth]
+      summary: Get current login info
+      description: Returns the current authenticated user and permissions.
+      responses:
+        "200":
+          description: Login info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  login:
+                    type: boolean
+                  user:
+                    $ref: "#/components/schemas/User"
+                  info:
+                    $ref: "#/components/schemas/UserInfo"
+
+  /api/lg/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate user
+      description: Returns a JWT token and user details on success.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Missing name or password
+        "404":
+          description: User not found
+        "429":
+          description: Too many login attempts
+
+  # ─── Install ─────────────────────────────────────────
+  /api/install/check:
+    post:
+      tags: [Install]
+      summary: Check installation status
+      responses:
+        "200":
+          description: Installation status
+
+  /api/install/:
+    post:
+      tags: [Install]
+      summary: Run initial installation
+      description: Creates the admin user and configures the database.
+      responses:
+        "200":
+          description: Installation complete
+
+  # ─── User ────────────────────────────────────────────
+  /api/user/page:
+    post:
+      tags: [User]
+      summary: List users (paginated)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageRequest"
+      responses:
+        "200":
+          description: Paginated user list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponse"
+
+  /api/user/new:
+    post:
+      tags: [User]
+      summary: Create a new user
+      responses:
+        "200":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdsResponse"
+
+  /api/user/info:
+    post:
+      tags: [User]
+      summary: Get user info
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: User details
+
+  /api/user/upinfo:
+    post:
+      tags: [User]
+      summary: Update user profile
+      responses:
+        "200":
+          description: Profile updated
+
+  /api/user/upass:
+    post:
+      tags: [User]
+      summary: Change user password
+      description: Rate-limited to prevent brute-force attacks.
+      responses:
+        "200":
+          description: Password changed
+        "429":
+          description: Too many password change attempts
+
+  /api/user/active:
+    post:
+      tags: [User]
+      summary: Activate/deactivate user
+      responses:
+        "200":
+          description: User status changed
+
+  /api/user/perm:
+    post:
+      tags: [User]
+      summary: Update user permissions
+      responses:
+        "200":
+          description: Permissions updated
+
+  # ─── Organization ────────────────────────────────────
+  /api/org/list:
+    post:
+      tags: [Organization]
+      summary: List organizations
+      responses:
+        "200":
+          description: Organization list
+
+  /api/org/new:
+    post:
+      tags: [Organization]
+      summary: Create organization
+      responses:
+        "200":
+          description: Organization created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdsResponse"
+
+  /api/org/info:
+    post:
+      tags: [Organization]
+      summary: Get organization info
+      responses:
+        "200":
+          description: Organization details
+
+  /api/org/save:
+    post:
+      tags: [Organization]
+      summary: Update organization
+      responses:
+        "200":
+          description: Organization updated
+
+  /api/org/rm:
+    post:
+      tags: [Organization]
+      summary: Delete organization
+      responses:
+        "200":
+          description: Organization deleted
+
+  /api/org/users:
+    post:
+      tags: [Organization]
+      summary: List organization members
+      responses:
+        "200":
+          description: Member list
+
+  /api/org/user/edit:
+    post:
+      tags: [Organization]
+      summary: Edit organization member role
+      responses:
+        "200":
+          description: Member role updated
+
+  /api/org/user/rm:
+    post:
+      tags: [Organization]
+      summary: Remove organization member
+      responses:
+        "200":
+          description: Member removed
+
+  /api/org/pipe/add:
+    post:
+      tags: [Organization]
+      summary: Add pipeline to organization
+      responses:
+        "200":
+          description: Pipeline added
+
+  /api/org/pipe/rm:
+    post:
+      tags: [Organization]
+      summary: Remove pipeline from organization
+      responses:
+        "200":
+          description: Pipeline removed
+
+  /api/org/vars:
+    post:
+      tags: [Organization]
+      summary: List organization variables
+      responses:
+        "200":
+          description: Variable list
+
+  /api/org/var/save:
+    post:
+      tags: [Organization]
+      summary: Save organization variable
+      responses:
+        "200":
+          description: Variable saved
+
+  /api/org/var/del:
+    post:
+      tags: [Organization]
+      summary: Delete organization variable
+      responses:
+        "200":
+          description: Variable deleted
+
+  # ─── Pipeline ────────────────────────────────────────
+  /api/pipeline/pipelines:
+    post:
+      tags: [Pipeline]
+      summary: List all pipelines
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageRequest"
+      responses:
+        "200":
+          description: Paginated pipeline list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponse"
+
+  /api/pipeline/org/pipelines:
+    post:
+      tags: [Pipeline]
+      summary: List pipelines in an organization
+      responses:
+        "200":
+          description: Pipeline list for organization
+
+  /api/pipeline/new:
+    post:
+      tags: [Pipeline]
+      summary: Create a new pipeline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewPipeline"
+      responses:
+        "200":
+          description: Pipeline created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdsResponse"
+
+  /api/pipeline/info:
+    post:
+      tags: [Pipeline]
+      summary: Get pipeline details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Pipeline ID or AID
+      responses:
+        "200":
+          description: Pipeline details
+
+  /api/pipeline/save:
+    post:
+      tags: [Pipeline]
+      summary: Update pipeline configuration
+      responses:
+        "200":
+          description: Pipeline updated
+
+  /api/pipeline/delete:
+    post:
+      tags: [Pipeline]
+      summary: Delete a pipeline
+      responses:
+        "200":
+          description: Pipeline deleted
+
+  /api/pipeline/run:
+    post:
+      tags: [Pipeline]
+      summary: Trigger a pipeline run
+      description: Creates a new build and enqueues it for execution.
+      responses:
+        "200":
+          description: Build started
+
+  /api/pipeline/rebuild:
+    post:
+      tags: [Pipeline]
+      summary: Rebuild a previous pipeline version
+      responses:
+        "200":
+          description: Rebuild started
+
+  /api/pipeline/copy:
+    post:
+      tags: [Pipeline]
+      summary: Clone a pipeline
+      responses:
+        "200":
+          description: Pipeline cloned
+
+  /api/pipeline/pipelineVersions:
+    post:
+      tags: [Pipeline]
+      summary: List pipeline version history
+      responses:
+        "200":
+          description: Version list
+
+  /api/pipeline/pipelineVersion:
+    post:
+      tags: [Pipeline]
+      summary: Get a specific pipeline version
+      responses:
+        "200":
+          description: Version details
+
+  /api/pipeline/search/sha:
+    post:
+      tags: [Pipeline]
+      summary: Search pipeline by Git SHA
+      responses:
+        "200":
+          description: Matching pipelines
+
+  /api/pipeline/vars:
+    post:
+      tags: [Pipeline]
+      summary: List pipeline variables
+      responses:
+        "200":
+          description: Variable list
+
+  /api/pipeline/var/save:
+    post:
+      tags: [Pipeline]
+      summary: Save pipeline variable
+      responses:
+        "200":
+          description: Variable saved
+
+  /api/pipeline/var/del:
+    post:
+      tags: [Pipeline]
+      summary: Delete pipeline variable
+      responses:
+        "200":
+          description: Variable deleted
+
+  # ─── Pipeline Version ────────────────────────────────
+  /api/pipelineVersion/delete:
+    post:
+      tags: [PipelineVersion]
+      summary: Delete a pipeline version
+      responses:
+        "200":
+          description: Version deleted
+
+  # ─── Runtime ─────────────────────────────────────────
+  /api/runtime/stages:
+    post:
+      tags: [Runtime]
+      summary: Get build stages
+      responses:
+        "200":
+          description: Stage list for a build
+
+  /api/runtime/cmds:
+    post:
+      tags: [Runtime]
+      summary: Get step commands
+      responses:
+        "200":
+          description: Command list for a step
+
+  /api/runtime/build:
+    post:
+      tags: [Runtime]
+      summary: Get live build status
+      description: Returns real-time build progress from the build engine.
+      responses:
+        "200":
+          description: Build show data
+
+  /api/runtime/cancel:
+    post:
+      tags: [Runtime]
+      summary: Cancel a running build
+      responses:
+        "200":
+          description: Build cancelled
+
+  /api/runtime/logs:
+    post:
+      tags: [Runtime]
+      summary: Get build logs
+      responses:
+        "200":
+          description: Log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LogEntry"
+
+  # ─── Trigger ─────────────────────────────────────────
+  /api/trigger/triggers:
+    post:
+      tags: [Trigger]
+      summary: List triggers for a pipeline
+      responses:
+        "200":
+          description: Trigger list
+
+  /api/trigger/save:
+    post:
+      tags: [Trigger]
+      summary: Create or update a trigger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TriggerParam"
+      responses:
+        "200":
+          description: Trigger saved
+
+  /api/trigger/delete:
+    post:
+      tags: [Trigger]
+      summary: Delete a trigger
+      responses:
+        "200":
+          description: Trigger deleted
+
+  /api/trigger/runs:
+    post:
+      tags: [Trigger]
+      summary: List trigger run history
+      responses:
+        "200":
+          description: Trigger run list
+
+  # ─── Webhook ─────────────────────────────────────────
+  /trigger/hook/{triggerId}:
+    post:
+      tags: [Webhook]
+      summary: Receive webhook from Git provider
+      description: |
+        Endpoint called by GitHub, GitLab, Gitea, or Gitee when a
+        configured event occurs (push, pull request, etc.).
+      parameters:
+        - name: triggerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Webhook processed
+        "400":
+          description: Invalid payload
+        "404":
+          description: Trigger not found
+
+  /trigger/web/{triggerId}:
+    post:
+      tags: [Webhook]
+      summary: Receive generic webhook
+      parameters:
+        - name: triggerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Webhook processed
+
+  # ─── Artifact ────────────────────────────────────────
+  /api/art/org-list:
+    post:
+      tags: [Artifact]
+      summary: List artifact repositories in an organization
+      responses:
+        "200":
+          description: Artifact repository list
+
+  /api/art/info:
+    post:
+      tags: [Artifact]
+      summary: Get artifact repository info
+      responses:
+        "200":
+          description: Repository details
+
+  /api/art/edit:
+    post:
+      tags: [Artifact]
+      summary: Update artifact repository
+      responses:
+        "200":
+          description: Repository updated
+
+  /api/art/rm:
+    post:
+      tags: [Artifact]
+      summary: Delete artifact repository
+      responses:
+        "200":
+          description: Repository deleted
+
+  /api/art/package/list:
+    post:
+      tags: [Artifact]
+      summary: List packages in a repository
+      responses:
+        "200":
+          description: Package list
+
+  /api/art/version/list:
+    post:
+      tags: [Artifact]
+      summary: List versions of a package
+      responses:
+        "200":
+          description: Version list
+
+  /api/art/version/infos:
+    post:
+      tags: [Artifact]
+      summary: Get version details
+      responses:
+        "200":
+          description: Version info
+
+  /api/art/version/url:
+    post:
+      tags: [Artifact]
+      summary: Get download URL for a version
+      responses:
+        "200":
+          description: Download URL
+
+  /api/art/version/save:
+    post:
+      tags: [Artifact]
+      summary: Update version metadata
+      responses:
+        "200":
+          description: Version updated
+
+  /api/art/version/rm:
+    post:
+      tags: [Artifact]
+      summary: Delete a version
+      responses:
+        "200":
+          description: Version deleted
+
+  # ─── Public Artifacts ────────────────────────────────
+  /api/art/pub/down/{id}/{path}:
+    get:
+      tags: [ArtifactPublic]
+      summary: Download public artifact by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File download
+          content:
+            application/octet-stream: {}
+        "404":
+          description: Artifact not found
+
+  /api/art/pub/downs/{id}/{name}/{path}:
+    get:
+      tags: [ArtifactPublic]
+      summary: Download public artifact by ID and name
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File download
+          content:
+            application/octet-stream: {}
+
+  # ─── YAML ────────────────────────────────────────────
+  /api/yml/templates:
+    post:
+      tags: [YAML]
+      summary: List available pipeline YAML templates
+      responses:
+        "200":
+          description: Template list
+
+  /api/yml/plugins:
+    post:
+      tags: [YAML]
+      summary: List available pipeline plugins
+      responses:
+        "200":
+          description: Plugin list
+
+  # ─── Debug (debug mode only) ────────────────────────
+  /debug/pprof/:
+    get:
+      tags: [Meta]
+      summary: pprof index (debug mode only)
+      responses:
+        "200":
+          description: pprof HTML index
+
+  /debug/pprof/heap:
+    get:
+      tags: [Meta]
+      summary: Heap profile
+      responses:
+        "200":
+          description: Heap profile data
+
+  /debug/pprof/goroutine:
+    get:
+      tags: [Meta]
+      summary: Goroutine profile
+      responses:
+        "200":
+          description: Goroutine profile data
+
+  /debug/pprof/profile:
+    get:
+      tags: [Meta]
+      summary: CPU profile (30s)
+      parameters:
+        - name: seconds
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        "200":
+          description: CPU profile data
+
+  /debug/pprof/trace:
+    get:
+      tags: [Meta]
+      summary: Execution trace
+      parameters:
+        - name: seconds
+          in: query
+          schema:
+            type: integer
+            default: 5
+      responses:
+        "200":
+          description: Trace data
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+      description: JWT token obtained via /api/lg/login
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [name, pass]
+      properties:
+        name:
+          type: string
+          example: admin
+        pass:
+          type: string
+          format: password
+          example: "hunter2"
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT token (valid for 5 days)
+        id:
+          type: string
+        name:
+          type: string
+        nick:
+          type: string
+        avatar:
+          type: string
+        lastLoginTime:
+          type: string
+          format: date-time
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        nick:
+          type: string
+        avatar:
+          type: string
+        active:
+          type: integer
+          description: "1 = active, 0 = inactive"
+        loginTime:
+          type: string
+          format: date-time
+
+    UserInfo:
+      type: object
+      description: Extended user info with permissions
+      properties:
+        permUser:
+          type: integer
+          description: "1 = can manage users"
+        permOrg:
+          type: integer
+          description: "1 = can manage organizations"
+        permPipe:
+          type: integer
+          description: "1 = can manage pipelines"
+
+    IdsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        aid:
+          type: integer
+          format: int64
+
+    NewPipeline:
+      type: object
+      required: [name, content]
+      properties:
+        name:
+          type: string
+          example: my-pipeline
+        displayName:
+          type: string
+          example: My Pipeline
+        content:
+          type: string
+          description: Pipeline YAML content
+        orgId:
+          type: string
+        accessToken:
+          type: string
+          description: Git access token
+        url:
+          type: string
+          description: Git repository URL
+        username:
+          type: string
+          description: Git username
+        vars:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewPipelineVar"
+
+    NewPipelineVar:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+        remarks:
+          type: string
+        public:
+          type: boolean
+
+    TriggerParam:
+      type: object
+      required: [pipelineId, types, name, params]
+      properties:
+        id:
+          type: string
+          description: Trigger ID (empty for new)
+        pipelineId:
+          type: string
+        types:
+          type: string
+          description: "Trigger type: github, gitlab, gitea, gitee"
+        name:
+          type: string
+        desc:
+          type: string
+        params:
+          type: string
+          description: JSON-encoded trigger configuration
+        enabled:
+          type: boolean
+
+    PageRequest:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int64
+          default: 1
+        size:
+          type: integer
+          format: int64
+          default: 20
+
+    PageResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int64
+        size:
+          type: integer
+          format: int64
+        total:
+          type: integer
+          format: int64
+        pages:
+          type: integer
+          format: int64
+        data:
+          type: array
+          items: {}
+
+    LogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        content:
+          type: string
+        times:
+          type: string
+          format: date-time
+        errs:
+          type: boolean
+        offset:
+          type: integer
+          format: int64
+
+security:
+  - cookieAuth: []

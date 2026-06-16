@@ -95,6 +95,20 @@ stages:
 
 See the [YML Documentation](http://gokins.cn/工作流语法/) for full syntax reference.
 
+## API Documentation
+
+Gokins exposes a RESTful API documented with OpenAPI 3.0. The full specification is available at [`docs/openapi.yaml`](docs/openapi.yaml).
+
+Key endpoints:
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/healthz` | GET | Liveness probe |
+| `/readyz` | GET | Readiness probe (DB + cache) |
+| `/api/lg/login` | POST | Authenticate and get JWT token |
+| `/api/pipeline/run` | POST | Trigger a pipeline build |
+| `/api/runtime/build` | POST | Live build status |
+| `/trigger/hook/:id` | POST | Git webhook receiver |
+
 ## Health Checks
 
 Gokins provides health check endpoints for monitoring:
@@ -136,6 +150,7 @@ Flags:
 ├── util/         - Utility functions
 ├── bean/         - Request/response DTOs
 ├── migrates/     - Database migrations
+├── docs/         - API documentation (OpenAPI spec)
 ├── Makefile      - Build automation
 └── Dockerfile    - Multi-stage Docker build
 ```
