@@ -30,6 +30,11 @@ func StartBuildEngine() *BuildEngine {
 		tasks: make(map[string]*BuildTask),
 	}
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logrus.Errorf("BuildEngine goroutine panic: %v\n%s", r, string(debug.Stack()))
+			}
+		}()
 		c.init()
 		for !hbtp.EndContext(comm.Ctx) {
 			c.run()

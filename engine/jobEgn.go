@@ -63,6 +63,11 @@ func StartJobEngine() *JobEngine {
 		jobs:  make(map[string]*jobSync),
 	}
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logrus.Errorf("JobEngine goroutine panic: %v\n%s", r, string(debug.Stack()))
+			}
+		}()
 		for !hbtp.EndContext(comm.Ctx) {
 			c.run()
 			time.Sleep(time.Second)

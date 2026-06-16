@@ -97,7 +97,7 @@ func createIndexIfNotExists(table, indexName, columns string) error {
 		// MySQL doesn't support IF NOT EXISTS for CREATE INDEX.
 		// We attempt creation and ignore duplicate-key errors.
 		sql = "CREATE INDEX `" + indexName + "` ON `" + table + "` (" + columns + ")"
-		_, err := comm.Db.Exec(sql)
+		_, err := comm.Db.Context(comm.Ctx).Exec(sql)
 		if err != nil {
 			msg := err.Error()
 			// MySQL error 1061 = Duplicate key name
@@ -109,7 +109,7 @@ func createIndexIfNotExists(table, indexName, columns string) error {
 	} else {
 		// SQLite and PostgreSQL support IF NOT EXISTS
 		sql = "CREATE INDEX IF NOT EXISTS " + indexName + " ON " + table + " (" + columns + ")"
-		_, err := comm.Db.Exec(sql)
+		_, err := comm.Db.Context(comm.Ctx).Exec(sql)
 		if err != nil {
 			return fmt.Errorf("create index %s on %s: %w", indexName, table, err)
 		}
