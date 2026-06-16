@@ -80,7 +80,7 @@ func (OrgController) list(c *gin.Context, m *hbtp.Map) {
 		gen.Args = append(gen.Args, "%"+q+"%")
 	}
 	gen.SQL += "\nORDER BY org.aid DESC"
-	page, err = comm.FindPages(gen, &ls, pg, 10)
+	page, err = comm.FindPagesCtx(c.Request.Context(), gen, &ls, pg, 10)
 	//}
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)

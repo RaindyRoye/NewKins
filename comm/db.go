@@ -1,6 +1,7 @@
 package comm
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -74,6 +75,13 @@ func findPages(ses *xorm.Session, ls interface{}, count, page int64, size ...int
 	}, nil
 }
 func FindPages(gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*bean.Page, error) {
+	return FindPagesCtx(Ctx, gen, ls, page, size...)
+}
+
+// FindPagesCtx is the context-aware version of FindPages.
+// It passes ctx to both the count and data queries so they can be
+// canceled when the HTTP request times out or the client disconnects.
+func FindPagesCtx(ctx context.Context, gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*bean.Page, error) {
 	var count int64
 	counts := "count(*)"
 	if gen.CountCols != "" {
@@ -85,7 +93,9 @@ func FindPages(gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*b
 	}
 	sqls := strings.Replace(gen.SQL[:orderIdx], "{{select}}", counts, 1)
 	sqls = strings.Replace(sqls, "{{limit}}", "", 1)
-	_, err := Db.SQL(sqls, gen.Args...).Get(&count)
+	ses := Db.Context(ctx)
+	defer func() { _ = ses.Close() }()
+	_, err := ses.SQL(sqls, gen.Args...).Get(&count)
 	if err != nil {
 		return nil, fmt.Errorf("FindPages: count query: %w", err)
 	}
@@ -93,7 +103,6 @@ func FindPages(gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*b
 	var pageno int64 = 1
 	var sizeno int64 = 10
 	var pagesno int64
-	// var count=c.FindCount(pars)
 	if page > 0 {
 		pageno = page
 	}
@@ -106,8 +115,6 @@ func FindPages(gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*b
 	if start > 0 {
 		starts = fmt.Sprintf("%d,", start)
 	}
-	ses := Db.NewSession()
-	defer func() { _ = ses.Close() }()
 	sqls = strings.Replace(gen.SQL, "{{select}}", gen.FindCols, 1)
 	if strings.Contains(sqls, "{{limit}}") {
 		sqls = strings.Replace(sqls, "{{limit}}", fmt.Sprintf("LIMIT %s%d", starts, sizeno), 1)

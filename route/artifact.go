@@ -76,7 +76,7 @@ func (ArtifactController) orgList(c *gin.Context, m *hbtp.Map) {
 		gen.Args = append(gen.Args, "%"+q+"%")
 	}
 	gen.SQL += "\nORDER BY art.aid DESC"
-	page, err = comm.FindPages(gen, &ls, pg, 20)
+	page, err = comm.FindPagesCtx(c.Request.Context(), gen, &ls, pg, 20)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
