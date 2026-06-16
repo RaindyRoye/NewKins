@@ -40,6 +40,7 @@ func runWeb() {
 		}
 	}()
 	comm.WebEgn = gin.Default()
+	comm.WebEgn.Use(util.MidRequestID())
 	comm.WebEgn.Use(util.MidSecurityHeaders())
 	comm.WebEgn.Use(midUiHandle)
 
