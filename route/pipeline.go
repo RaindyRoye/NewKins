@@ -52,7 +52,7 @@ func (PipelineController) orgPipelines(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewOrgPerm(lgusr, orgId)
+	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, orgId)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
 		c.String(404, "not found org")
 		return
@@ -140,8 +140,9 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 		c.String(400, "param err")
 		return
 	}
+	ctx := c.Request.Context()
 	usr := service.GetMidLgUser(c)
-	perm := service.NewPipePerm(usr, pipelineId)
+	perm := service.NewPipePermCtx(ctx, usr, pipelineId)
 	if !perm.CanWrite() {
 		c.String(405, "No Auth")
 		return
@@ -160,7 +161,7 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 		Name:        name,
 		DisplayName: displayName,
 	}
-	_, err = comm.Db.Context(c.Request.Context()).Cols("name,display_name").Where("id = ?", pipelineId).Update(pipeline)
+	_, err = comm.Db.Context(ctx).Cols("name,display_name").Where("id = ?", pipelineId).Update(pipeline)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -171,7 +172,7 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 		Username:    username,
 		AccessToken: accessToken,
 	}
-	_, err = comm.Db.Context(c.Request.Context()).Cols("yml_content,url,username,access_token").Where("pipeline_id = ?", pipelineId).Update(tpc)
+	_, err = comm.Db.Context(ctx).Cols("yml_content,url,username,access_token").Where("pipeline_id = ?", pipelineId).Update(tpc)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -184,8 +185,9 @@ func (PipelineController) delete(c *gin.Context, m *hbtp.Map) {
 		c.String(400, "param err")
 		return
 	}
+	ctx := c.Request.Context()
 	usr := service.GetMidLgUser(c)
-	perm := service.NewPipePerm(usr, id)
+	perm := service.NewPipePermCtx(ctx, usr, id)
 	if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
 		c.String(404, "未找到流水线信息")
 		return
@@ -198,7 +200,7 @@ func (PipelineController) delete(c *gin.Context, m *hbtp.Map) {
 		Deleted:     1,
 		DeletedTime: time.Now(),
 	}
-	_, err := comm.Db.Context(c.Request.Context()).Cols("deleted").Where("id = ?", id).Update(tp)
+	_, err := comm.Db.Context(ctx).Cols("deleted").Where("id = ?", id).Update(tp)
 	if err != nil {
 		util.RespInternalErr(c, "pipeline delete", err)
 		return
@@ -206,7 +208,7 @@ func (PipelineController) delete(c *gin.Context, m *hbtp.Map) {
 	version := &model.TPipelineVersion{
 		Deleted: 1,
 	}
-	_, err = comm.Db.Context(c.Request.Context()).Cols("deleted").Where("pipeline_id = ?", id).Update(version)
+	_, err = comm.Db.Context(ctx).Cols("deleted").Where("pipeline_id = ?", id).Update(version)
 	if err != nil {
 		util.RespInternalErr(c, "pipeline delete", err)
 		return
@@ -229,14 +231,15 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 		util.RespErr(c, 400, "yaml validation error", err)
 		return
 	}
+	ctx := c.Request.Context()
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewOrgPerm(lgusr, npipe.OrgId)
+	perm := service.NewOrgPermCtx(ctx, lgusr, npipe.OrgId)
 	if npipe.OrgId != "" && perm.Org() == nil {
 		c.String(404, "组织不存在")
 		return
 	}
 	if !perm.IsAdmin() {
-		uf, ok := service.GetUserInfo(lgusr.Id)
+		uf, ok := service.GetUserInfoCtx(ctx, lgusr.Id)
 		if !ok || uf.PermPipe != 1 {
 			c.String(405, "no permission")
 			return
@@ -253,7 +256,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 		DisplayName:  npipe.DisplayName,
 		PipelineType: "",
 	}
-	_, err = comm.Db.Context(c.Request.Context()).InsertOne(pipeline)
+	_, err = comm.Db.Context(ctx).InsertOne(pipeline)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -265,7 +268,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 		Username:    npipe.Username,
 		AccessToken: npipe.AccessToken,
 	}
-	_, err = comm.Db.Context(c.Request.Context()).InsertOne(tpc)
+	_, err = comm.Db.Context(ctx).InsertOne(tpc)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -283,7 +286,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 			if v.Public {
 				pipelineVar.Public = 1
 			}
-			_, err = comm.Db.Context(c.Request.Context()).InsertOne(pipelineVar)
+			_, err = comm.Db.Context(ctx).InsertOne(pipelineVar)
 			if err != nil {
 				util.RespInternalErr(c, "db operation", err)
 				return
@@ -297,7 +300,7 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 			Created: time.Now(),
 			Public:  0,
 		}
-		_, err = comm.Db.Context(c.Request.Context()).InsertOne(top)
+		_, err = comm.Db.Context(ctx).InsertOne(top)
 		if err != nil {
 			util.RespInternalErr(c, "db operation", err)
 			return
@@ -313,8 +316,9 @@ func (PipelineController) info(c *gin.Context, m *hbtp.Map) {
 		c.String(400, "param err")
 		return
 	}
+	ctx := c.Request.Context()
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewPipePerm(lgusr, id)
+	perm := service.NewPipePermCtx(ctx, lgusr, id)
 	if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
 		c.String(404, "未找到流水线信息")
 		return
@@ -323,7 +327,6 @@ func (PipelineController) info(c *gin.Context, m *hbtp.Map) {
 		c.String(405, "No Auth")
 		return
 	}
-	ctx := c.Request.Context()
 	pipe := &model.TPipelineInfo{}
 	ok, err := comm.Db.Context(ctx).Where("id=? and deleted != 1", id).Get(pipe)
 	if err != nil {
@@ -368,7 +371,7 @@ func (PipelineController) run(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewPipePerm(lgusr, pipelineId)
+	perm := service.NewPipePermCtx(c.Request.Context(), lgusr, pipelineId)
 	if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
 		c.String(404, "未找到流水线信息")
 		return
@@ -392,8 +395,9 @@ func (PipelineController) copy(c *gin.Context, m *hbtp.Map) {
 		c.String(400, "param err")
 		return
 	}
+	ctx := c.Request.Context()
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewPipePerm(lgusr, pipelineId)
+	perm := service.NewPipePermCtx(ctx, lgusr, pipelineId)
 	if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
 		c.String(404, "未找到流水线信息")
 		return
@@ -403,7 +407,7 @@ func (PipelineController) copy(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.IsAdmin() {
-		uf, ok := service.GetUserInfo(lgusr.Id)
+		uf, ok := service.GetUserInfoCtx(ctx, lgusr.Id)
 		if !ok || uf.PermPipe != 1 {
 			c.String(405, "no permission")
 			return
@@ -416,14 +420,14 @@ func (PipelineController) copy(c *gin.Context, m *hbtp.Map) {
 		DisplayName:  perm.Pipeline().DisplayName,
 		PipelineType: perm.Pipeline().PipelineType,
 	}
-	_, err := comm.Db.Context(c.Request.Context()).InsertOne(pipe)
+	_, err := comm.Db.Context(ctx).InsertOne(pipe)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
 
 	tpc := &model.TPipelineConf{}
-	_, err = comm.Db.Context(c.Request.Context()).Where("pipeline_id=?", perm.Pipeline().Id).Get(tpc)
+	_, err = comm.Db.Context(ctx).Where("pipeline_id=?", perm.Pipeline().Id).Get(tpc)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -435,7 +439,7 @@ func (PipelineController) copy(c *gin.Context, m *hbtp.Map) {
 		YmlContent:  tpc.YmlContent,
 		Username:    tpc.Username,
 	}
-	_, err = comm.Db.Context(c.Request.Context()).InsertOne(ne)
+	_, err = comm.Db.Context(ctx).InsertOne(ne)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -459,7 +463,7 @@ func (PipelineController) rebuild(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewPipePerm(lgusr, tvp.PipelineId)
+	perm := service.NewPipePermCtx(c.Request.Context(), lgusr, tvp.PipelineId)
 	if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
 		c.String(404, "未找到流水线信息")
 		return
@@ -485,7 +489,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 	var page *bean.Page
 	var err error
 	if pipelineId != "" {
-		perm := service.NewPipePerm(usr, pipelineId)
+		perm := service.NewPipePermCtx(c.Request.Context(), usr, pipelineId)
 		if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
 			c.String(404, "未找到流水线信息")
 			return
@@ -575,7 +579,7 @@ func (PipelineController) pipelineVersion(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "not found build")
 		return
 	}
-	perm := service.NewPipePerm(service.GetMidLgUser(c), pv.PipelineId)
+	perm := service.NewPipePermCtx(ctx, service.GetMidLgUser(c), pv.PipelineId)
 	if perm.Pipeline() == nil {
 		c.String(404, "not found pipe")
 		return
@@ -618,7 +622,7 @@ func (PipelineController) searchSha(c *gin.Context, m *hbtp.Map) {
 		c.String(400, "param err")
 		return
 	}
-	perm := service.NewPipePerm(service.GetMidLgUser(c), id)
+	perm := service.NewPipePermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Pipeline() == nil {
 		c.String(404, "not found pipe")
 		return
@@ -658,7 +662,7 @@ func (PipelineController) vars(c *gin.Context, m *hbtp.Map) {
 		c.String(400, "param err")
 		return
 	}
-	perm := service.NewPipePerm(service.GetMidLgUser(c), pipelineId)
+	perm := service.NewPipePermCtx(c.Request.Context(), service.GetMidLgUser(c), pipelineId)
 	if perm.Pipeline() == nil {
 		c.String(404, "not found pipe")
 		return
@@ -693,7 +697,7 @@ func (PipelineController) varSave(c *gin.Context, pv *bean.PipelineVar) {
 		c.String(400, "param err")
 		return
 	}
-	perm := service.NewPipePerm(service.GetMidLgUser(c), pv.PipelineId)
+	perm := service.NewPipePermCtx(c.Request.Context(), service.GetMidLgUser(c), pv.PipelineId)
 	if perm.Pipeline() == nil {
 		c.String(404, "not found pipe")
 		return
@@ -757,7 +761,7 @@ func (PipelineController) varDel(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "not found pipe_var")
 		return
 	}
-	perm := service.NewPipePerm(service.GetMidLgUser(c), pipelineVar.PipelineId)
+	perm := service.NewPipePermCtx(c.Request.Context(), service.GetMidLgUser(c), pipelineVar.PipelineId)
 	if perm.Pipeline() == nil {
 		c.String(404, "not found pipe")
 		return

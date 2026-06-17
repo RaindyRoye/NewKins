@@ -135,7 +135,7 @@ func (RuntimeController) cancel(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "Not Found")
 		return
 	}
-	perm := service.NewPipePerm(service.GetMidLgUser(c), build.PipelineId)
+	perm := service.NewPipePermCtx(c.Request.Context(), service.GetMidLgUser(c), build.PipelineId)
 	if !perm.CanExec() {
 		c.String(405, "No Permission")
 		return

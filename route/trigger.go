@@ -39,7 +39,7 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewPipePerm(lgusr, pipelineId)
+	perm := service.NewPipePermCtx(c.Request.Context(), lgusr, pipelineId)
 	if perm.Pipeline() == nil {
 		c.String(404, "流水线不存在")
 		return
@@ -87,7 +87,7 @@ func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewPipePerm(lgusr, tp.PipelineId)
+	perm := service.NewPipePermCtx(ctx, lgusr, tp.PipelineId)
 	if perm.Pipeline() == nil {
 		c.String(404, "流水线不存在")
 		return
@@ -145,7 +145,7 @@ func (TriggerController) delete(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewPipePerm(lgusr, tt.PipelineId)
+	perm := service.NewPipePermCtx(ctx, lgusr, tt.PipelineId)
 	if perm.Pipeline() == nil {
 		c.String(404, "流水线不存在")
 		return
@@ -187,7 +187,7 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewPipePerm(lgusr, tt.PipelineId)
+	perm := service.NewPipePermCtx(ctx, lgusr, tt.PipelineId)
 	if perm.Pipeline() == nil {
 		c.String(404, "流水线不存在")
 		return

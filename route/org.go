@@ -126,8 +126,8 @@ func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 		c.String(400, "param err")
 		return
 	}
-	lgusr := service.GetMidLgUser(c)
 	ctx := c.Request.Context()
+	lgusr := service.GetMidLgUser(c)
 	if !service.IsAdmin(lgusr) {
 		uf, ok := service.GetUserInfoCtx(ctx, lgusr.Id)
 		if !ok || uf.PermOrg != 1 {
@@ -135,10 +135,9 @@ func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 			return
 		}
 	}
-	usr := service.GetMidLgUser(c)
 	ne := &model.TOrg{
 		Id:      utils.NewXid(),
-		Uid:     usr.Id,
+		Uid:     lgusr.Id,
 		Name:    name,
 		Desc:    desc,
 		Created: time.Now(),
@@ -147,7 +146,7 @@ func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 	if pub {
 		ne.Public = 1
 	}
-	_, err := comm.Db.Context(c.Request.Context()).InsertOne(ne)
+	_, err := comm.Db.Context(ctx).InsertOne(ne)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return

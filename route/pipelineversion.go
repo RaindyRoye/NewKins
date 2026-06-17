@@ -36,7 +36,7 @@ func (PipelineVersionController) delete(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "not found pipe_var")
 		return
 	}
-	perm := service.NewPipePerm(service.GetMidLgUser(c), tpv.PipelineId)
+	perm := service.NewPipePermCtx(c.Request.Context(), service.GetMidLgUser(c), tpv.PipelineId)
 	if perm.Pipeline() == nil {
 		c.String(404, "not found pipe")
 		return

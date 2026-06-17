@@ -49,7 +49,7 @@ func (ArtifactController) orgList(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewOrgPerm(lgusr, orgId)
+	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, orgId)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
 		c.String(404, "not found org")
 		return
@@ -105,7 +105,7 @@ func (ArtifactController) info(c *gin.Context, m *hbtp.Map) {
 		c.String(404, "not found art")
 		return
 	}
-	perm := service.NewOrgPerm(service.GetMidLgUser(c), arty.OrgId)
+	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), arty.OrgId)
 	if !perm.CanRead() {
 		c.String(405, "no permission")
 		return
@@ -139,7 +139,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewOrgPerm(lgusr, orgId)
+	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, orgId)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
 		c.String(404, "not found org")
 		return
@@ -208,7 +208,7 @@ func (ArtifactController) rm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewOrgPerm(lgusr, art.OrgId)
+	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, art.OrgId)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
 		c.String(404, "not found org")
 		return
@@ -306,7 +306,7 @@ func (ArtifactController) versionInfos(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewOrgPerm(lgusr, arty.OrgId)
+	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, arty.OrgId)
 	if !perm.CanRead() {
 		c.String(405, "No Permission")
 		return
@@ -342,7 +342,7 @@ func (ArtifactController) versionUrl(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewOrgPerm(lgusr, arty.OrgId)
+	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, arty.OrgId)
 	if !perm.CanDownload() {
 		c.String(405, "No Permission")
 		return
@@ -377,7 +377,7 @@ func (ArtifactController) versionSave(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewOrgPerm(lgusr, arty.OrgId)
+	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, arty.OrgId)
 	if !perm.CanWrite() {
 		c.String(405, "No Permission")
 		return
@@ -413,7 +413,7 @@ func (ArtifactController) versionRm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
-	perm := service.NewOrgPerm(lgusr, arty.OrgId)
+	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, arty.OrgId)
 	if !perm.CanWrite() {
 		c.String(405, "No Permission")
 		return

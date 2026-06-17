@@ -38,7 +38,7 @@ func (LoginController) info(c *gin.Context) {
 			logrus.Warnf("login info: struct2struct user: %v", err)
 		}
 		rt["user"] = usrs
-		info, _ := service.GetUserInfo(usrs.Id)
+		info, _ := service.GetUserInfoCtx(c.Request.Context(), usrs.Id)
 		rt["info"] = info
 		if service.IsAdmin(usr) {
 			info.PermUser = 1
@@ -55,7 +55,7 @@ func (LoginController) login(c *gin.Context, m *bean.LoginReq) {
 		c.String(400, "param err")
 		return
 	}
-	usr, ok := service.FindUserName(m.Name)
+	usr, ok := service.FindUserNameCtx(c.Request.Context(), m.Name)
 	if !ok {
 		c.String(404, "not found user")
 		return
