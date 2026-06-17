@@ -61,9 +61,9 @@ func TestInitPostgresMigrate_EmptyParams(t *testing.T) {
 }
 
 func TestPostgresConnectionStringFormat(t *testing.T) {
-	// Regression test: the old format string had "***" hardcoded instead of "%s"
-	// for the password field, causing all Postgres connections to fail with
-	// misaligned arguments (pass→host, host→dbs, dbs→extra).
+	// Regression test: the format string previously had "***" hardcoded instead
+	// of "%s" for the password field, causing all Postgres connections to fail
+	// with misaligned arguments (pass→host, host→dbs, dbs→extra).
 	// The format string must use %s for all 4 parameters (user, pass, host, dbs).
 	user, pass, host, dbs := "testuser", "testpass", "localhost:5432", "testdb"
 	ul := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, pass, host, dbs)

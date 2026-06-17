@@ -164,6 +164,7 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 		return
 	}
 	wait = true
+	// Build connection URL: postgres://user:password@host/database?sslmode=disable
 	ul := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, pass, host, dbs)
 	db, err := sql.Open("postgres", ul)
 	if err != nil {
