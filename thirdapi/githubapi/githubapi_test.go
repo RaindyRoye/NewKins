@@ -10,12 +10,12 @@ import (
 
 func TestGithubRepos(t *testing.T) {
 	u := fmt.Sprintf(ApiGithubGetRepos, "all", "full_name", "desc", "1", "10")
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u, nil) //nolint:noctx // test-only HTTP request
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u, nil)
 	if err != nil {
 		t.Logf("GitHub Api :%s err : %v", u, err)
 		return
 	}
-	resp, err := http.DefaultClient.Do(req) //nolint:gosec // G107: test-only HTTP request
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Logf("GitHub Api :%s err : %v", u, err)
 		return
@@ -30,12 +30,12 @@ func TestGithubRepos(t *testing.T) {
 
 func TestGiteeCode(t *testing.T) {
 	u := fmt.Sprintf("https://github.com/login/oauth/authorize&client_id=%s", "102c5b2608655a5b7683")
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u, nil) //nolint:noctx // test-only HTTP request
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u, nil)
 	if err != nil {
 		t.Logf("GitHub Api :%s err : %v", u, err)
 		return
 	}
-	resp, err := http.DefaultClient.Do(req) //nolint:gosec // G107: test-only HTTP request
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Logf("GitHub Api :%s err : %v", u, err)
 		return

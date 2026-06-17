@@ -305,7 +305,6 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 			util.RespInternalErr(c, "db operation", err)
 			return
 		}
-
 	}
 	c.JSON(http.StatusOK, pipeline)
 }
@@ -549,7 +548,6 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 	}
 
 	c.JSON(200, page)
-
 }
 func (PipelineController) pipelineVersion(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")

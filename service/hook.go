@@ -74,9 +74,9 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 	if err != nil {
 		return nil, fmt.Errorf("parse webhook (type=%s): %w", hookType, err)
 	}
-	sha := ""
-	events := ""
-	branchs := ""
+	var sha string
+	var events string
+	var branchs string
 	switch c := h.(type) {
 	case *hook.PullRequestHook:
 		events = "pr"

@@ -106,7 +106,7 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 		m.Datasource.Driver = "sqlite3"
 	}
 
-	dataul := ""
+	var dataul string
 	var err error
 	switch m.Datasource.Driver {
 	case "mysql":
@@ -119,7 +119,6 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 	if err != nil {
 		util.RespInternalErr(c, "database migration init", err)
 		return
-
 	}
 	if dataul == "" {
 		c.String(400, "datasource configuration is invalid")

@@ -124,7 +124,7 @@ func runDaemon() error {
 		return fmt.Errorf("resolve executable path: %w", err)
 	}
 	fmt.Println("starting background process...")
-	cmd := exec.Command(fullpth, args...) //nolint:gosec // G204: intentional subprocess for daemon mode
+	cmd := exec.Command(fullpth, args...)
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start daemon process: %w", err)
 	}

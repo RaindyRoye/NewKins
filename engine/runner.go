@@ -104,7 +104,7 @@ func (c *baseRunner) PushOutLine(buildID, jobId, cmdId, bs string, iserr bool) e
 	if err = os.MkdirAll(dir, 0750); err != nil {
 		return fmt.Errorf("create log dir %s: %w", dir, err)
 	}
-	logfl, err := os.OpenFile(logpth, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600) //nolint:gosec // G304: log path is derived from controlled build paths
+	logfl, err := os.OpenFile(logpth, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
 	if err != nil {
 		return fmt.Errorf("open log file %s: %w", logpth, err)
 	}
@@ -228,7 +228,7 @@ func (c *baseRunner) GetEnv(buildID, jobId, key string) (string, bool) {
 		return "", false
 	}
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, job.step.BuildId, common.PathJobs, job.step.Id)
-	bts, err := os.ReadFile(filepath.Join(dir, "build.env")) //nolint:gosec // G304: path is derived from controlled build paths
+	bts, err := os.ReadFile(filepath.Join(dir, "build.env"))
 	if err != nil {
 		return "", false
 	}

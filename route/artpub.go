@@ -136,7 +136,7 @@ func (ArtPublicController) downFile(c *gin.Context, fls string) {
 		nms = stat.Name()
 	}
 
-	fl, err := os.Open(fls) //nolint:gosec // G304: artifact file path is validated and derived from DB records
+	fl, err := os.Open(fls)
 	if err != nil {
 		c.String(404, "Not Found File")
 		return
