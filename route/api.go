@@ -30,7 +30,11 @@ func (ApiController) hello(c *gin.Context) {
 	c.String(200, "hello world")
 }
 func (ApiController) version(c *gin.Context) {
-	c.String(200, comm.Version)
+	c.JSON(200, gin.H{
+		"version":    comm.Version,
+		"build_time": comm.BuildTime,
+		"git_commit": comm.GitCommit,
+	})
 }
 func (ApiController) test(c *gin.Context) {
 	all, err := io.ReadAll(c.Request.Body)

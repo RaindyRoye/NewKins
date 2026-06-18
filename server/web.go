@@ -112,7 +112,12 @@ func regApi() {
 	}
 	// Health check endpoints
 	comm.WebEgn.GET("/healthz", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok", "version": comm.Version})
+		c.JSON(200, gin.H{
+			"status":     "ok",
+			"version":    comm.Version,
+			"build_time": comm.BuildTime,
+			"git_commit": comm.GitCommit,
+		})
 	})
 	comm.WebEgn.GET("/readyz", func(c *gin.Context) {
 		if comm.Db != nil && comm.BCache != nil {

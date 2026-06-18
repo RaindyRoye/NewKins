@@ -43,6 +43,12 @@ func TestHealthzEndpoint(t *testing.T) {
 	if resp["version"] != comm.Version {
 		t.Errorf("expected version %q, got %v", comm.Version, resp["version"])
 	}
+	if _, ok := resp["build_time"]; !ok {
+		t.Error("healthz response should contain build_time field")
+	}
+	if _, ok := resp["git_commit"]; !ok {
+		t.Error("healthz response should contain git_commit field")
+	}
 }
 
 func TestReadyzEndpoint_NotReady(t *testing.T) {
@@ -155,8 +161,18 @@ func TestApiVersionEndpoint(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Errorf("expected status 200, got %d", w.Code)
 	}
-	if w.Body.String() != comm.Version {
-		t.Errorf("expected version %q, got %q", comm.Version, w.Body.String())
+	var resp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to parse JSON response: %v", err)
+	}
+	if resp["version"] != comm.Version {
+		t.Errorf("expected version %q, got %v", comm.Version, resp["version"])
+	}
+	if _, ok := resp["build_time"]; !ok {
+		t.Error("response should contain build_time field")
+	}
+	if _, ok := resp["git_commit"]; !ok {
+		t.Error("response should contain git_commit field")
 	}
 }
 

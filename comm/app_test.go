@@ -117,3 +117,46 @@ func TestResetCtx_DifferentContexts(t *testing.T) {
 func syncOnce() sync.Once {
 	return sync.Once{}
 }
+
+// --- Build Info Variables ---
+
+func TestBuildInfoDefaults(t *testing.T) {
+	// Verify the build info variables have their expected default values.
+	// These are set at build time via -ldflags, but should default to
+	// "unknown" when not set (e.g., during development or testing).
+	if Version == "" {
+		t.Error("Version should have a non-empty default value")
+	}
+	if BuildTime == "" {
+		t.Error("BuildTime should have a non-empty default value")
+	}
+	if GitCommit == "" {
+		t.Error("GitCommit should have a non-empty default value")
+	}
+}
+
+func TestBuildInfoSettable(t *testing.T) {
+	// Verify build info variables can be set (as ldflags would do at build time).
+	oldVersion := Version
+	oldBuild := BuildTime
+	oldCommit := GitCommit
+	defer func() {
+		Version = oldVersion
+		BuildTime = oldBuild
+		GitCommit = oldCommit
+	}()
+
+	Version = "9.9.9-test"
+	BuildTime = "2026-01-01T00:00:00Z"
+	GitCommit = "abc1234"
+
+	if Version != "9.9.9-test" {
+		t.Errorf("Version = %q, want %q", Version, "9.9.9-test")
+	}
+	if BuildTime != "2026-01-01T00:00:00Z" {
+		t.Errorf("BuildTime = %q, want %q", BuildTime, "2026-01-01T00:00:00Z")
+	}
+	if GitCommit != "abc1234" {
+		t.Errorf("GitCommit = %q, want %q", GitCommit, "abc1234")
+	}
+}

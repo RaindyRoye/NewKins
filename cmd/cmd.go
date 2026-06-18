@@ -76,9 +76,15 @@ Use 'gokins run' for foreground mode with better log visibility.`,
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the Gokins version and exit",
+	Short: "Print the Gokins version, build time, and git commit",
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Println("gokins version:" + comm.Version)
+		cmd.Printf("gokins version: %s\n", comm.Version)
+		if comm.BuildTime != "unknown" {
+			cmd.Printf("  build time:   %s\n", comm.BuildTime)
+		}
+		if comm.GitCommit != "unknown" {
+			cmd.Printf("  git commit:   %s\n", comm.GitCommit)
+		}
 	},
 }
 

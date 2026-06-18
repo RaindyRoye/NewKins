@@ -10,7 +10,17 @@ import (
 	"xorm.io/xorm"
 )
 
-const Version = "1.3.7"
+// Version is the semantic version of the application.
+// It can be overridden at build time via -ldflags.
+var Version = "1.3.7"
+
+// BuildTime is the UTC timestamp of the build.
+// Set at build time via -ldflags: -X 'github.com/gokins/gokins/comm.BuildTime=...'
+var BuildTime = "unknown"
+
+// GitCommit is the short git commit SHA of the build.
+// Set at build time via -ldflags: -X 'github.com/gokins/gokins/comm.GitCommit=...'
+var GitCommit = "unknown"
 
 // MaskedValue is used to redact sensitive data in API responses and logs.
 const MaskedValue = "***"
