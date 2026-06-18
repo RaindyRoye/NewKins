@@ -261,36 +261,36 @@ func convertCommentHook(gp *gitlabCommentHook) (*hook.PullRequestCommentHook, er
 }
 
 type gitlabPushHook struct {
-	ObjectKind   string      `json:"object_kind"`
-	EventName    string      `json:"event_name"`
-	Before       string      `json:"before"`
-	After        string      `json:"after"`
-	Ref          string      `json:"ref"`
-	CheckoutSha  string      `json:"checkout_sha"`
-	Message      any `json:"message"`
-	UserId       int         `json:"user_id"`
-	UserName     string      `json:"user_name"`
-	UserUsername string      `json:"user_username"`
-	UserEmail    string      `json:"user_email"`
-	UserAvatar   string      `json:"user_avatar"`
-	ProjectId    int         `json:"project_id"`
+	ObjectKind   string `json:"object_kind"`
+	EventName    string `json:"event_name"`
+	Before       string `json:"before"`
+	After        string `json:"after"`
+	Ref          string `json:"ref"`
+	CheckoutSha  string `json:"checkout_sha"`
+	Message      any    `json:"message"`
+	UserId       int    `json:"user_id"`
+	UserName     string `json:"user_name"`
+	UserUsername string `json:"user_username"`
+	UserEmail    string `json:"user_email"`
+	UserAvatar   string `json:"user_avatar"`
+	ProjectId    int    `json:"project_id"`
 	Project      struct {
-		Id                int         `json:"id"`
-		Name              string      `json:"name"`
-		Description       string      `json:"description"`
-		WebUrl            string      `json:"web_url"`
-		AvatarUrl         any `json:"avatar_url"`
-		GitSshUrl         string      `json:"git_ssh_url"`
-		GitHttpUrl        string      `json:"git_http_url"`
-		Namespace         string      `json:"namespace"`
-		VisibilityLevel   int         `json:"visibility_level"`
-		PathWithNamespace string      `json:"path_with_namespace"`
-		DefaultBranch     string      `json:"default_branch"`
-		CiConfigPath      string      `json:"ci_config_path"`
-		Homepage          string      `json:"homepage"`
-		Url               string      `json:"url"`
-		SshUrl            string      `json:"ssh_url"`
-		HttpUrl           string      `json:"http_url"`
+		Id                int    `json:"id"`
+		Name              string `json:"name"`
+		Description       string `json:"description"`
+		WebUrl            string `json:"web_url"`
+		AvatarUrl         any    `json:"avatar_url"`
+		GitSshUrl         string `json:"git_ssh_url"`
+		GitHttpUrl        string `json:"git_http_url"`
+		Namespace         string `json:"namespace"`
+		VisibilityLevel   int    `json:"visibility_level"`
+		PathWithNamespace string `json:"path_with_namespace"`
+		DefaultBranch     string `json:"default_branch"`
+		CiConfigPath      string `json:"ci_config_path"`
+		Homepage          string `json:"homepage"`
+		Url               string `json:"url"`
+		SshUrl            string `json:"ssh_url"`
+		HttpUrl           string `json:"http_url"`
 	} `json:"project"`
 	Commits []struct {
 		Id        string    `json:"id"`
@@ -302,9 +302,9 @@ type gitlabPushHook struct {
 			Name  string `json:"name"`
 			Email string `json:"email"`
 		} `json:"author"`
-		Added    []any `json:"added"`
-		Modified []string      `json:"modified"`
-		Removed  []any `json:"removed"`
+		Added    []any    `json:"added"`
+		Modified []string `json:"modified"`
+		Removed  []any    `json:"removed"`
 	} `json:"commits"`
 	TotalCommitsCount int `json:"total_commits_count"`
 	PushOptions       struct {
@@ -330,87 +330,87 @@ type gitlabPRHook struct {
 		Email     string `json:"email"`
 	} `json:"user"`
 	Project struct {
-		Id                int         `json:"id"`
-		Name              string      `json:"name"`
-		Description       string      `json:"description"`
-		WebUrl            string      `json:"web_url"`
-		AvatarUrl         any `json:"avatar_url"`
-		GitSshUrl         string      `json:"git_ssh_url"`
-		GitHttpUrl        string      `json:"git_http_url"`
-		Namespace         string      `json:"namespace"`
-		VisibilityLevel   int         `json:"visibility_level"`
-		PathWithNamespace string      `json:"path_with_namespace"`
-		DefaultBranch     string      `json:"default_branch"`
-		CiConfigPath      string      `json:"ci_config_path"`
-		Homepage          string      `json:"homepage"`
-		Url               string      `json:"url"`
-		SshUrl            string      `json:"ssh_url"`
-		HttpUrl           string      `json:"http_url"`
+		Id                int    `json:"id"`
+		Name              string `json:"name"`
+		Description       string `json:"description"`
+		WebUrl            string `json:"web_url"`
+		AvatarUrl         any    `json:"avatar_url"`
+		GitSshUrl         string `json:"git_ssh_url"`
+		GitHttpUrl        string `json:"git_http_url"`
+		Namespace         string `json:"namespace"`
+		VisibilityLevel   int    `json:"visibility_level"`
+		PathWithNamespace string `json:"path_with_namespace"`
+		DefaultBranch     string `json:"default_branch"`
+		CiConfigPath      string `json:"ci_config_path"`
+		Homepage          string `json:"homepage"`
+		Url               string `json:"url"`
+		SshUrl            string `json:"ssh_url"`
+		HttpUrl           string `json:"http_url"`
 	} `json:"project"`
 	ObjectAttributes struct {
-		AssigneeId     any `json:"assignee_id"`
-		AuthorId       int         `json:"author_id"`
-		CreatedAt      string      `json:"created_at"`
-		Description    string      `json:"description"`
-		HeadPipelineId any `json:"head_pipeline_id"`
-		Id             int         `json:"id"`
-		Iid            int64       `json:"iid"`
-		LastEditedAt   any `json:"last_edited_at"`
-		LastEditedById any `json:"last_edited_by_id"`
-		MergeCommitSha any `json:"merge_commit_sha"`
-		MergeError     any `json:"merge_error"`
+		AssigneeId     any    `json:"assignee_id"`
+		AuthorId       int    `json:"author_id"`
+		CreatedAt      string `json:"created_at"`
+		Description    string `json:"description"`
+		HeadPipelineId any    `json:"head_pipeline_id"`
+		Id             int    `json:"id"`
+		Iid            int64  `json:"iid"`
+		LastEditedAt   any    `json:"last_edited_at"`
+		LastEditedById any    `json:"last_edited_by_id"`
+		MergeCommitSha any    `json:"merge_commit_sha"`
+		MergeError     any    `json:"merge_error"`
 		MergeParams    struct {
 			ForceRemoveSourceBranch string `json:"force_remove_source_branch"`
 		} `json:"merge_params"`
-		MergeStatus               string      `json:"merge_status"`
-		MergeUserId               any `json:"merge_user_id"`
-		MergeWhenPipelineSucceeds bool        `json:"merge_when_pipeline_succeeds"`
-		MilestoneId               any `json:"milestone_id"`
-		SourceBranch              string      `json:"source_branch"`
-		SourceProjectId           int         `json:"source_project_id"`
-		StateId                   int         `json:"state_id"`
-		TargetBranch              string      `json:"target_branch"`
-		TargetProjectId           int         `json:"target_project_id"`
-		TimeEstimate              int         `json:"time_estimate"`
-		Title                     string      `json:"title"`
-		UpdatedAt                 string      `json:"updated_at"`
-		UpdatedById               any `json:"updated_by_id"`
-		Url                       string      `json:"url"`
+		MergeStatus               string `json:"merge_status"`
+		MergeUserId               any    `json:"merge_user_id"`
+		MergeWhenPipelineSucceeds bool   `json:"merge_when_pipeline_succeeds"`
+		MilestoneId               any    `json:"milestone_id"`
+		SourceBranch              string `json:"source_branch"`
+		SourceProjectId           int    `json:"source_project_id"`
+		StateId                   int    `json:"state_id"`
+		TargetBranch              string `json:"target_branch"`
+		TargetProjectId           int    `json:"target_project_id"`
+		TimeEstimate              int    `json:"time_estimate"`
+		Title                     string `json:"title"`
+		UpdatedAt                 string `json:"updated_at"`
+		UpdatedById               any    `json:"updated_by_id"`
+		Url                       string `json:"url"`
 		Source                    struct {
-			Id                int         `json:"id"`
-			Name              string      `json:"name"`
-			Description       string      `json:"description"`
-			WebUrl            string      `json:"web_url"`
-			AvatarUrl         any `json:"avatar_url"`
-			GitSshUrl         string      `json:"git_ssh_url"`
-			GitHttpUrl        string      `json:"git_http_url"`
-			Namespace         string      `json:"namespace"`
-			VisibilityLevel   int         `json:"visibility_level"`
-			PathWithNamespace string      `json:"path_with_namespace"`
-			DefaultBranch     string      `json:"default_branch"`
-			CiConfigPath      string      `json:"ci_config_path"`
-			Homepage          string      `json:"homepage"`
-			Url               string      `json:"url"`
-			SshUrl            string      `json:"ssh_url"`
-			HttpUrl           string      `json:"http_url"`
+			Id                int    `json:"id"`
+			Name              string `json:"name"`
+			Description       string `json:"description"`
+			WebUrl            string `json:"web_url"`
+			AvatarUrl         any    `json:"avatar_url"`
+			GitSshUrl         string `json:"git_ssh_url"`
+			GitHttpUrl        string `json:"git_http_url"`
+			Namespace         string `json:"namespace"`
+			VisibilityLevel   int    `json:"visibility_level"`
+			PathWithNamespace string `json:"path_with_namespace"`
+			DefaultBranch     string `json:"default_branch"`
+			CiConfigPath      string `json:"ci_config_path"`
+			Homepage          string `json:"homepage"`
+			Url               string `json:"url"`
+			SshUrl            string `json:"ssh_url"`
+			HttpUrl           string `json:"http_url"`
 		} `json:"source"`
 		Target struct {
-			Id                int         `json:"id"`
-			Name              string      `json:"name"`
-			Description       string      `json:"description"`
-			WebUrl            string      `json:"web_url"`
-			AvatarUrl         any `json:"avatar_url"`
-			GitSshUrl         string      `json:"git_ssh_url"`
-			GitHttpUrl        string      `json:"git_http_url"`
-			Namespace         string      `json:"namespace"`
-			VisibilityLevel   int         `json:"visibility_level"`
-			PathWithNamespace string      `json:"path_with_namespace"`
-			DefaultBranch     string      `json:"default_branch"`
-			CiConfigPath      string      `json:"ci_config_path"`
-			Homepage          string      `json:"homepage"`
-			Url               string      `json:"url"`
-			SshUrl            string      `json:"ssh_url"`
-			HttpUrl           string      `json:"http_url"`
+			Id                int    `json:"id"`
+			Name              string `json:"name"`
+			Description       string `json:"description"`
+			WebUrl            string `json:"web_url"`
+			AvatarUrl         any    `json:"avatar_url"`
+			GitSshUrl         string `json:"git_ssh_url"`
+			GitHttpUrl        string `json:"git_http_url"`
+			Namespace         string `json:"namespace"`
+			VisibilityLevel   int    `json:"visibility_level"`
+			PathWithNamespace string `json:"path_with_namespace"`
+			DefaultBranch     string `json:"default_branch"`
+			CiConfigPath      string `json:"ci_config_path"`
+			Homepage          string `json:"homepage"`
+			Url               string `json:"url"`
+			SshUrl            string `json:"ssh_url"`
+			HttpUrl           string `json:"http_url"`
 		} `json:"target"`
 		LastCommit struct {
 			Id        string    `json:"id"`
@@ -423,15 +423,15 @@ type gitlabPRHook struct {
 				Email string `json:"email"`
 			} `json:"author"`
 		} `json:"last_commit"`
-		WorkInProgress      bool          `json:"work_in_progress"`
-		TotalTimeSpent      int           `json:"total_time_spent"`
-		TimeChange          int           `json:"time_change"`
-		HumanTotalTimeSpent any   `json:"human_total_time_spent"`
-		HumanTimeChange     any   `json:"human_time_change"`
-		HumanTimeEstimate   any   `json:"human_time_estimate"`
-		AssigneeIds         []any `json:"assignee_ids"`
-		State               string        `json:"state"`
-		Action              string        `json:"action"`
+		WorkInProgress      bool   `json:"work_in_progress"`
+		TotalTimeSpent      int    `json:"total_time_spent"`
+		TimeChange          int    `json:"time_change"`
+		HumanTotalTimeSpent any    `json:"human_total_time_spent"`
+		HumanTimeChange     any    `json:"human_time_change"`
+		HumanTimeEstimate   any    `json:"human_time_estimate"`
+		AssigneeIds         []any  `json:"assignee_ids"`
+		State               string `json:"state"`
+		Action              string `json:"action"`
 	} `json:"object_attributes"`
 	Labels  []any `json:"labels"`
 	Changes struct {
@@ -459,48 +459,48 @@ type gitlabCommentHook struct {
 	} `json:"user"`
 	ProjectId int `json:"project_id"`
 	Project   struct {
-		Id                int         `json:"id"`
-		Name              string      `json:"name"`
-		Description       string      `json:"description"`
-		WebUrl            string      `json:"web_url"`
-		AvatarUrl         any `json:"avatar_url"`
-		GitSshUrl         string      `json:"git_ssh_url"`
-		GitHttpUrl        string      `json:"git_http_url"`
-		Namespace         string      `json:"namespace"`
-		VisibilityLevel   int         `json:"visibility_level"`
-		PathWithNamespace string      `json:"path_with_namespace"`
-		DefaultBranch     string      `json:"default_branch"`
-		CiConfigPath      string      `json:"ci_config_path"`
-		Homepage          string      `json:"homepage"`
-		Url               string      `json:"url"`
-		SshUrl            string      `json:"ssh_url"`
-		HttpUrl           string      `json:"http_url"`
+		Id                int    `json:"id"`
+		Name              string `json:"name"`
+		Description       string `json:"description"`
+		WebUrl            string `json:"web_url"`
+		AvatarUrl         any    `json:"avatar_url"`
+		GitSshUrl         string `json:"git_ssh_url"`
+		GitHttpUrl        string `json:"git_http_url"`
+		Namespace         string `json:"namespace"`
+		VisibilityLevel   int    `json:"visibility_level"`
+		PathWithNamespace string `json:"path_with_namespace"`
+		DefaultBranch     string `json:"default_branch"`
+		CiConfigPath      string `json:"ci_config_path"`
+		Homepage          string `json:"homepage"`
+		Url               string `json:"url"`
+		SshUrl            string `json:"ssh_url"`
+		HttpUrl           string `json:"http_url"`
 	} `json:"project"`
 	ObjectAttributes struct {
-		Attachment       any `json:"attachment"`
-		AuthorId         int         `json:"author_id"`
-		ChangePosition   any `json:"change_position"`
-		CommitId         any `json:"commit_id"`
-		CreatedAt        string      `json:"created_at"`
-		DiscussionId     string      `json:"discussion_id"`
-		Id               int         `json:"id"`
-		LineCode         any `json:"line_code"`
-		Note             string      `json:"note"`
-		NoteableId       int         `json:"noteable_id"`   //nolint:misspell // GitLab API uses "noteable"
-		NoteableType     string      `json:"noteable_type"` //nolint:misspell // GitLab API uses "noteable"
-		OriginalPosition any `json:"original_position"`
-		Position         any `json:"position"`
-		ProjectId        int         `json:"project_id"`
-		ResolvedAt       any `json:"resolved_at"`
-		ResolvedById     any `json:"resolved_by_id"`
-		ResolvedByPush   any `json:"resolved_by_push"`
-		StDiff           any `json:"st_diff"`
-		System           bool        `json:"system"`
-		Type             any `json:"type"`
-		UpdatedAt        string      `json:"updated_at"`
-		UpdatedById      any `json:"updated_by_id"`
-		Description      string      `json:"description"`
-		Url              string      `json:"url"`
+		Attachment       any    `json:"attachment"`
+		AuthorId         int    `json:"author_id"`
+		ChangePosition   any    `json:"change_position"`
+		CommitId         any    `json:"commit_id"`
+		CreatedAt        string `json:"created_at"`
+		DiscussionId     string `json:"discussion_id"`
+		Id               int    `json:"id"`
+		LineCode         any    `json:"line_code"`
+		Note             string `json:"note"`
+		NoteableId       int    `json:"noteable_id"`   //nolint:misspell // GitLab API uses "noteable"
+		NoteableType     string `json:"noteable_type"` //nolint:misspell // GitLab API uses "noteable"
+		OriginalPosition any    `json:"original_position"`
+		Position         any    `json:"position"`
+		ProjectId        int    `json:"project_id"`
+		ResolvedAt       any    `json:"resolved_at"`
+		ResolvedById     any    `json:"resolved_by_id"`
+		ResolvedByPush   any    `json:"resolved_by_push"`
+		StDiff           any    `json:"st_diff"`
+		System           bool   `json:"system"`
+		Type             any    `json:"type"`
+		UpdatedAt        string `json:"updated_at"`
+		UpdatedById      any    `json:"updated_by_id"`
+		Description      string `json:"description"`
+		Url              string `json:"url"`
 	} `json:"object_attributes"`
 	Repository struct {
 		Name        string `json:"name"`
@@ -509,69 +509,69 @@ type gitlabCommentHook struct {
 		Homepage    string `json:"homepage"`
 	} `json:"repository"`
 	MergeRequest struct {
-		AssigneeId     any `json:"assignee_id"`
-		AuthorId       int         `json:"author_id"`
-		CreatedAt      string      `json:"created_at"`
-		Description    string      `json:"description"`
-		HeadPipelineId any `json:"head_pipeline_id"`
-		Id             int         `json:"id"`
-		Iid            int64       `json:"iid"`
-		LastEditedAt   any `json:"last_edited_at"`
-		LastEditedById any `json:"last_edited_by_id"`
-		MergeCommitSha any `json:"merge_commit_sha"`
-		MergeError     any `json:"merge_error"`
+		AssigneeId     any    `json:"assignee_id"`
+		AuthorId       int    `json:"author_id"`
+		CreatedAt      string `json:"created_at"`
+		Description    string `json:"description"`
+		HeadPipelineId any    `json:"head_pipeline_id"`
+		Id             int    `json:"id"`
+		Iid            int64  `json:"iid"`
+		LastEditedAt   any    `json:"last_edited_at"`
+		LastEditedById any    `json:"last_edited_by_id"`
+		MergeCommitSha any    `json:"merge_commit_sha"`
+		MergeError     any    `json:"merge_error"`
 		MergeParams    struct {
 			ForceRemoveSourceBranch string `json:"force_remove_source_branch"`
 		} `json:"merge_params"`
-		MergeStatus               string      `json:"merge_status"`
-		MergeUserId               any `json:"merge_user_id"`
-		MergeWhenPipelineSucceeds bool        `json:"merge_when_pipeline_succeeds"`
-		MilestoneId               any `json:"milestone_id"`
-		SourceBranch              string      `json:"source_branch"`
-		SourceProjectId           int         `json:"source_project_id"`
-		StateId                   int         `json:"state_id"`
-		TargetBranch              string      `json:"target_branch"`
-		TargetProjectId           int         `json:"target_project_id"`
-		TimeEstimate              int         `json:"time_estimate"`
-		Title                     string      `json:"title"`
-		UpdatedAt                 string      `json:"updated_at"`
-		UpdatedById               any `json:"updated_by_id"`
-		Url                       string      `json:"url"`
+		MergeStatus               string `json:"merge_status"`
+		MergeUserId               any    `json:"merge_user_id"`
+		MergeWhenPipelineSucceeds bool   `json:"merge_when_pipeline_succeeds"`
+		MilestoneId               any    `json:"milestone_id"`
+		SourceBranch              string `json:"source_branch"`
+		SourceProjectId           int    `json:"source_project_id"`
+		StateId                   int    `json:"state_id"`
+		TargetBranch              string `json:"target_branch"`
+		TargetProjectId           int    `json:"target_project_id"`
+		TimeEstimate              int    `json:"time_estimate"`
+		Title                     string `json:"title"`
+		UpdatedAt                 string `json:"updated_at"`
+		UpdatedById               any    `json:"updated_by_id"`
+		Url                       string `json:"url"`
 		Source                    struct {
-			Id                int         `json:"id"`
-			Name              string      `json:"name"`
-			Description       string      `json:"description"`
-			WebUrl            string      `json:"web_url"`
-			AvatarUrl         any `json:"avatar_url"`
-			GitSshUrl         string      `json:"git_ssh_url"`
-			GitHttpUrl        string      `json:"git_http_url"`
-			Namespace         string      `json:"namespace"`
-			VisibilityLevel   int         `json:"visibility_level"`
-			PathWithNamespace string      `json:"path_with_namespace"`
-			DefaultBranch     string      `json:"default_branch"`
-			CiConfigPath      string      `json:"ci_config_path"`
-			Homepage          string      `json:"homepage"`
-			Url               string      `json:"url"`
-			SshUrl            string      `json:"ssh_url"`
-			HttpUrl           string      `json:"http_url"`
+			Id                int    `json:"id"`
+			Name              string `json:"name"`
+			Description       string `json:"description"`
+			WebUrl            string `json:"web_url"`
+			AvatarUrl         any    `json:"avatar_url"`
+			GitSshUrl         string `json:"git_ssh_url"`
+			GitHttpUrl        string `json:"git_http_url"`
+			Namespace         string `json:"namespace"`
+			VisibilityLevel   int    `json:"visibility_level"`
+			PathWithNamespace string `json:"path_with_namespace"`
+			DefaultBranch     string `json:"default_branch"`
+			CiConfigPath      string `json:"ci_config_path"`
+			Homepage          string `json:"homepage"`
+			Url               string `json:"url"`
+			SshUrl            string `json:"ssh_url"`
+			HttpUrl           string `json:"http_url"`
 		} `json:"source"`
 		Target struct {
-			Id                int         `json:"id"`
-			Name              string      `json:"name"`
-			Description       string      `json:"description"`
-			WebUrl            string      `json:"web_url"`
-			AvatarUrl         any `json:"avatar_url"`
-			GitSshUrl         string      `json:"git_ssh_url"`
-			GitHttpUrl        string      `json:"git_http_url"`
-			Namespace         string      `json:"namespace"`
-			VisibilityLevel   int         `json:"visibility_level"`
-			PathWithNamespace string      `json:"path_with_namespace"`
-			DefaultBranch     string      `json:"default_branch"`
-			CiConfigPath      string      `json:"ci_config_path"`
-			Homepage          string      `json:"homepage"`
-			Url               string      `json:"url"`
-			SshUrl            string      `json:"ssh_url"`
-			HttpUrl           string      `json:"http_url"`
+			Id                int    `json:"id"`
+			Name              string `json:"name"`
+			Description       string `json:"description"`
+			WebUrl            string `json:"web_url"`
+			AvatarUrl         any    `json:"avatar_url"`
+			GitSshUrl         string `json:"git_ssh_url"`
+			GitHttpUrl        string `json:"git_http_url"`
+			Namespace         string `json:"namespace"`
+			VisibilityLevel   int    `json:"visibility_level"`
+			PathWithNamespace string `json:"path_with_namespace"`
+			DefaultBranch     string `json:"default_branch"`
+			CiConfigPath      string `json:"ci_config_path"`
+			Homepage          string `json:"homepage"`
+			Url               string `json:"url"`
+			SshUrl            string `json:"ssh_url"`
+			HttpUrl           string `json:"http_url"`
 		} `json:"target"`
 		LastCommit struct {
 			Id        string    `json:"id"`
@@ -584,13 +584,13 @@ type gitlabCommentHook struct {
 				Email string `json:"email"`
 			} `json:"author"`
 		} `json:"last_commit"`
-		WorkInProgress      bool          `json:"work_in_progress"`
-		TotalTimeSpent      int           `json:"total_time_spent"`
-		TimeChange          int           `json:"time_change"`
-		HumanTotalTimeSpent any   `json:"human_total_time_spent"`
-		HumanTimeChange     any   `json:"human_time_change"`
-		HumanTimeEstimate   any   `json:"human_time_estimate"`
-		AssigneeIds         []any `json:"assignee_ids"`
-		State               string        `json:"state"`
+		WorkInProgress      bool   `json:"work_in_progress"`
+		TotalTimeSpent      int    `json:"total_time_spent"`
+		TimeChange          int    `json:"time_change"`
+		HumanTotalTimeSpent any    `json:"human_total_time_spent"`
+		HumanTimeChange     any    `json:"human_time_change"`
+		HumanTimeEstimate   any    `json:"human_time_estimate"`
+		AssigneeIds         []any  `json:"assignee_ids"`
+		State               string `json:"state"`
 	} `json:"merge_request"`
 }

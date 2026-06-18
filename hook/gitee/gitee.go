@@ -303,10 +303,10 @@ type giteePushHook struct {
 			Name  string `json:"name"`
 			Email string `json:"email"`
 		} `json:"committer"`
-		Distinct bool          `json:"distinct"`
-		Added    []any `json:"added"`
-		Removed  []any `json:"removed"`
-		Modified []string      `json:"modified"`
+		Distinct bool     `json:"distinct"`
+		Added    []any    `json:"added"`
+		Removed  []any    `json:"removed"`
+		Modified []string `json:"modified"`
 	} `json:"commits"`
 	HeadCommit struct {
 		Id        string    `json:"id"`
@@ -328,10 +328,10 @@ type giteePushHook struct {
 			Name  string `json:"name"`
 			Email string `json:"email"`
 		} `json:"committer"`
-		Distinct bool          `json:"distinct"`
-		Added    []any `json:"added"`
-		Removed  []any `json:"removed"`
-		Modified []string      `json:"modified"`
+		Distinct bool     `json:"distinct"`
+		Added    []any    `json:"added"`
+		Removed  []any    `json:"removed"`
+		Modified []string `json:"modified"`
 	} `json:"head_commit"`
 	Repository struct {
 		Id       int64  `json:"id"`
@@ -351,35 +351,35 @@ type giteePushHook struct {
 			Type      string `json:"type"`
 			SiteAdmin bool   `json:"site_admin"`
 		} `json:"owner"`
-		Private           bool        `json:"private"`
-		HtmlUrl           string      `json:"html_url"`
-		Url               string      `json:"url"`
-		Description       string      `json:"description"`
-		Fork              bool        `json:"fork"`
-		CreatedAt         time.Time   `json:"created_at"`
-		UpdatedAt         time.Time   `json:"updated_at"`
-		PushedAt          time.Time   `json:"pushed_at"`
-		GitUrl            string      `json:"git_url"`
-		SshUrl            string      `json:"ssh_url"`
-		CloneUrl          string      `json:"clone_url"`
-		SvnUrl            string      `json:"svn_url"`
-		GitHttpUrl        string      `json:"git_http_url"`
-		GitSshUrl         string      `json:"git_ssh_url"`
-		GitSvnUrl         string      `json:"git_svn_url"`
-		Homepage          any `json:"homepage"`
-		StargazersCount   int         `json:"stargazers_count"`
-		WatchersCount     int         `json:"watchers_count"`
-		ForksCount        int         `json:"forks_count"`
-		Language          string      `json:"language"`
-		HasIssues         bool        `json:"has_issues"`
-		HasWiki           bool        `json:"has_wiki"`
-		HasPages          bool        `json:"has_pages"`
-		License           string      `json:"license"`
-		OpenIssuesCount   int         `json:"open_issues_count"`
-		DefaultBranch     string      `json:"default_branch"`
-		Namespace         string      `json:"namespace"`
-		NameWithNamespace string      `json:"name_with_namespace"`
-		PathWithNamespace string      `json:"path_with_namespace"`
+		Private           bool      `json:"private"`
+		HtmlUrl           string    `json:"html_url"`
+		Url               string    `json:"url"`
+		Description       string    `json:"description"`
+		Fork              bool      `json:"fork"`
+		CreatedAt         time.Time `json:"created_at"`
+		UpdatedAt         time.Time `json:"updated_at"`
+		PushedAt          time.Time `json:"pushed_at"`
+		GitUrl            string    `json:"git_url"`
+		SshUrl            string    `json:"ssh_url"`
+		CloneUrl          string    `json:"clone_url"`
+		SvnUrl            string    `json:"svn_url"`
+		GitHttpUrl        string    `json:"git_http_url"`
+		GitSshUrl         string    `json:"git_ssh_url"`
+		GitSvnUrl         string    `json:"git_svn_url"`
+		Homepage          any       `json:"homepage"`
+		StargazersCount   int       `json:"stargazers_count"`
+		WatchersCount     int       `json:"watchers_count"`
+		ForksCount        int       `json:"forks_count"`
+		Language          string    `json:"language"`
+		HasIssues         bool      `json:"has_issues"`
+		HasWiki           bool      `json:"has_wiki"`
+		HasPages          bool      `json:"has_pages"`
+		License           string    `json:"license"`
+		OpenIssuesCount   int       `json:"open_issues_count"`
+		DefaultBranch     string    `json:"default_branch"`
+		Namespace         string    `json:"namespace"`
+		NameWithNamespace string    `json:"name_with_namespace"`
+		PathWithNamespace string    `json:"path_with_namespace"`
 	} `json:"repository"`
 	Project struct {
 		Id       int    `json:"id"`
@@ -399,35 +399,35 @@ type giteePushHook struct {
 			Type      string `json:"type"`
 			SiteAdmin bool   `json:"site_admin"`
 		} `json:"owner"`
-		Private           bool        `json:"private"`
-		HtmlUrl           string      `json:"html_url"`
-		Url               string      `json:"url"`
-		Description       string      `json:"description"`
-		Fork              bool        `json:"fork"`
-		CreatedAt         time.Time   `json:"created_at"`
-		UpdatedAt         time.Time   `json:"updated_at"`
-		PushedAt          time.Time   `json:"pushed_at"`
-		GitUrl            string      `json:"git_url"`
-		SshUrl            string      `json:"ssh_url"`
-		CloneUrl          string      `json:"clone_url"`
-		SvnUrl            string      `json:"svn_url"`
-		GitHttpUrl        string      `json:"git_http_url"`
-		GitSshUrl         string      `json:"git_ssh_url"`
-		GitSvnUrl         string      `json:"git_svn_url"`
-		Homepage          any `json:"homepage"`
-		StargazersCount   int         `json:"stargazers_count"`
-		WatchersCount     int         `json:"watchers_count"`
-		ForksCount        int         `json:"forks_count"`
-		Language          string      `json:"language"`
-		HasIssues         bool        `json:"has_issues"`
-		HasWiki           bool        `json:"has_wiki"`
-		HasPages          bool        `json:"has_pages"`
-		License           string      `json:"license"`
-		OpenIssuesCount   int         `json:"open_issues_count"`
-		DefaultBranch     string      `json:"default_branch"`
-		Namespace         string      `json:"namespace"`
-		NameWithNamespace string      `json:"name_with_namespace"`
-		PathWithNamespace string      `json:"path_with_namespace"`
+		Private           bool      `json:"private"`
+		HtmlUrl           string    `json:"html_url"`
+		Url               string    `json:"url"`
+		Description       string    `json:"description"`
+		Fork              bool      `json:"fork"`
+		CreatedAt         time.Time `json:"created_at"`
+		UpdatedAt         time.Time `json:"updated_at"`
+		PushedAt          time.Time `json:"pushed_at"`
+		GitUrl            string    `json:"git_url"`
+		SshUrl            string    `json:"ssh_url"`
+		CloneUrl          string    `json:"clone_url"`
+		SvnUrl            string    `json:"svn_url"`
+		GitHttpUrl        string    `json:"git_http_url"`
+		GitSshUrl         string    `json:"git_ssh_url"`
+		GitSvnUrl         string    `json:"git_svn_url"`
+		Homepage          any       `json:"homepage"`
+		StargazersCount   int       `json:"stargazers_count"`
+		WatchersCount     int       `json:"watchers_count"`
+		ForksCount        int       `json:"forks_count"`
+		Language          string    `json:"language"`
+		HasIssues         bool      `json:"has_issues"`
+		HasWiki           bool      `json:"has_wiki"`
+		HasPages          bool      `json:"has_pages"`
+		License           string    `json:"license"`
+		OpenIssuesCount   int       `json:"open_issues_count"`
+		DefaultBranch     string    `json:"default_branch"`
+		Namespace         string    `json:"namespace"`
+		NameWithNamespace string    `json:"name_with_namespace"`
+		PathWithNamespace string    `json:"path_with_namespace"`
 	} `json:"project"`
 	UserId   int    `json:"user_id"`
 	UserName string `json:"user_name"`
@@ -460,35 +460,35 @@ type giteePushHook struct {
 		Type      string `json:"type"`
 		SiteAdmin bool   `json:"site_admin"`
 	} `json:"sender"`
-	Enterprise any `json:"enterprise"`
-	HookName   string      `json:"hook_name"`
-	HookId     int         `json:"hook_id"`
-	HookUrl    string      `json:"hook_url"`
-	Password   string      `json:"password"`
-	Timestamp  string      `json:"timestamp"`
-	Sign       string      `json:"sign"`
+	Enterprise any    `json:"enterprise"`
+	HookName   string `json:"hook_name"`
+	HookId     int    `json:"hook_id"`
+	HookUrl    string `json:"hook_url"`
+	Password   string `json:"password"`
+	Timestamp  string `json:"timestamp"`
+	Sign       string `json:"sign"`
 }
 
 type giteePRHook struct {
 	Action      string `json:"action"`
 	ActionDesc  string `json:"action_desc"`
 	PullRequest struct {
-		Id                 int           `json:"id"`
-		Number             int64         `json:"number"`
-		State              string        `json:"state"`
-		HtmlUrl            string        `json:"html_url"`
-		DiffUrl            string        `json:"diff_url"`
-		PatchUrl           string        `json:"patch_url"`
-		Title              string        `json:"title"`
-		Body               string        `json:"body"`
-		Labels             []any `json:"labels"`
-		Languages          []any `json:"languages"`
-		CreatedAt          time.Time     `json:"created_at"`
-		UpdatedAt          time.Time     `json:"updated_at"`
-		ClosedAt           any   `json:"closed_at"`
-		MergedAt           any   `json:"merged_at"`
-		MergeCommitSha     string        `json:"merge_commit_sha"`
-		MergeReferenceName string        `json:"merge_reference_name"`
+		Id                 int       `json:"id"`
+		Number             int64     `json:"number"`
+		State              string    `json:"state"`
+		HtmlUrl            string    `json:"html_url"`
+		DiffUrl            string    `json:"diff_url"`
+		PatchUrl           string    `json:"patch_url"`
+		Title              string    `json:"title"`
+		Body               string    `json:"body"`
+		Labels             []any     `json:"labels"`
+		Languages          []any     `json:"languages"`
+		CreatedAt          time.Time `json:"created_at"`
+		UpdatedAt          time.Time `json:"updated_at"`
+		ClosedAt           any       `json:"closed_at"`
+		MergedAt           any       `json:"merged_at"`
+		MergeCommitSha     string    `json:"merge_commit_sha"`
+		MergeReferenceName string    `json:"merge_reference_name"`
 		User               struct {
 			Id        int    `json:"id"`
 			Name      string `json:"name"`
@@ -530,9 +530,9 @@ type giteePRHook struct {
 			Type      string `json:"type"`
 			SiteAdmin bool   `json:"site_admin"`
 		} `json:"testers"`
-		NeedTest   bool        `json:"need_test"`
-		NeedReview bool        `json:"need_review"`
-		Milestone  any `json:"milestone"`
+		NeedTest   bool `json:"need_test"`
+		NeedReview bool `json:"need_review"`
+		Milestone  any  `json:"milestone"`
 		Head       struct {
 			Label string `json:"label"`
 			Ref   string `json:"ref"`
@@ -568,35 +568,35 @@ type giteePRHook struct {
 					Type      string `json:"type"`
 					SiteAdmin bool   `json:"site_admin"`
 				} `json:"owner"`
-				Private           bool        `json:"private"`
-				HtmlUrl           string      `json:"html_url"`
-				Url               string      `json:"url"`
-				Description       string      `json:"description"`
-				Fork              bool        `json:"fork"`
-				CreatedAt         time.Time   `json:"created_at"`
-				UpdatedAt         time.Time   `json:"updated_at"`
-				PushedAt          time.Time   `json:"pushed_at"`
-				GitUrl            string      `json:"git_url"`
-				SshUrl            string      `json:"ssh_url"`
-				CloneUrl          string      `json:"clone_url"`
-				SvnUrl            string      `json:"svn_url"`
-				GitHttpUrl        string      `json:"git_http_url"`
-				GitSshUrl         string      `json:"git_ssh_url"`
-				GitSvnUrl         string      `json:"git_svn_url"`
-				Homepage          any `json:"homepage"`
-				StargazersCount   int         `json:"stargazers_count"`
-				WatchersCount     int         `json:"watchers_count"`
-				ForksCount        int         `json:"forks_count"`
-				Language          string      `json:"language"`
-				HasIssues         bool        `json:"has_issues"`
-				HasWiki           bool        `json:"has_wiki"`
-				HasPages          bool        `json:"has_pages"`
-				License           string      `json:"license"`
-				OpenIssuesCount   int         `json:"open_issues_count"`
-				DefaultBranch     string      `json:"default_branch"`
-				Namespace         string      `json:"namespace"`
-				NameWithNamespace string      `json:"name_with_namespace"`
-				PathWithNamespace string      `json:"path_with_namespace"`
+				Private           bool      `json:"private"`
+				HtmlUrl           string    `json:"html_url"`
+				Url               string    `json:"url"`
+				Description       string    `json:"description"`
+				Fork              bool      `json:"fork"`
+				CreatedAt         time.Time `json:"created_at"`
+				UpdatedAt         time.Time `json:"updated_at"`
+				PushedAt          time.Time `json:"pushed_at"`
+				GitUrl            string    `json:"git_url"`
+				SshUrl            string    `json:"ssh_url"`
+				CloneUrl          string    `json:"clone_url"`
+				SvnUrl            string    `json:"svn_url"`
+				GitHttpUrl        string    `json:"git_http_url"`
+				GitSshUrl         string    `json:"git_ssh_url"`
+				GitSvnUrl         string    `json:"git_svn_url"`
+				Homepage          any       `json:"homepage"`
+				StargazersCount   int       `json:"stargazers_count"`
+				WatchersCount     int       `json:"watchers_count"`
+				ForksCount        int       `json:"forks_count"`
+				Language          string    `json:"language"`
+				HasIssues         bool      `json:"has_issues"`
+				HasWiki           bool      `json:"has_wiki"`
+				HasPages          bool      `json:"has_pages"`
+				License           string    `json:"license"`
+				OpenIssuesCount   int       `json:"open_issues_count"`
+				DefaultBranch     string    `json:"default_branch"`
+				Namespace         string    `json:"namespace"`
+				NameWithNamespace string    `json:"name_with_namespace"`
+				PathWithNamespace string    `json:"path_with_namespace"`
 			} `json:"repo"`
 		} `json:"head"`
 		Base struct {
@@ -634,35 +634,35 @@ type giteePRHook struct {
 					Type      string `json:"type"`
 					SiteAdmin bool   `json:"site_admin"`
 				} `json:"owner"`
-				Private           bool        `json:"private"`
-				HtmlUrl           string      `json:"html_url"`
-				Url               string      `json:"url"`
-				Description       string      `json:"description"`
-				Fork              bool        `json:"fork"`
-				CreatedAt         time.Time   `json:"created_at"`
-				UpdatedAt         time.Time   `json:"updated_at"`
-				PushedAt          time.Time   `json:"pushed_at"`
-				GitUrl            string      `json:"git_url"`
-				SshUrl            string      `json:"ssh_url"`
-				CloneUrl          string      `json:"clone_url"`
-				SvnUrl            string      `json:"svn_url"`
-				GitHttpUrl        string      `json:"git_http_url"`
-				GitSshUrl         string      `json:"git_ssh_url"`
-				GitSvnUrl         string      `json:"git_svn_url"`
-				Homepage          any `json:"homepage"`
-				StargazersCount   int         `json:"stargazers_count"`
-				WatchersCount     int         `json:"watchers_count"`
-				ForksCount        int         `json:"forks_count"`
-				Language          string      `json:"language"`
-				HasIssues         bool        `json:"has_issues"`
-				HasWiki           bool        `json:"has_wiki"`
-				HasPages          bool        `json:"has_pages"`
-				License           string      `json:"license"`
-				OpenIssuesCount   int         `json:"open_issues_count"`
-				DefaultBranch     string      `json:"default_branch"`
-				Namespace         string      `json:"namespace"`
-				NameWithNamespace string      `json:"name_with_namespace"`
-				PathWithNamespace string      `json:"path_with_namespace"`
+				Private           bool      `json:"private"`
+				HtmlUrl           string    `json:"html_url"`
+				Url               string    `json:"url"`
+				Description       string    `json:"description"`
+				Fork              bool      `json:"fork"`
+				CreatedAt         time.Time `json:"created_at"`
+				UpdatedAt         time.Time `json:"updated_at"`
+				PushedAt          time.Time `json:"pushed_at"`
+				GitUrl            string    `json:"git_url"`
+				SshUrl            string    `json:"ssh_url"`
+				CloneUrl          string    `json:"clone_url"`
+				SvnUrl            string    `json:"svn_url"`
+				GitHttpUrl        string    `json:"git_http_url"`
+				GitSshUrl         string    `json:"git_ssh_url"`
+				GitSvnUrl         string    `json:"git_svn_url"`
+				Homepage          any       `json:"homepage"`
+				StargazersCount   int       `json:"stargazers_count"`
+				WatchersCount     int       `json:"watchers_count"`
+				ForksCount        int       `json:"forks_count"`
+				Language          string    `json:"language"`
+				HasIssues         bool      `json:"has_issues"`
+				HasWiki           bool      `json:"has_wiki"`
+				HasPages          bool      `json:"has_pages"`
+				License           string    `json:"license"`
+				OpenIssuesCount   int       `json:"open_issues_count"`
+				DefaultBranch     string    `json:"default_branch"`
+				Namespace         string    `json:"namespace"`
+				NameWithNamespace string    `json:"name_with_namespace"`
+				PathWithNamespace string    `json:"path_with_namespace"`
 			} `json:"repo"`
 		} `json:"base"`
 		Merged      bool   `json:"merged"`
@@ -687,16 +687,16 @@ type giteePRHook struct {
 		Deletions    int `json:"deletions"`
 		ChangedFiles int `json:"changed_files"`
 	} `json:"pull_request"`
-	Number         int           `json:"number"`
-	Iid            int           `json:"iid"`
-	Title          string        `json:"title"`
-	Body           string        `json:"body"`
-	Languages      []any `json:"languages"`
-	State          string        `json:"state"`
-	MergeStatus    string        `json:"merge_status"`
-	MergeCommitSha string        `json:"merge_commit_sha"`
-	Url            string        `json:"url"`
-	SourceBranch   string        `json:"source_branch"`
+	Number         int    `json:"number"`
+	Iid            int    `json:"iid"`
+	Title          string `json:"title"`
+	Body           string `json:"body"`
+	Languages      []any  `json:"languages"`
+	State          string `json:"state"`
+	MergeStatus    string `json:"merge_status"`
+	MergeCommitSha string `json:"merge_commit_sha"`
+	Url            string `json:"url"`
+	SourceBranch   string `json:"source_branch"`
 	SourceRepo     struct {
 		Project struct {
 			Id       int    `json:"id"`
@@ -716,35 +716,35 @@ type giteePRHook struct {
 				Type      string `json:"type"`
 				SiteAdmin bool   `json:"site_admin"`
 			} `json:"owner"`
-			Private           bool        `json:"private"`
-			HtmlUrl           string      `json:"html_url"`
-			Url               string      `json:"url"`
-			Description       string      `json:"description"`
-			Fork              bool        `json:"fork"`
-			CreatedAt         time.Time   `json:"created_at"`
-			UpdatedAt         time.Time   `json:"updated_at"`
-			PushedAt          time.Time   `json:"pushed_at"`
-			GitUrl            string      `json:"git_url"`
-			SshUrl            string      `json:"ssh_url"`
-			CloneUrl          string      `json:"clone_url"`
-			SvnUrl            string      `json:"svn_url"`
-			GitHttpUrl        string      `json:"git_http_url"`
-			GitSshUrl         string      `json:"git_ssh_url"`
-			GitSvnUrl         string      `json:"git_svn_url"`
-			Homepage          any `json:"homepage"`
-			StargazersCount   int         `json:"stargazers_count"`
-			WatchersCount     int         `json:"watchers_count"`
-			ForksCount        int         `json:"forks_count"`
-			Language          string      `json:"language"`
-			HasIssues         bool        `json:"has_issues"`
-			HasWiki           bool        `json:"has_wiki"`
-			HasPages          bool        `json:"has_pages"`
-			License           string      `json:"license"`
-			OpenIssuesCount   int         `json:"open_issues_count"`
-			DefaultBranch     string      `json:"default_branch"`
-			Namespace         string      `json:"namespace"`
-			NameWithNamespace string      `json:"name_with_namespace"`
-			PathWithNamespace string      `json:"path_with_namespace"`
+			Private           bool      `json:"private"`
+			HtmlUrl           string    `json:"html_url"`
+			Url               string    `json:"url"`
+			Description       string    `json:"description"`
+			Fork              bool      `json:"fork"`
+			CreatedAt         time.Time `json:"created_at"`
+			UpdatedAt         time.Time `json:"updated_at"`
+			PushedAt          time.Time `json:"pushed_at"`
+			GitUrl            string    `json:"git_url"`
+			SshUrl            string    `json:"ssh_url"`
+			CloneUrl          string    `json:"clone_url"`
+			SvnUrl            string    `json:"svn_url"`
+			GitHttpUrl        string    `json:"git_http_url"`
+			GitSshUrl         string    `json:"git_ssh_url"`
+			GitSvnUrl         string    `json:"git_svn_url"`
+			Homepage          any       `json:"homepage"`
+			StargazersCount   int       `json:"stargazers_count"`
+			WatchersCount     int       `json:"watchers_count"`
+			ForksCount        int       `json:"forks_count"`
+			Language          string    `json:"language"`
+			HasIssues         bool      `json:"has_issues"`
+			HasWiki           bool      `json:"has_wiki"`
+			HasPages          bool      `json:"has_pages"`
+			License           string    `json:"license"`
+			OpenIssuesCount   int       `json:"open_issues_count"`
+			DefaultBranch     string    `json:"default_branch"`
+			Namespace         string    `json:"namespace"`
+			NameWithNamespace string    `json:"name_with_namespace"`
+			PathWithNamespace string    `json:"path_with_namespace"`
 		} `json:"project"`
 		Repository struct {
 			Id       int64  `json:"id"`
@@ -764,35 +764,35 @@ type giteePRHook struct {
 				Type      string `json:"type"`
 				SiteAdmin bool   `json:"site_admin"`
 			} `json:"owner"`
-			Private           bool        `json:"private"`
-			HtmlUrl           string      `json:"html_url"`
-			Url               string      `json:"url"`
-			Description       string      `json:"description"`
-			Fork              bool        `json:"fork"`
-			CreatedAt         time.Time   `json:"created_at"`
-			UpdatedAt         time.Time   `json:"updated_at"`
-			PushedAt          time.Time   `json:"pushed_at"`
-			GitUrl            string      `json:"git_url"`
-			SshUrl            string      `json:"ssh_url"`
-			CloneUrl          string      `json:"clone_url"`
-			SvnUrl            string      `json:"svn_url"`
-			GitHttpUrl        string      `json:"git_http_url"`
-			GitSshUrl         string      `json:"git_ssh_url"`
-			GitSvnUrl         string      `json:"git_svn_url"`
-			Homepage          any `json:"homepage"`
-			StargazersCount   int         `json:"stargazers_count"`
-			WatchersCount     int         `json:"watchers_count"`
-			ForksCount        int         `json:"forks_count"`
-			Language          string      `json:"language"`
-			HasIssues         bool        `json:"has_issues"`
-			HasWiki           bool        `json:"has_wiki"`
-			HasPages          bool        `json:"has_pages"`
-			License           string      `json:"license"`
-			OpenIssuesCount   int         `json:"open_issues_count"`
-			DefaultBranch     string      `json:"default_branch"`
-			Namespace         string      `json:"namespace"`
-			NameWithNamespace string      `json:"name_with_namespace"`
-			PathWithNamespace string      `json:"path_with_namespace"`
+			Private           bool      `json:"private"`
+			HtmlUrl           string    `json:"html_url"`
+			Url               string    `json:"url"`
+			Description       string    `json:"description"`
+			Fork              bool      `json:"fork"`
+			CreatedAt         time.Time `json:"created_at"`
+			UpdatedAt         time.Time `json:"updated_at"`
+			PushedAt          time.Time `json:"pushed_at"`
+			GitUrl            string    `json:"git_url"`
+			SshUrl            string    `json:"ssh_url"`
+			CloneUrl          string    `json:"clone_url"`
+			SvnUrl            string    `json:"svn_url"`
+			GitHttpUrl        string    `json:"git_http_url"`
+			GitSshUrl         string    `json:"git_ssh_url"`
+			GitSvnUrl         string    `json:"git_svn_url"`
+			Homepage          any       `json:"homepage"`
+			StargazersCount   int       `json:"stargazers_count"`
+			WatchersCount     int       `json:"watchers_count"`
+			ForksCount        int       `json:"forks_count"`
+			Language          string    `json:"language"`
+			HasIssues         bool      `json:"has_issues"`
+			HasWiki           bool      `json:"has_wiki"`
+			HasPages          bool      `json:"has_pages"`
+			License           string    `json:"license"`
+			OpenIssuesCount   int       `json:"open_issues_count"`
+			DefaultBranch     string    `json:"default_branch"`
+			Namespace         string    `json:"namespace"`
+			NameWithNamespace string    `json:"name_with_namespace"`
+			PathWithNamespace string    `json:"path_with_namespace"`
 		} `json:"repository"`
 	} `json:"source_repo"`
 	TargetBranch string `json:"target_branch"`
@@ -815,35 +815,35 @@ type giteePRHook struct {
 				Type      string `json:"type"`
 				SiteAdmin bool   `json:"site_admin"`
 			} `json:"owner"`
-			Private           bool        `json:"private"`
-			HtmlUrl           string      `json:"html_url"`
-			Url               string      `json:"url"`
-			Description       string      `json:"description"`
-			Fork              bool        `json:"fork"`
-			CreatedAt         time.Time   `json:"created_at"`
-			UpdatedAt         time.Time   `json:"updated_at"`
-			PushedAt          time.Time   `json:"pushed_at"`
-			GitUrl            string      `json:"git_url"`
-			SshUrl            string      `json:"ssh_url"`
-			CloneUrl          string      `json:"clone_url"`
-			SvnUrl            string      `json:"svn_url"`
-			GitHttpUrl        string      `json:"git_http_url"`
-			GitSshUrl         string      `json:"git_ssh_url"`
-			GitSvnUrl         string      `json:"git_svn_url"`
-			Homepage          any `json:"homepage"`
-			StargazersCount   int         `json:"stargazers_count"`
-			WatchersCount     int         `json:"watchers_count"`
-			ForksCount        int         `json:"forks_count"`
-			Language          string      `json:"language"`
-			HasIssues         bool        `json:"has_issues"`
-			HasWiki           bool        `json:"has_wiki"`
-			HasPages          bool        `json:"has_pages"`
-			License           string      `json:"license"`
-			OpenIssuesCount   int         `json:"open_issues_count"`
-			DefaultBranch     string      `json:"default_branch"`
-			Namespace         string      `json:"namespace"`
-			NameWithNamespace string      `json:"name_with_namespace"`
-			PathWithNamespace string      `json:"path_with_namespace"`
+			Private           bool      `json:"private"`
+			HtmlUrl           string    `json:"html_url"`
+			Url               string    `json:"url"`
+			Description       string    `json:"description"`
+			Fork              bool      `json:"fork"`
+			CreatedAt         time.Time `json:"created_at"`
+			UpdatedAt         time.Time `json:"updated_at"`
+			PushedAt          time.Time `json:"pushed_at"`
+			GitUrl            string    `json:"git_url"`
+			SshUrl            string    `json:"ssh_url"`
+			CloneUrl          string    `json:"clone_url"`
+			SvnUrl            string    `json:"svn_url"`
+			GitHttpUrl        string    `json:"git_http_url"`
+			GitSshUrl         string    `json:"git_ssh_url"`
+			GitSvnUrl         string    `json:"git_svn_url"`
+			Homepage          any       `json:"homepage"`
+			StargazersCount   int       `json:"stargazers_count"`
+			WatchersCount     int       `json:"watchers_count"`
+			ForksCount        int       `json:"forks_count"`
+			Language          string    `json:"language"`
+			HasIssues         bool      `json:"has_issues"`
+			HasWiki           bool      `json:"has_wiki"`
+			HasPages          bool      `json:"has_pages"`
+			License           string    `json:"license"`
+			OpenIssuesCount   int       `json:"open_issues_count"`
+			DefaultBranch     string    `json:"default_branch"`
+			Namespace         string    `json:"namespace"`
+			NameWithNamespace string    `json:"name_with_namespace"`
+			PathWithNamespace string    `json:"path_with_namespace"`
 		} `json:"project"`
 		Repository struct {
 			Id       int    `json:"id"`
@@ -863,35 +863,35 @@ type giteePRHook struct {
 				Type      string `json:"type"`
 				SiteAdmin bool   `json:"site_admin"`
 			} `json:"owner"`
-			Private           bool        `json:"private"`
-			HtmlUrl           string      `json:"html_url"`
-			Url               string      `json:"url"`
-			Description       string      `json:"description"`
-			Fork              bool        `json:"fork"`
-			CreatedAt         time.Time   `json:"created_at"`
-			UpdatedAt         time.Time   `json:"updated_at"`
-			PushedAt          time.Time   `json:"pushed_at"`
-			GitUrl            string      `json:"git_url"`
-			SshUrl            string      `json:"ssh_url"`
-			CloneUrl          string      `json:"clone_url"`
-			SvnUrl            string      `json:"svn_url"`
-			GitHttpUrl        string      `json:"git_http_url"`
-			GitSshUrl         string      `json:"git_ssh_url"`
-			GitSvnUrl         string      `json:"git_svn_url"`
-			Homepage          any `json:"homepage"`
-			StargazersCount   int         `json:"stargazers_count"`
-			WatchersCount     int         `json:"watchers_count"`
-			ForksCount        int         `json:"forks_count"`
-			Language          string      `json:"language"`
-			HasIssues         bool        `json:"has_issues"`
-			HasWiki           bool        `json:"has_wiki"`
-			HasPages          bool        `json:"has_pages"`
-			License           string      `json:"license"`
-			OpenIssuesCount   int         `json:"open_issues_count"`
-			DefaultBranch     string      `json:"default_branch"`
-			Namespace         string      `json:"namespace"`
-			NameWithNamespace string      `json:"name_with_namespace"`
-			PathWithNamespace string      `json:"path_with_namespace"`
+			Private           bool      `json:"private"`
+			HtmlUrl           string    `json:"html_url"`
+			Url               string    `json:"url"`
+			Description       string    `json:"description"`
+			Fork              bool      `json:"fork"`
+			CreatedAt         time.Time `json:"created_at"`
+			UpdatedAt         time.Time `json:"updated_at"`
+			PushedAt          time.Time `json:"pushed_at"`
+			GitUrl            string    `json:"git_url"`
+			SshUrl            string    `json:"ssh_url"`
+			CloneUrl          string    `json:"clone_url"`
+			SvnUrl            string    `json:"svn_url"`
+			GitHttpUrl        string    `json:"git_http_url"`
+			GitSshUrl         string    `json:"git_ssh_url"`
+			GitSvnUrl         string    `json:"git_svn_url"`
+			Homepage          any       `json:"homepage"`
+			StargazersCount   int       `json:"stargazers_count"`
+			WatchersCount     int       `json:"watchers_count"`
+			ForksCount        int       `json:"forks_count"`
+			Language          string    `json:"language"`
+			HasIssues         bool      `json:"has_issues"`
+			HasWiki           bool      `json:"has_wiki"`
+			HasPages          bool      `json:"has_pages"`
+			License           string    `json:"license"`
+			OpenIssuesCount   int       `json:"open_issues_count"`
+			DefaultBranch     string    `json:"default_branch"`
+			Namespace         string    `json:"namespace"`
+			NameWithNamespace string    `json:"name_with_namespace"`
+			PathWithNamespace string    `json:"path_with_namespace"`
 		} `json:"repository"`
 	} `json:"target_repo"`
 	Project struct {
@@ -912,35 +912,35 @@ type giteePRHook struct {
 			Type      string `json:"type"`
 			SiteAdmin bool   `json:"site_admin"`
 		} `json:"owner"`
-		Private           bool        `json:"private"`
-		HtmlUrl           string      `json:"html_url"`
-		Url               string      `json:"url"`
-		Description       string      `json:"description"`
-		Fork              bool        `json:"fork"`
-		CreatedAt         time.Time   `json:"created_at"`
-		UpdatedAt         time.Time   `json:"updated_at"`
-		PushedAt          time.Time   `json:"pushed_at"`
-		GitUrl            string      `json:"git_url"`
-		SshUrl            string      `json:"ssh_url"`
-		CloneUrl          string      `json:"clone_url"`
-		SvnUrl            string      `json:"svn_url"`
-		GitHttpUrl        string      `json:"git_http_url"`
-		GitSshUrl         string      `json:"git_ssh_url"`
-		GitSvnUrl         string      `json:"git_svn_url"`
-		Homepage          any `json:"homepage"`
-		StargazersCount   int         `json:"stargazers_count"`
-		WatchersCount     int         `json:"watchers_count"`
-		ForksCount        int         `json:"forks_count"`
-		Language          string      `json:"language"`
-		HasIssues         bool        `json:"has_issues"`
-		HasWiki           bool        `json:"has_wiki"`
-		HasPages          bool        `json:"has_pages"`
-		License           string      `json:"license"`
-		OpenIssuesCount   int         `json:"open_issues_count"`
-		DefaultBranch     string      `json:"default_branch"`
-		Namespace         string      `json:"namespace"`
-		NameWithNamespace string      `json:"name_with_namespace"`
-		PathWithNamespace string      `json:"path_with_namespace"`
+		Private           bool      `json:"private"`
+		HtmlUrl           string    `json:"html_url"`
+		Url               string    `json:"url"`
+		Description       string    `json:"description"`
+		Fork              bool      `json:"fork"`
+		CreatedAt         time.Time `json:"created_at"`
+		UpdatedAt         time.Time `json:"updated_at"`
+		PushedAt          time.Time `json:"pushed_at"`
+		GitUrl            string    `json:"git_url"`
+		SshUrl            string    `json:"ssh_url"`
+		CloneUrl          string    `json:"clone_url"`
+		SvnUrl            string    `json:"svn_url"`
+		GitHttpUrl        string    `json:"git_http_url"`
+		GitSshUrl         string    `json:"git_ssh_url"`
+		GitSvnUrl         string    `json:"git_svn_url"`
+		Homepage          any       `json:"homepage"`
+		StargazersCount   int       `json:"stargazers_count"`
+		WatchersCount     int       `json:"watchers_count"`
+		ForksCount        int       `json:"forks_count"`
+		Language          string    `json:"language"`
+		HasIssues         bool      `json:"has_issues"`
+		HasWiki           bool      `json:"has_wiki"`
+		HasPages          bool      `json:"has_pages"`
+		License           string    `json:"license"`
+		OpenIssuesCount   int       `json:"open_issues_count"`
+		DefaultBranch     string    `json:"default_branch"`
+		Namespace         string    `json:"namespace"`
+		NameWithNamespace string    `json:"name_with_namespace"`
+		PathWithNamespace string    `json:"path_with_namespace"`
 	} `json:"project"`
 	Repository struct {
 		Id       int    `json:"id"`
@@ -960,35 +960,35 @@ type giteePRHook struct {
 			Type      string `json:"type"`
 			SiteAdmin bool   `json:"site_admin"`
 		} `json:"owner"`
-		Private           bool        `json:"private"`
-		HtmlUrl           string      `json:"html_url"`
-		Url               string      `json:"url"`
-		Description       string      `json:"description"`
-		Fork              bool        `json:"fork"`
-		CreatedAt         time.Time   `json:"created_at"`
-		UpdatedAt         time.Time   `json:"updated_at"`
-		PushedAt          time.Time   `json:"pushed_at"`
-		GitUrl            string      `json:"git_url"`
-		SshUrl            string      `json:"ssh_url"`
-		CloneUrl          string      `json:"clone_url"`
-		SvnUrl            string      `json:"svn_url"`
-		GitHttpUrl        string      `json:"git_http_url"`
-		GitSshUrl         string      `json:"git_ssh_url"`
-		GitSvnUrl         string      `json:"git_svn_url"`
-		Homepage          any `json:"homepage"`
-		StargazersCount   int         `json:"stargazers_count"`
-		WatchersCount     int         `json:"watchers_count"`
-		ForksCount        int         `json:"forks_count"`
-		Language          string      `json:"language"`
-		HasIssues         bool        `json:"has_issues"`
-		HasWiki           bool        `json:"has_wiki"`
-		HasPages          bool        `json:"has_pages"`
-		License           string      `json:"license"`
-		OpenIssuesCount   int         `json:"open_issues_count"`
-		DefaultBranch     string      `json:"default_branch"`
-		Namespace         string      `json:"namespace"`
-		NameWithNamespace string      `json:"name_with_namespace"`
-		PathWithNamespace string      `json:"path_with_namespace"`
+		Private           bool      `json:"private"`
+		HtmlUrl           string    `json:"html_url"`
+		Url               string    `json:"url"`
+		Description       string    `json:"description"`
+		Fork              bool      `json:"fork"`
+		CreatedAt         time.Time `json:"created_at"`
+		UpdatedAt         time.Time `json:"updated_at"`
+		PushedAt          time.Time `json:"pushed_at"`
+		GitUrl            string    `json:"git_url"`
+		SshUrl            string    `json:"ssh_url"`
+		CloneUrl          string    `json:"clone_url"`
+		SvnUrl            string    `json:"svn_url"`
+		GitHttpUrl        string    `json:"git_http_url"`
+		GitSshUrl         string    `json:"git_ssh_url"`
+		GitSvnUrl         string    `json:"git_svn_url"`
+		Homepage          any       `json:"homepage"`
+		StargazersCount   int       `json:"stargazers_count"`
+		WatchersCount     int       `json:"watchers_count"`
+		ForksCount        int       `json:"forks_count"`
+		Language          string    `json:"language"`
+		HasIssues         bool      `json:"has_issues"`
+		HasWiki           bool      `json:"has_wiki"`
+		HasPages          bool      `json:"has_pages"`
+		License           string    `json:"license"`
+		OpenIssuesCount   int       `json:"open_issues_count"`
+		DefaultBranch     string    `json:"default_branch"`
+		Namespace         string    `json:"namespace"`
+		NameWithNamespace string    `json:"name_with_namespace"`
+		PathWithNamespace string    `json:"path_with_namespace"`
 	} `json:"repository"`
 	Author struct {
 		Id        int    `json:"id"`
@@ -1029,14 +1029,14 @@ type giteePRHook struct {
 		Type      string `json:"type"`
 		SiteAdmin bool   `json:"site_admin"`
 	} `json:"sender"`
-	TargetUser any `json:"target_user"`
-	Enterprise any `json:"enterprise"`
-	HookName   string      `json:"hook_name"`
-	HookId     int         `json:"hook_id"`
-	HookUrl    string      `json:"hook_url"`
-	Password   string      `json:"password"`
-	Timestamp  string      `json:"timestamp"`
-	Sign       string      `json:"sign"`
+	TargetUser any    `json:"target_user"`
+	Enterprise any    `json:"enterprise"`
+	HookName   string `json:"hook_name"`
+	HookId     int    `json:"hook_id"`
+	HookUrl    string `json:"hook_url"`
+	Password   string `json:"password"`
+	Timestamp  string `json:"timestamp"`
+	Sign       string `json:"sign"`
 }
 
 type giteeCommentHook struct {
@@ -1079,35 +1079,35 @@ type giteeCommentHook struct {
 			Type      string `json:"type"`
 			SiteAdmin bool   `json:"site_admin"`
 		} `json:"owner"`
-		Private           bool        `json:"private"`
-		HtmlUrl           string      `json:"html_url"`
-		Url               string      `json:"url"`
-		Description       string      `json:"description"`
-		Fork              bool        `json:"fork"`
-		CreatedAt         time.Time   `json:"created_at"`
-		UpdatedAt         time.Time   `json:"updated_at"`
-		PushedAt          time.Time   `json:"pushed_at"`
-		GitUrl            string      `json:"git_url"`
-		SshUrl            string      `json:"ssh_url"`
-		CloneUrl          string      `json:"clone_url"`
-		SvnUrl            string      `json:"svn_url"`
-		GitHttpUrl        string      `json:"git_http_url"`
-		GitSshUrl         string      `json:"git_ssh_url"`
-		GitSvnUrl         string      `json:"git_svn_url"`
-		Homepage          any `json:"homepage"`
-		StargazersCount   int         `json:"stargazers_count"`
-		WatchersCount     int         `json:"watchers_count"`
-		ForksCount        int         `json:"forks_count"`
-		Language          string      `json:"language"`
-		HasIssues         bool        `json:"has_issues"`
-		HasWiki           bool        `json:"has_wiki"`
-		HasPages          bool        `json:"has_pages"`
-		License           string      `json:"license"`
-		OpenIssuesCount   int         `json:"open_issues_count"`
-		DefaultBranch     string      `json:"default_branch"`
-		Namespace         string      `json:"namespace"`
-		NameWithNamespace string      `json:"name_with_namespace"`
-		PathWithNamespace string      `json:"path_with_namespace"`
+		Private           bool      `json:"private"`
+		HtmlUrl           string    `json:"html_url"`
+		Url               string    `json:"url"`
+		Description       string    `json:"description"`
+		Fork              bool      `json:"fork"`
+		CreatedAt         time.Time `json:"created_at"`
+		UpdatedAt         time.Time `json:"updated_at"`
+		PushedAt          time.Time `json:"pushed_at"`
+		GitUrl            string    `json:"git_url"`
+		SshUrl            string    `json:"ssh_url"`
+		CloneUrl          string    `json:"clone_url"`
+		SvnUrl            string    `json:"svn_url"`
+		GitHttpUrl        string    `json:"git_http_url"`
+		GitSshUrl         string    `json:"git_ssh_url"`
+		GitSvnUrl         string    `json:"git_svn_url"`
+		Homepage          any       `json:"homepage"`
+		StargazersCount   int       `json:"stargazers_count"`
+		WatchersCount     int       `json:"watchers_count"`
+		ForksCount        int       `json:"forks_count"`
+		Language          string    `json:"language"`
+		HasIssues         bool      `json:"has_issues"`
+		HasWiki           bool      `json:"has_wiki"`
+		HasPages          bool      `json:"has_pages"`
+		License           string    `json:"license"`
+		OpenIssuesCount   int       `json:"open_issues_count"`
+		DefaultBranch     string    `json:"default_branch"`
+		Namespace         string    `json:"namespace"`
+		NameWithNamespace string    `json:"name_with_namespace"`
+		PathWithNamespace string    `json:"path_with_namespace"`
 	} `json:"repository"`
 	Project struct {
 		Id       int    `json:"id"`
@@ -1127,35 +1127,35 @@ type giteeCommentHook struct {
 			Type      string `json:"type"`
 			SiteAdmin bool   `json:"site_admin"`
 		} `json:"owner"`
-		Private           bool        `json:"private"`
-		HtmlUrl           string      `json:"html_url"`
-		Url               string      `json:"url"`
-		Description       string      `json:"description"`
-		Fork              bool        `json:"fork"`
-		CreatedAt         time.Time   `json:"created_at"`
-		UpdatedAt         time.Time   `json:"updated_at"`
-		PushedAt          time.Time   `json:"pushed_at"`
-		GitUrl            string      `json:"git_url"`
-		SshUrl            string      `json:"ssh_url"`
-		CloneUrl          string      `json:"clone_url"`
-		SvnUrl            string      `json:"svn_url"`
-		GitHttpUrl        string      `json:"git_http_url"`
-		GitSshUrl         string      `json:"git_ssh_url"`
-		GitSvnUrl         string      `json:"git_svn_url"`
-		Homepage          any `json:"homepage"`
-		StargazersCount   int         `json:"stargazers_count"`
-		WatchersCount     int         `json:"watchers_count"`
-		ForksCount        int         `json:"forks_count"`
-		Language          string      `json:"language"`
-		HasIssues         bool        `json:"has_issues"`
-		HasWiki           bool        `json:"has_wiki"`
-		HasPages          bool        `json:"has_pages"`
-		License           string      `json:"license"`
-		OpenIssuesCount   int         `json:"open_issues_count"`
-		DefaultBranch     string      `json:"default_branch"`
-		Namespace         string      `json:"namespace"`
-		NameWithNamespace string      `json:"name_with_namespace"`
-		PathWithNamespace string      `json:"path_with_namespace"`
+		Private           bool      `json:"private"`
+		HtmlUrl           string    `json:"html_url"`
+		Url               string    `json:"url"`
+		Description       string    `json:"description"`
+		Fork              bool      `json:"fork"`
+		CreatedAt         time.Time `json:"created_at"`
+		UpdatedAt         time.Time `json:"updated_at"`
+		PushedAt          time.Time `json:"pushed_at"`
+		GitUrl            string    `json:"git_url"`
+		SshUrl            string    `json:"ssh_url"`
+		CloneUrl          string    `json:"clone_url"`
+		SvnUrl            string    `json:"svn_url"`
+		GitHttpUrl        string    `json:"git_http_url"`
+		GitSshUrl         string    `json:"git_ssh_url"`
+		GitSvnUrl         string    `json:"git_svn_url"`
+		Homepage          any       `json:"homepage"`
+		StargazersCount   int       `json:"stargazers_count"`
+		WatchersCount     int       `json:"watchers_count"`
+		ForksCount        int       `json:"forks_count"`
+		Language          string    `json:"language"`
+		HasIssues         bool      `json:"has_issues"`
+		HasWiki           bool      `json:"has_wiki"`
+		HasPages          bool      `json:"has_pages"`
+		License           string    `json:"license"`
+		OpenIssuesCount   int       `json:"open_issues_count"`
+		DefaultBranch     string    `json:"default_branch"`
+		Namespace         string    `json:"namespace"`
+		NameWithNamespace string    `json:"name_with_namespace"`
+		PathWithNamespace string    `json:"path_with_namespace"`
 	} `json:"project"`
 	Author struct {
 		Id        int    `json:"id"`
@@ -1183,31 +1183,31 @@ type giteeCommentHook struct {
 		Type      string `json:"type"`
 		SiteAdmin bool   `json:"site_admin"`
 	} `json:"sender"`
-	Url           string      `json:"url"`
-	Note          string      `json:"note"`
-	NoteableType  string      `json:"noteable_type"` //nolint:misspell // Gitee/GitLab API field name
-	NoteableId    int         `json:"noteable_id"`   //nolint:misspell // Gitee/GitLab API field name
-	Title         string      `json:"title"`
-	PerIid        string      `json:"per_iid"`
-	ShortCommitId any `json:"short_commit_id"`
-	Enterprise    any `json:"enterprise"`
+	Url           string `json:"url"`
+	Note          string `json:"note"`
+	NoteableType  string `json:"noteable_type"` //nolint:misspell // Gitee/GitLab API field name
+	NoteableId    int    `json:"noteable_id"`   //nolint:misspell // Gitee/GitLab API field name
+	Title         string `json:"title"`
+	PerIid        string `json:"per_iid"`
+	ShortCommitId any    `json:"short_commit_id"`
+	Enterprise    any    `json:"enterprise"`
 	PullRequest   struct {
-		Id                 int           `json:"id"`
-		Number             int64         `json:"number"`
-		State              string        `json:"state"`
-		HtmlUrl            string        `json:"html_url"`
-		DiffUrl            string        `json:"diff_url"`
-		PatchUrl           string        `json:"patch_url"`
-		Title              string        `json:"title"`
-		Body               string        `json:"body"`
-		Labels             []any `json:"labels"`
-		Languages          []any `json:"languages"`
-		CreatedAt          time.Time     `json:"created_at"`
-		UpdatedAt          time.Time     `json:"updated_at"`
-		ClosedAt           any   `json:"closed_at"`
-		MergedAt           any   `json:"merged_at"`
-		MergeCommitSha     string        `json:"merge_commit_sha"`
-		MergeReferenceName string        `json:"merge_reference_name"`
+		Id                 int       `json:"id"`
+		Number             int64     `json:"number"`
+		State              string    `json:"state"`
+		HtmlUrl            string    `json:"html_url"`
+		DiffUrl            string    `json:"diff_url"`
+		PatchUrl           string    `json:"patch_url"`
+		Title              string    `json:"title"`
+		Body               string    `json:"body"`
+		Labels             []any     `json:"labels"`
+		Languages          []any     `json:"languages"`
+		CreatedAt          time.Time `json:"created_at"`
+		UpdatedAt          time.Time `json:"updated_at"`
+		ClosedAt           any       `json:"closed_at"`
+		MergedAt           any       `json:"merged_at"`
+		MergeCommitSha     string    `json:"merge_commit_sha"`
+		MergeReferenceName string    `json:"merge_reference_name"`
 		User               struct {
 			Id        int    `json:"id"`
 			Name      string `json:"name"`
@@ -1249,9 +1249,9 @@ type giteeCommentHook struct {
 			Type      string `json:"type"`
 			SiteAdmin bool   `json:"site_admin"`
 		} `json:"testers"`
-		NeedTest   bool        `json:"need_test"`
-		NeedReview bool        `json:"need_review"`
-		Milestone  any `json:"milestone"`
+		NeedTest   bool `json:"need_test"`
+		NeedReview bool `json:"need_review"`
+		Milestone  any  `json:"milestone"`
 		Head       struct {
 			Label string `json:"label"`
 			Ref   string `json:"ref"`
@@ -1287,35 +1287,35 @@ type giteeCommentHook struct {
 					Type      string `json:"type"`
 					SiteAdmin bool   `json:"site_admin"`
 				} `json:"owner"`
-				Private           bool        `json:"private"`
-				HtmlUrl           string      `json:"html_url"`
-				Url               string      `json:"url"`
-				Description       string      `json:"description"`
-				Fork              bool        `json:"fork"`
-				CreatedAt         time.Time   `json:"created_at"`
-				UpdatedAt         time.Time   `json:"updated_at"`
-				PushedAt          time.Time   `json:"pushed_at"`
-				GitUrl            string      `json:"git_url"`
-				SshUrl            string      `json:"ssh_url"`
-				CloneUrl          string      `json:"clone_url"`
-				SvnUrl            string      `json:"svn_url"`
-				GitHttpUrl        string      `json:"git_http_url"`
-				GitSshUrl         string      `json:"git_ssh_url"`
-				GitSvnUrl         string      `json:"git_svn_url"`
-				Homepage          any `json:"homepage"`
-				StargazersCount   int         `json:"stargazers_count"`
-				WatchersCount     int         `json:"watchers_count"`
-				ForksCount        int         `json:"forks_count"`
-				Language          string      `json:"language"`
-				HasIssues         bool        `json:"has_issues"`
-				HasWiki           bool        `json:"has_wiki"`
-				HasPages          bool        `json:"has_pages"`
-				License           string      `json:"license"`
-				OpenIssuesCount   int         `json:"open_issues_count"`
-				DefaultBranch     string      `json:"default_branch"`
-				Namespace         string      `json:"namespace"`
-				NameWithNamespace string      `json:"name_with_namespace"`
-				PathWithNamespace string      `json:"path_with_namespace"`
+				Private           bool      `json:"private"`
+				HtmlUrl           string    `json:"html_url"`
+				Url               string    `json:"url"`
+				Description       string    `json:"description"`
+				Fork              bool      `json:"fork"`
+				CreatedAt         time.Time `json:"created_at"`
+				UpdatedAt         time.Time `json:"updated_at"`
+				PushedAt          time.Time `json:"pushed_at"`
+				GitUrl            string    `json:"git_url"`
+				SshUrl            string    `json:"ssh_url"`
+				CloneUrl          string    `json:"clone_url"`
+				SvnUrl            string    `json:"svn_url"`
+				GitHttpUrl        string    `json:"git_http_url"`
+				GitSshUrl         string    `json:"git_ssh_url"`
+				GitSvnUrl         string    `json:"git_svn_url"`
+				Homepage          any       `json:"homepage"`
+				StargazersCount   int       `json:"stargazers_count"`
+				WatchersCount     int       `json:"watchers_count"`
+				ForksCount        int       `json:"forks_count"`
+				Language          string    `json:"language"`
+				HasIssues         bool      `json:"has_issues"`
+				HasWiki           bool      `json:"has_wiki"`
+				HasPages          bool      `json:"has_pages"`
+				License           string    `json:"license"`
+				OpenIssuesCount   int       `json:"open_issues_count"`
+				DefaultBranch     string    `json:"default_branch"`
+				Namespace         string    `json:"namespace"`
+				NameWithNamespace string    `json:"name_with_namespace"`
+				PathWithNamespace string    `json:"path_with_namespace"`
 			} `json:"repo"`
 		} `json:"head"`
 		Base struct {
@@ -1353,35 +1353,35 @@ type giteeCommentHook struct {
 					Type      string `json:"type"`
 					SiteAdmin bool   `json:"site_admin"`
 				} `json:"owner"`
-				Private           bool        `json:"private"`
-				HtmlUrl           string      `json:"html_url"`
-				Url               string      `json:"url"`
-				Description       string      `json:"description"`
-				Fork              bool        `json:"fork"`
-				CreatedAt         time.Time   `json:"created_at"`
-				UpdatedAt         time.Time   `json:"updated_at"`
-				PushedAt          time.Time   `json:"pushed_at"`
-				GitUrl            string      `json:"git_url"`
-				SshUrl            string      `json:"ssh_url"`
-				CloneUrl          string      `json:"clone_url"`
-				SvnUrl            string      `json:"svn_url"`
-				GitHttpUrl        string      `json:"git_http_url"`
-				GitSshUrl         string      `json:"git_ssh_url"`
-				GitSvnUrl         string      `json:"git_svn_url"`
-				Homepage          any `json:"homepage"`
-				StargazersCount   int         `json:"stargazers_count"`
-				WatchersCount     int         `json:"watchers_count"`
-				ForksCount        int         `json:"forks_count"`
-				Language          string      `json:"language"`
-				HasIssues         bool        `json:"has_issues"`
-				HasWiki           bool        `json:"has_wiki"`
-				HasPages          bool        `json:"has_pages"`
-				License           string      `json:"license"`
-				OpenIssuesCount   int         `json:"open_issues_count"`
-				DefaultBranch     string      `json:"default_branch"`
-				Namespace         string      `json:"namespace"`
-				NameWithNamespace string      `json:"name_with_namespace"`
-				PathWithNamespace string      `json:"path_with_namespace"`
+				Private           bool      `json:"private"`
+				HtmlUrl           string    `json:"html_url"`
+				Url               string    `json:"url"`
+				Description       string    `json:"description"`
+				Fork              bool      `json:"fork"`
+				CreatedAt         time.Time `json:"created_at"`
+				UpdatedAt         time.Time `json:"updated_at"`
+				PushedAt          time.Time `json:"pushed_at"`
+				GitUrl            string    `json:"git_url"`
+				SshUrl            string    `json:"ssh_url"`
+				CloneUrl          string    `json:"clone_url"`
+				SvnUrl            string    `json:"svn_url"`
+				GitHttpUrl        string    `json:"git_http_url"`
+				GitSshUrl         string    `json:"git_ssh_url"`
+				GitSvnUrl         string    `json:"git_svn_url"`
+				Homepage          any       `json:"homepage"`
+				StargazersCount   int       `json:"stargazers_count"`
+				WatchersCount     int       `json:"watchers_count"`
+				ForksCount        int       `json:"forks_count"`
+				Language          string    `json:"language"`
+				HasIssues         bool      `json:"has_issues"`
+				HasWiki           bool      `json:"has_wiki"`
+				HasPages          bool      `json:"has_pages"`
+				License           string    `json:"license"`
+				OpenIssuesCount   int       `json:"open_issues_count"`
+				DefaultBranch     string    `json:"default_branch"`
+				Namespace         string    `json:"namespace"`
+				NameWithNamespace string    `json:"name_with_namespace"`
+				PathWithNamespace string    `json:"path_with_namespace"`
 			} `json:"repo"`
 		} `json:"base"`
 		Merged      bool   `json:"merged"`

@@ -353,11 +353,11 @@ type giteaPushHook struct {
 			Email    string `json:"email"`
 			Username string `json:"username"`
 		} `json:"committer"`
-		Verification any `json:"verification"`
-		Timestamp    time.Time   `json:"timestamp"`
-		Added        any `json:"added"`
-		Removed      any `json:"removed"`
-		Modified     any `json:"modified"`
+		Verification any       `json:"verification"`
+		Timestamp    time.Time `json:"timestamp"`
+		Added        any       `json:"added"`
+		Removed      any       `json:"removed"`
+		Modified     any       `json:"modified"`
 	} `json:"commits"`
 	HeadCommit any `json:"head_commit"`
 	Repository struct {
@@ -380,31 +380,31 @@ type giteaPushHook struct {
 			Description   string    `json:"description"`
 			Username      string    `json:"username"`
 		} `json:"owner"`
-		Name            string      `json:"name"`
-		FullName        string      `json:"full_name"`
-		Description     string      `json:"description"`
-		Empty           bool        `json:"empty"`
-		Private         bool        `json:"private"`
-		Fork            bool        `json:"fork"`
-		Template        bool        `json:"template"`
-		Parent          any `json:"parent"`
-		Mirror          bool        `json:"mirror"`
-		Size            int         `json:"size"`
-		HtmlUrl         string      `json:"html_url"`
-		SshUrl          string      `json:"ssh_url"`
-		CloneUrl        string      `json:"clone_url"`
-		OriginalUrl     string      `json:"original_url"`
-		Website         string      `json:"website"`
-		StarsCount      int         `json:"stars_count"`
-		ForksCount      int         `json:"forks_count"`
-		WatchersCount   int         `json:"watchers_count"`
-		OpenIssuesCount int         `json:"open_issues_count"`
-		OpenPrCounter   int         `json:"open_pr_counter"`
-		ReleaseCounter  int         `json:"release_counter"`
-		DefaultBranch   string      `json:"default_branch"`
-		Archived        bool        `json:"archived"`
-		CreatedAt       time.Time   `json:"created_at"`
-		UpdatedAt       time.Time   `json:"updated_at"`
+		Name            string    `json:"name"`
+		FullName        string    `json:"full_name"`
+		Description     string    `json:"description"`
+		Empty           bool      `json:"empty"`
+		Private         bool      `json:"private"`
+		Fork            bool      `json:"fork"`
+		Template        bool      `json:"template"`
+		Parent          any       `json:"parent"`
+		Mirror          bool      `json:"mirror"`
+		Size            int       `json:"size"`
+		HtmlUrl         string    `json:"html_url"`
+		SshUrl          string    `json:"ssh_url"`
+		CloneUrl        string    `json:"clone_url"`
+		OriginalUrl     string    `json:"original_url"`
+		Website         string    `json:"website"`
+		StarsCount      int       `json:"stars_count"`
+		ForksCount      int       `json:"forks_count"`
+		WatchersCount   int       `json:"watchers_count"`
+		OpenIssuesCount int       `json:"open_issues_count"`
+		OpenPrCounter   int       `json:"open_pr_counter"`
+		ReleaseCounter  int       `json:"release_counter"`
+		DefaultBranch   string    `json:"default_branch"`
+		Archived        bool      `json:"archived"`
+		CreatedAt       time.Time `json:"created_at"`
+		UpdatedAt       time.Time `json:"updated_at"`
 		Permissions     struct {
 			Admin bool `json:"admin"`
 			Push  bool `json:"push"`
@@ -492,23 +492,23 @@ type giteaPRHook struct {
 			Description   string    `json:"description"`
 			Username      string    `json:"username"`
 		} `json:"user"`
-		Title          string        `json:"title"`
-		Body           string        `json:"body"`
-		Labels         []any `json:"labels"`
-		Milestone      any   `json:"milestone"`
-		Assignee       any   `json:"assignee"`
-		Assignees      any   `json:"assignees"`
-		State          string        `json:"state"`
-		IsLocked       bool          `json:"is_locked"`
-		Comments       int           `json:"comments"`
-		HtmlUrl        string        `json:"html_url"`
-		DiffUrl        string        `json:"diff_url"`
-		PatchUrl       string        `json:"patch_url"`
-		Mergeable      bool          `json:"mergeable"`
-		Merged         bool          `json:"merged"`
-		MergedAt       any   `json:"merged_at"`
-		MergeCommitSha any   `json:"merge_commit_sha"`
-		MergedBy       any   `json:"merged_by"`
+		Title          string `json:"title"`
+		Body           string `json:"body"`
+		Labels         []any  `json:"labels"`
+		Milestone      any    `json:"milestone"`
+		Assignee       any    `json:"assignee"`
+		Assignees      any    `json:"assignees"`
+		State          string `json:"state"`
+		IsLocked       bool   `json:"is_locked"`
+		Comments       int    `json:"comments"`
+		HtmlUrl        string `json:"html_url"`
+		DiffUrl        string `json:"diff_url"`
+		PatchUrl       string `json:"patch_url"`
+		Mergeable      bool   `json:"mergeable"`
+		Merged         bool   `json:"merged"`
+		MergedAt       any    `json:"merged_at"`
+		MergeCommitSha any    `json:"merge_commit_sha"`
+		MergedBy       any    `json:"merged_by"`
 		Base           struct {
 			Label  string `json:"label"`
 			Ref    string `json:"ref"`
@@ -534,31 +534,31 @@ type giteaPRHook struct {
 					Description   string    `json:"description"`
 					Username      string    `json:"username"`
 				} `json:"owner"`
-				Name            string      `json:"name"`
-				FullName        string      `json:"full_name"`
-				Description     string      `json:"description"`
-				Empty           bool        `json:"empty"`
-				Private         bool        `json:"private"`
-				Fork            bool        `json:"fork"`
-				Template        bool        `json:"template"`
-				Parent          any `json:"parent"`
-				Mirror          bool        `json:"mirror"`
-				Size            int         `json:"size"`
-				HtmlUrl         string      `json:"html_url"`
-				SshUrl          string      `json:"ssh_url"`
-				CloneUrl        string      `json:"clone_url"`
-				OriginalUrl     string      `json:"original_url"`
-				Website         string      `json:"website"`
-				StarsCount      int         `json:"stars_count"`
-				ForksCount      int         `json:"forks_count"`
-				WatchersCount   int         `json:"watchers_count"`
-				OpenIssuesCount int         `json:"open_issues_count"`
-				OpenPrCounter   int         `json:"open_pr_counter"`
-				ReleaseCounter  int         `json:"release_counter"`
-				DefaultBranch   string      `json:"default_branch"`
-				Archived        bool        `json:"archived"`
-				CreatedAt       time.Time   `json:"created_at"`
-				UpdatedAt       time.Time   `json:"updated_at"`
+				Name            string    `json:"name"`
+				FullName        string    `json:"full_name"`
+				Description     string    `json:"description"`
+				Empty           bool      `json:"empty"`
+				Private         bool      `json:"private"`
+				Fork            bool      `json:"fork"`
+				Template        bool      `json:"template"`
+				Parent          any       `json:"parent"`
+				Mirror          bool      `json:"mirror"`
+				Size            int       `json:"size"`
+				HtmlUrl         string    `json:"html_url"`
+				SshUrl          string    `json:"ssh_url"`
+				CloneUrl        string    `json:"clone_url"`
+				OriginalUrl     string    `json:"original_url"`
+				Website         string    `json:"website"`
+				StarsCount      int       `json:"stars_count"`
+				ForksCount      int       `json:"forks_count"`
+				WatchersCount   int       `json:"watchers_count"`
+				OpenIssuesCount int       `json:"open_issues_count"`
+				OpenPrCounter   int       `json:"open_pr_counter"`
+				ReleaseCounter  int       `json:"release_counter"`
+				DefaultBranch   string    `json:"default_branch"`
+				Archived        bool      `json:"archived"`
+				CreatedAt       time.Time `json:"created_at"`
+				UpdatedAt       time.Time `json:"updated_at"`
 				Permissions     struct {
 					Admin bool `json:"admin"`
 					Push  bool `json:"push"`
@@ -609,31 +609,31 @@ type giteaPRHook struct {
 					Description   string    `json:"description"`
 					Username      string    `json:"username"`
 				} `json:"owner"`
-				Name            string      `json:"name"`
-				FullName        string      `json:"full_name"`
-				Description     string      `json:"description"`
-				Empty           bool        `json:"empty"`
-				Private         bool        `json:"private"`
-				Fork            bool        `json:"fork"`
-				Template        bool        `json:"template"`
-				Parent          any `json:"parent"`
-				Mirror          bool        `json:"mirror"`
-				Size            int         `json:"size"`
-				HtmlUrl         string      `json:"html_url"`
-				SshUrl          string      `json:"ssh_url"`
-				CloneUrl        string      `json:"clone_url"`
-				OriginalUrl     string      `json:"original_url"`
-				Website         string      `json:"website"`
-				StarsCount      int         `json:"stars_count"`
-				ForksCount      int         `json:"forks_count"`
-				WatchersCount   int         `json:"watchers_count"`
-				OpenIssuesCount int         `json:"open_issues_count"`
-				OpenPrCounter   int         `json:"open_pr_counter"`
-				ReleaseCounter  int         `json:"release_counter"`
-				DefaultBranch   string      `json:"default_branch"`
-				Archived        bool        `json:"archived"`
-				CreatedAt       time.Time   `json:"created_at"`
-				UpdatedAt       time.Time   `json:"updated_at"`
+				Name            string    `json:"name"`
+				FullName        string    `json:"full_name"`
+				Description     string    `json:"description"`
+				Empty           bool      `json:"empty"`
+				Private         bool      `json:"private"`
+				Fork            bool      `json:"fork"`
+				Template        bool      `json:"template"`
+				Parent          any       `json:"parent"`
+				Mirror          bool      `json:"mirror"`
+				Size            int       `json:"size"`
+				HtmlUrl         string    `json:"html_url"`
+				SshUrl          string    `json:"ssh_url"`
+				CloneUrl        string    `json:"clone_url"`
+				OriginalUrl     string    `json:"original_url"`
+				Website         string    `json:"website"`
+				StarsCount      int       `json:"stars_count"`
+				ForksCount      int       `json:"forks_count"`
+				WatchersCount   int       `json:"watchers_count"`
+				OpenIssuesCount int       `json:"open_issues_count"`
+				OpenPrCounter   int       `json:"open_pr_counter"`
+				ReleaseCounter  int       `json:"release_counter"`
+				DefaultBranch   string    `json:"default_branch"`
+				Archived        bool      `json:"archived"`
+				CreatedAt       time.Time `json:"created_at"`
+				UpdatedAt       time.Time `json:"updated_at"`
 				Permissions     struct {
 					Admin bool `json:"admin"`
 					Push  bool `json:"push"`
@@ -659,11 +659,11 @@ type giteaPRHook struct {
 				MirrorInterval            string `json:"mirror_interval"`
 			} `json:"repo"`
 		} `json:"head"`
-		MergeBase string      `json:"merge_base"`
-		DueDate   any `json:"due_date"`
-		CreatedAt time.Time   `json:"created_at"`
-		UpdatedAt time.Time   `json:"updated_at"`
-		ClosedAt  any `json:"closed_at"`
+		MergeBase string    `json:"merge_base"`
+		DueDate   any       `json:"due_date"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+		ClosedAt  any       `json:"closed_at"`
 	} `json:"pull_request"`
 	Repository struct {
 		Id    int `json:"id"`
@@ -685,31 +685,31 @@ type giteaPRHook struct {
 			Description   string    `json:"description"`
 			Username      string    `json:"username"`
 		} `json:"owner"`
-		Name            string      `json:"name"`
-		FullName        string      `json:"full_name"`
-		Description     string      `json:"description"`
-		Empty           bool        `json:"empty"`
-		Private         bool        `json:"private"`
-		Fork            bool        `json:"fork"`
-		Template        bool        `json:"template"`
-		Parent          any `json:"parent"`
-		Mirror          bool        `json:"mirror"`
-		Size            int         `json:"size"`
-		HtmlUrl         string      `json:"html_url"`
-		SshUrl          string      `json:"ssh_url"`
-		CloneUrl        string      `json:"clone_url"`
-		OriginalUrl     string      `json:"original_url"`
-		Website         string      `json:"website"`
-		StarsCount      int         `json:"stars_count"`
-		ForksCount      int         `json:"forks_count"`
-		WatchersCount   int         `json:"watchers_count"`
-		OpenIssuesCount int         `json:"open_issues_count"`
-		OpenPrCounter   int         `json:"open_pr_counter"`
-		ReleaseCounter  int         `json:"release_counter"`
-		DefaultBranch   string      `json:"default_branch"`
-		Archived        bool        `json:"archived"`
-		CreatedAt       time.Time   `json:"created_at"`
-		UpdatedAt       time.Time   `json:"updated_at"`
+		Name            string    `json:"name"`
+		FullName        string    `json:"full_name"`
+		Description     string    `json:"description"`
+		Empty           bool      `json:"empty"`
+		Private         bool      `json:"private"`
+		Fork            bool      `json:"fork"`
+		Template        bool      `json:"template"`
+		Parent          any       `json:"parent"`
+		Mirror          bool      `json:"mirror"`
+		Size            int       `json:"size"`
+		HtmlUrl         string    `json:"html_url"`
+		SshUrl          string    `json:"ssh_url"`
+		CloneUrl        string    `json:"clone_url"`
+		OriginalUrl     string    `json:"original_url"`
+		Website         string    `json:"website"`
+		StarsCount      int       `json:"stars_count"`
+		ForksCount      int       `json:"forks_count"`
+		WatchersCount   int       `json:"watchers_count"`
+		OpenIssuesCount int       `json:"open_issues_count"`
+		OpenPrCounter   int       `json:"open_pr_counter"`
+		ReleaseCounter  int       `json:"release_counter"`
+		DefaultBranch   string    `json:"default_branch"`
+		Archived        bool      `json:"archived"`
+		CreatedAt       time.Time `json:"created_at"`
+		UpdatedAt       time.Time `json:"updated_at"`
 		Permissions     struct {
 			Admin bool `json:"admin"`
 			Push  bool `json:"push"`
@@ -780,23 +780,23 @@ type giteaCommentHook struct {
 			Description   string    `json:"description"`
 			Username      string    `json:"username"`
 		} `json:"user"`
-		OriginalAuthor   string        `json:"original_author"`
-		OriginalAuthorId int           `json:"original_author_id"`
-		Title            string        `json:"title"`
-		Body             string        `json:"body"`
-		Ref              string        `json:"ref"`
-		Labels           []any `json:"labels"`
-		Milestone        any   `json:"milestone"`
-		Assignee         any   `json:"assignee"`
-		Assignees        any   `json:"assignees"`
-		State            string        `json:"state"`
-		IsLocked         bool          `json:"is_locked"`
-		Comments         int           `json:"comments"`
-		CreatedAt        time.Time     `json:"created_at"`
-		UpdatedAt        time.Time     `json:"updated_at"`
-		ClosedAt         any   `json:"closed_at"`
-		DueDate          any   `json:"due_date"`
-		PullRequest      any   `json:"pull_request"`
+		OriginalAuthor   string    `json:"original_author"`
+		OriginalAuthorId int       `json:"original_author_id"`
+		Title            string    `json:"title"`
+		Body             string    `json:"body"`
+		Ref              string    `json:"ref"`
+		Labels           []any     `json:"labels"`
+		Milestone        any       `json:"milestone"`
+		Assignee         any       `json:"assignee"`
+		Assignees        any       `json:"assignees"`
+		State            string    `json:"state"`
+		IsLocked         bool      `json:"is_locked"`
+		Comments         int       `json:"comments"`
+		CreatedAt        time.Time `json:"created_at"`
+		UpdatedAt        time.Time `json:"updated_at"`
+		ClosedAt         any       `json:"closed_at"`
+		DueDate          any       `json:"due_date"`
+		PullRequest      any       `json:"pull_request"`
 		Repository       struct {
 			Id       int    `json:"id"`
 			Name     string `json:"name"`
@@ -853,31 +853,31 @@ type giteaCommentHook struct {
 			Description   string    `json:"description"`
 			Username      string    `json:"username"`
 		} `json:"owner"`
-		Name            string      `json:"name"`
-		FullName        string      `json:"full_name"`
-		Description     string      `json:"description"`
-		Empty           bool        `json:"empty"`
-		Private         bool        `json:"private"`
-		Fork            bool        `json:"fork"`
-		Template        bool        `json:"template"`
-		Parent          any `json:"parent"`
-		Mirror          bool        `json:"mirror"`
-		Size            int         `json:"size"`
-		HtmlUrl         string      `json:"html_url"`
-		SshUrl          string      `json:"ssh_url"`
-		CloneUrl        string      `json:"clone_url"`
-		OriginalUrl     string      `json:"original_url"`
-		Website         string      `json:"website"`
-		StarsCount      int         `json:"stars_count"`
-		ForksCount      int         `json:"forks_count"`
-		WatchersCount   int         `json:"watchers_count"`
-		OpenIssuesCount int         `json:"open_issues_count"`
-		OpenPrCounter   int         `json:"open_pr_counter"`
-		ReleaseCounter  int         `json:"release_counter"`
-		DefaultBranch   string      `json:"default_branch"`
-		Archived        bool        `json:"archived"`
-		CreatedAt       time.Time   `json:"created_at"`
-		UpdatedAt       time.Time   `json:"updated_at"`
+		Name            string    `json:"name"`
+		FullName        string    `json:"full_name"`
+		Description     string    `json:"description"`
+		Empty           bool      `json:"empty"`
+		Private         bool      `json:"private"`
+		Fork            bool      `json:"fork"`
+		Template        bool      `json:"template"`
+		Parent          any       `json:"parent"`
+		Mirror          bool      `json:"mirror"`
+		Size            int       `json:"size"`
+		HtmlUrl         string    `json:"html_url"`
+		SshUrl          string    `json:"ssh_url"`
+		CloneUrl        string    `json:"clone_url"`
+		OriginalUrl     string    `json:"original_url"`
+		Website         string    `json:"website"`
+		StarsCount      int       `json:"stars_count"`
+		ForksCount      int       `json:"forks_count"`
+		WatchersCount   int       `json:"watchers_count"`
+		OpenIssuesCount int       `json:"open_issues_count"`
+		OpenPrCounter   int       `json:"open_pr_counter"`
+		ReleaseCounter  int       `json:"release_counter"`
+		DefaultBranch   string    `json:"default_branch"`
+		Archived        bool      `json:"archived"`
+		CreatedAt       time.Time `json:"created_at"`
+		UpdatedAt       time.Time `json:"updated_at"`
 		Permissions     struct {
 			Admin bool `json:"admin"`
 			Push  bool `json:"push"`
@@ -944,23 +944,23 @@ type giteaPullRequestURL struct {
 		Description   string    `json:"description"`
 		Username      string    `json:"username"`
 	} `json:"user"`
-	Title          string        `json:"title"`
-	Body           string        `json:"body"`
-	Labels         []any `json:"labels"`
-	Milestone      any   `json:"milestone"`
-	Assignee       any   `json:"assignee"`
-	Assignees      any   `json:"assignees"`
-	State          string        `json:"state"`
-	IsLocked       bool          `json:"is_locked"`
-	Comments       int           `json:"comments"`
-	HtmlUrl        string        `json:"html_url"`
-	DiffUrl        string        `json:"diff_url"`
-	PatchUrl       string        `json:"patch_url"`
-	Mergeable      bool          `json:"mergeable"`
-	Merged         bool          `json:"merged"`
-	MergedAt       any   `json:"merged_at"`
-	MergeCommitSha any   `json:"merge_commit_sha"`
-	MergedBy       any   `json:"merged_by"`
+	Title          string `json:"title"`
+	Body           string `json:"body"`
+	Labels         []any  `json:"labels"`
+	Milestone      any    `json:"milestone"`
+	Assignee       any    `json:"assignee"`
+	Assignees      any    `json:"assignees"`
+	State          string `json:"state"`
+	IsLocked       bool   `json:"is_locked"`
+	Comments       int    `json:"comments"`
+	HtmlUrl        string `json:"html_url"`
+	DiffUrl        string `json:"diff_url"`
+	PatchUrl       string `json:"patch_url"`
+	Mergeable      bool   `json:"mergeable"`
+	Merged         bool   `json:"merged"`
+	MergedAt       any    `json:"merged_at"`
+	MergeCommitSha any    `json:"merge_commit_sha"`
+	MergedBy       any    `json:"merged_by"`
 	Base           struct {
 		Label  string `json:"label"`
 		Ref    string `json:"ref"`
@@ -986,31 +986,31 @@ type giteaPullRequestURL struct {
 				Description   string    `json:"description"`
 				Username      string    `json:"username"`
 			} `json:"owner"`
-			Name            string      `json:"name"`
-			FullName        string      `json:"full_name"`
-			Description     string      `json:"description"`
-			Empty           bool        `json:"empty"`
-			Private         bool        `json:"private"`
-			Fork            bool        `json:"fork"`
-			Template        bool        `json:"template"`
-			Parent          any `json:"parent"`
-			Mirror          bool        `json:"mirror"`
-			Size            int         `json:"size"`
-			HtmlUrl         string      `json:"html_url"`
-			SshUrl          string      `json:"ssh_url"`
-			CloneUrl        string      `json:"clone_url"`
-			OriginalUrl     string      `json:"original_url"`
-			Website         string      `json:"website"`
-			StarsCount      int         `json:"stars_count"`
-			ForksCount      int         `json:"forks_count"`
-			WatchersCount   int         `json:"watchers_count"`
-			OpenIssuesCount int         `json:"open_issues_count"`
-			OpenPrCounter   int         `json:"open_pr_counter"`
-			ReleaseCounter  int         `json:"release_counter"`
-			DefaultBranch   string      `json:"default_branch"`
-			Archived        bool        `json:"archived"`
-			CreatedAt       time.Time   `json:"created_at"`
-			UpdatedAt       time.Time   `json:"updated_at"`
+			Name            string    `json:"name"`
+			FullName        string    `json:"full_name"`
+			Description     string    `json:"description"`
+			Empty           bool      `json:"empty"`
+			Private         bool      `json:"private"`
+			Fork            bool      `json:"fork"`
+			Template        bool      `json:"template"`
+			Parent          any       `json:"parent"`
+			Mirror          bool      `json:"mirror"`
+			Size            int       `json:"size"`
+			HtmlUrl         string    `json:"html_url"`
+			SshUrl          string    `json:"ssh_url"`
+			CloneUrl        string    `json:"clone_url"`
+			OriginalUrl     string    `json:"original_url"`
+			Website         string    `json:"website"`
+			StarsCount      int       `json:"stars_count"`
+			ForksCount      int       `json:"forks_count"`
+			WatchersCount   int       `json:"watchers_count"`
+			OpenIssuesCount int       `json:"open_issues_count"`
+			OpenPrCounter   int       `json:"open_pr_counter"`
+			ReleaseCounter  int       `json:"release_counter"`
+			DefaultBranch   string    `json:"default_branch"`
+			Archived        bool      `json:"archived"`
+			CreatedAt       time.Time `json:"created_at"`
+			UpdatedAt       time.Time `json:"updated_at"`
 			Permissions     struct {
 				Admin bool `json:"admin"`
 				Push  bool `json:"push"`
@@ -1061,31 +1061,31 @@ type giteaPullRequestURL struct {
 				Description   string    `json:"description"`
 				Username      string    `json:"username"`
 			} `json:"owner"`
-			Name            string      `json:"name"`
-			FullName        string      `json:"full_name"`
-			Description     string      `json:"description"`
-			Empty           bool        `json:"empty"`
-			Private         bool        `json:"private"`
-			Fork            bool        `json:"fork"`
-			Template        bool        `json:"template"`
-			Parent          any `json:"parent"`
-			Mirror          bool        `json:"mirror"`
-			Size            int         `json:"size"`
-			HtmlUrl         string      `json:"html_url"`
-			SshUrl          string      `json:"ssh_url"`
-			CloneUrl        string      `json:"clone_url"`
-			OriginalUrl     string      `json:"original_url"`
-			Website         string      `json:"website"`
-			StarsCount      int         `json:"stars_count"`
-			ForksCount      int         `json:"forks_count"`
-			WatchersCount   int         `json:"watchers_count"`
-			OpenIssuesCount int         `json:"open_issues_count"`
-			OpenPrCounter   int         `json:"open_pr_counter"`
-			ReleaseCounter  int         `json:"release_counter"`
-			DefaultBranch   string      `json:"default_branch"`
-			Archived        bool        `json:"archived"`
-			CreatedAt       time.Time   `json:"created_at"`
-			UpdatedAt       time.Time   `json:"updated_at"`
+			Name            string    `json:"name"`
+			FullName        string    `json:"full_name"`
+			Description     string    `json:"description"`
+			Empty           bool      `json:"empty"`
+			Private         bool      `json:"private"`
+			Fork            bool      `json:"fork"`
+			Template        bool      `json:"template"`
+			Parent          any       `json:"parent"`
+			Mirror          bool      `json:"mirror"`
+			Size            int       `json:"size"`
+			HtmlUrl         string    `json:"html_url"`
+			SshUrl          string    `json:"ssh_url"`
+			CloneUrl        string    `json:"clone_url"`
+			OriginalUrl     string    `json:"original_url"`
+			Website         string    `json:"website"`
+			StarsCount      int       `json:"stars_count"`
+			ForksCount      int       `json:"forks_count"`
+			WatchersCount   int       `json:"watchers_count"`
+			OpenIssuesCount int       `json:"open_issues_count"`
+			OpenPrCounter   int       `json:"open_pr_counter"`
+			ReleaseCounter  int       `json:"release_counter"`
+			DefaultBranch   string    `json:"default_branch"`
+			Archived        bool      `json:"archived"`
+			CreatedAt       time.Time `json:"created_at"`
+			UpdatedAt       time.Time `json:"updated_at"`
 			Permissions     struct {
 				Admin bool `json:"admin"`
 				Push  bool `json:"push"`
@@ -1111,9 +1111,9 @@ type giteaPullRequestURL struct {
 			MirrorInterval            string `json:"mirror_interval"`
 		} `json:"repo"`
 	} `json:"head"`
-	MergeBase string      `json:"merge_base"`
-	DueDate   any `json:"due_date"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	ClosedAt  any `json:"closed_at"`
+	MergeBase string    `json:"merge_base"`
+	DueDate   any       `json:"due_date"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	ClosedAt  any       `json:"closed_at"`
 }

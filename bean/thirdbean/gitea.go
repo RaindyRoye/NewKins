@@ -22,31 +22,31 @@ type ResultGiteaRepo struct {
 		Description   string    `json:"description"`
 		Username      string    `json:"username"`
 	} `json:"owner"`
-	Name            string      `json:"name"`
-	FullName        string      `json:"full_name"`
-	Description     string      `json:"description"`
-	Empty           bool        `json:"empty"`
-	Private         bool        `json:"private"`
-	Fork            bool        `json:"fork"`
-	Template        bool        `json:"template"`
-	Parent          any `json:"parent"`
-	Mirror          bool        `json:"mirror"`
-	Size            int         `json:"size"`
-	HtmlUrl         string      `json:"html_url"`
-	SshUrl          string      `json:"ssh_url"`
-	CloneUrl        string      `json:"clone_url"`
-	OriginalUrl     string      `json:"original_url"`
-	Website         string      `json:"website"`
-	StarsCount      int         `json:"stars_count"`
-	ForksCount      int         `json:"forks_count"`
-	WatchersCount   int         `json:"watchers_count"`
-	OpenIssuesCount int         `json:"open_issues_count"`
-	OpenPrCounter   int         `json:"open_pr_counter"`
-	ReleaseCounter  int         `json:"release_counter"`
-	DefaultBranch   string      `json:"default_branch"`
-	Archived        bool        `json:"archived"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
+	Name            string    `json:"name"`
+	FullName        string    `json:"full_name"`
+	Description     string    `json:"description"`
+	Empty           bool      `json:"empty"`
+	Private         bool      `json:"private"`
+	Fork            bool      `json:"fork"`
+	Template        bool      `json:"template"`
+	Parent          any       `json:"parent"`
+	Mirror          bool      `json:"mirror"`
+	Size            int       `json:"size"`
+	HtmlUrl         string    `json:"html_url"`
+	SshUrl          string    `json:"ssh_url"`
+	CloneUrl        string    `json:"clone_url"`
+	OriginalUrl     string    `json:"original_url"`
+	Website         string    `json:"website"`
+	StarsCount      int       `json:"stars_count"`
+	ForksCount      int       `json:"forks_count"`
+	WatchersCount   int       `json:"watchers_count"`
+	OpenIssuesCount int       `json:"open_issues_count"`
+	OpenPrCounter   int       `json:"open_pr_counter"`
+	ReleaseCounter  int       `json:"release_counter"`
+	DefaultBranch   string    `json:"default_branch"`
+	Archived        bool      `json:"archived"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 	Permissions     struct {
 		Admin bool `json:"admin"`
 		Push  bool `json:"push"`
@@ -88,24 +88,24 @@ type ResultGiteaRepoBranch struct {
 			Username string `json:"username"`
 		} `json:"committer"`
 		Verification struct {
-			Verified  bool        `json:"verified"`
-			Reason    string      `json:"reason"`
-			Signature string      `json:"signature"`
-			Signer    any `json:"signer"`
-			Payload   string      `json:"payload"`
+			Verified  bool   `json:"verified"`
+			Reason    string `json:"reason"`
+			Signature string `json:"signature"`
+			Signer    any    `json:"signer"`
+			Payload   string `json:"payload"`
 		} `json:"verification"`
-		Timestamp time.Time   `json:"timestamp"`
-		Added     any `json:"added"`
-		Removed   any `json:"removed"`
-		Modified  any `json:"modified"`
+		Timestamp time.Time `json:"timestamp"`
+		Added     any       `json:"added"`
+		Removed   any       `json:"removed"`
+		Modified  any       `json:"modified"`
 	} `json:"commit"`
-	Protected                     bool          `json:"protected"`
-	RequiredApprovals             int           `json:"required_approvals"`
-	EnableStatusCheck             bool          `json:"enable_status_check"`
-	StatusCheckContexts           []any `json:"status_check_contexts"`
-	UserCanPush                   bool          `json:"user_can_push"`
-	UserCanMerge                  bool          `json:"user_can_merge"`
-	EffectiveBranchProtectionName string        `json:"effective_branch_protection_name"`
+	Protected                     bool   `json:"protected"`
+	RequiredApprovals             int    `json:"required_approvals"`
+	EnableStatusCheck             bool   `json:"enable_status_check"`
+	StatusCheckContexts           []any  `json:"status_check_contexts"`
+	UserCanPush                   bool   `json:"user_can_push"`
+	UserCanMerge                  bool   `json:"user_can_merge"`
+	EffectiveBranchProtectionName string `json:"effective_branch_protection_name"`
 }
 type ResultGetGiteaHook struct {
 	Id     int    `json:"id"`
