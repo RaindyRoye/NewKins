@@ -8,7 +8,7 @@ func TestTTrigger_Param(t *testing.T) {
 	tr := &TTrigger{
 		Id:    "test-1",
 		Name:  "test trigger",
-		Param: map[string]interface{}{"key": "value"},
+		Param: map[string]any{"key": "value"},
 	}
 	if tr.Param["key"] != "value" {
 		t.Error("Param map not set correctly")

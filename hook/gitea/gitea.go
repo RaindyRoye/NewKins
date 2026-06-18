@@ -353,13 +353,13 @@ type giteaPushHook struct {
 			Email    string `json:"email"`
 			Username string `json:"username"`
 		} `json:"committer"`
-		Verification interface{} `json:"verification"`
+		Verification any `json:"verification"`
 		Timestamp    time.Time   `json:"timestamp"`
-		Added        interface{} `json:"added"`
-		Removed      interface{} `json:"removed"`
-		Modified     interface{} `json:"modified"`
+		Added        any `json:"added"`
+		Removed      any `json:"removed"`
+		Modified     any `json:"modified"`
 	} `json:"commits"`
-	HeadCommit interface{} `json:"head_commit"`
+	HeadCommit any `json:"head_commit"`
 	Repository struct {
 		Id    int `json:"id"`
 		Owner struct {
@@ -387,7 +387,7 @@ type giteaPushHook struct {
 		Private         bool        `json:"private"`
 		Fork            bool        `json:"fork"`
 		Template        bool        `json:"template"`
-		Parent          interface{} `json:"parent"`
+		Parent          any `json:"parent"`
 		Mirror          bool        `json:"mirror"`
 		Size            int         `json:"size"`
 		HtmlUrl         string      `json:"html_url"`
@@ -494,10 +494,10 @@ type giteaPRHook struct {
 		} `json:"user"`
 		Title          string        `json:"title"`
 		Body           string        `json:"body"`
-		Labels         []interface{} `json:"labels"`
-		Milestone      interface{}   `json:"milestone"`
-		Assignee       interface{}   `json:"assignee"`
-		Assignees      interface{}   `json:"assignees"`
+		Labels         []any `json:"labels"`
+		Milestone      any   `json:"milestone"`
+		Assignee       any   `json:"assignee"`
+		Assignees      any   `json:"assignees"`
 		State          string        `json:"state"`
 		IsLocked       bool          `json:"is_locked"`
 		Comments       int           `json:"comments"`
@@ -506,9 +506,9 @@ type giteaPRHook struct {
 		PatchUrl       string        `json:"patch_url"`
 		Mergeable      bool          `json:"mergeable"`
 		Merged         bool          `json:"merged"`
-		MergedAt       interface{}   `json:"merged_at"`
-		MergeCommitSha interface{}   `json:"merge_commit_sha"`
-		MergedBy       interface{}   `json:"merged_by"`
+		MergedAt       any   `json:"merged_at"`
+		MergeCommitSha any   `json:"merge_commit_sha"`
+		MergedBy       any   `json:"merged_by"`
 		Base           struct {
 			Label  string `json:"label"`
 			Ref    string `json:"ref"`
@@ -541,7 +541,7 @@ type giteaPRHook struct {
 				Private         bool        `json:"private"`
 				Fork            bool        `json:"fork"`
 				Template        bool        `json:"template"`
-				Parent          interface{} `json:"parent"`
+				Parent          any `json:"parent"`
 				Mirror          bool        `json:"mirror"`
 				Size            int         `json:"size"`
 				HtmlUrl         string      `json:"html_url"`
@@ -616,7 +616,7 @@ type giteaPRHook struct {
 				Private         bool        `json:"private"`
 				Fork            bool        `json:"fork"`
 				Template        bool        `json:"template"`
-				Parent          interface{} `json:"parent"`
+				Parent          any `json:"parent"`
 				Mirror          bool        `json:"mirror"`
 				Size            int         `json:"size"`
 				HtmlUrl         string      `json:"html_url"`
@@ -660,10 +660,10 @@ type giteaPRHook struct {
 			} `json:"repo"`
 		} `json:"head"`
 		MergeBase string      `json:"merge_base"`
-		DueDate   interface{} `json:"due_date"`
+		DueDate   any `json:"due_date"`
 		CreatedAt time.Time   `json:"created_at"`
 		UpdatedAt time.Time   `json:"updated_at"`
-		ClosedAt  interface{} `json:"closed_at"`
+		ClosedAt  any `json:"closed_at"`
 	} `json:"pull_request"`
 	Repository struct {
 		Id    int `json:"id"`
@@ -692,7 +692,7 @@ type giteaPRHook struct {
 		Private         bool        `json:"private"`
 		Fork            bool        `json:"fork"`
 		Template        bool        `json:"template"`
-		Parent          interface{} `json:"parent"`
+		Parent          any `json:"parent"`
 		Mirror          bool        `json:"mirror"`
 		Size            int         `json:"size"`
 		HtmlUrl         string      `json:"html_url"`
@@ -752,7 +752,7 @@ type giteaPRHook struct {
 		Description   string    `json:"description"`
 		Username      string    `json:"username"`
 	} `json:"sender"`
-	Review interface{} `json:"review"`
+	Review any `json:"review"`
 }
 type giteaCommentHook struct {
 	Secret string `json:"secret"`
@@ -785,18 +785,18 @@ type giteaCommentHook struct {
 		Title            string        `json:"title"`
 		Body             string        `json:"body"`
 		Ref              string        `json:"ref"`
-		Labels           []interface{} `json:"labels"`
-		Milestone        interface{}   `json:"milestone"`
-		Assignee         interface{}   `json:"assignee"`
-		Assignees        interface{}   `json:"assignees"`
+		Labels           []any `json:"labels"`
+		Milestone        any   `json:"milestone"`
+		Assignee         any   `json:"assignee"`
+		Assignees        any   `json:"assignees"`
 		State            string        `json:"state"`
 		IsLocked         bool          `json:"is_locked"`
 		Comments         int           `json:"comments"`
 		CreatedAt        time.Time     `json:"created_at"`
 		UpdatedAt        time.Time     `json:"updated_at"`
-		ClosedAt         interface{}   `json:"closed_at"`
-		DueDate          interface{}   `json:"due_date"`
-		PullRequest      interface{}   `json:"pull_request"`
+		ClosedAt         any   `json:"closed_at"`
+		DueDate          any   `json:"due_date"`
+		PullRequest      any   `json:"pull_request"`
 		Repository       struct {
 			Id       int    `json:"id"`
 			Name     string `json:"name"`
@@ -860,7 +860,7 @@ type giteaCommentHook struct {
 		Private         bool        `json:"private"`
 		Fork            bool        `json:"fork"`
 		Template        bool        `json:"template"`
-		Parent          interface{} `json:"parent"`
+		Parent          any `json:"parent"`
 		Mirror          bool        `json:"mirror"`
 		Size            int         `json:"size"`
 		HtmlUrl         string      `json:"html_url"`
@@ -946,10 +946,10 @@ type giteaPullRequestURL struct {
 	} `json:"user"`
 	Title          string        `json:"title"`
 	Body           string        `json:"body"`
-	Labels         []interface{} `json:"labels"`
-	Milestone      interface{}   `json:"milestone"`
-	Assignee       interface{}   `json:"assignee"`
-	Assignees      interface{}   `json:"assignees"`
+	Labels         []any `json:"labels"`
+	Milestone      any   `json:"milestone"`
+	Assignee       any   `json:"assignee"`
+	Assignees      any   `json:"assignees"`
 	State          string        `json:"state"`
 	IsLocked       bool          `json:"is_locked"`
 	Comments       int           `json:"comments"`
@@ -958,9 +958,9 @@ type giteaPullRequestURL struct {
 	PatchUrl       string        `json:"patch_url"`
 	Mergeable      bool          `json:"mergeable"`
 	Merged         bool          `json:"merged"`
-	MergedAt       interface{}   `json:"merged_at"`
-	MergeCommitSha interface{}   `json:"merge_commit_sha"`
-	MergedBy       interface{}   `json:"merged_by"`
+	MergedAt       any   `json:"merged_at"`
+	MergeCommitSha any   `json:"merge_commit_sha"`
+	MergedBy       any   `json:"merged_by"`
 	Base           struct {
 		Label  string `json:"label"`
 		Ref    string `json:"ref"`
@@ -993,7 +993,7 @@ type giteaPullRequestURL struct {
 			Private         bool        `json:"private"`
 			Fork            bool        `json:"fork"`
 			Template        bool        `json:"template"`
-			Parent          interface{} `json:"parent"`
+			Parent          any `json:"parent"`
 			Mirror          bool        `json:"mirror"`
 			Size            int         `json:"size"`
 			HtmlUrl         string      `json:"html_url"`
@@ -1068,7 +1068,7 @@ type giteaPullRequestURL struct {
 			Private         bool        `json:"private"`
 			Fork            bool        `json:"fork"`
 			Template        bool        `json:"template"`
-			Parent          interface{} `json:"parent"`
+			Parent          any `json:"parent"`
 			Mirror          bool        `json:"mirror"`
 			Size            int         `json:"size"`
 			HtmlUrl         string      `json:"html_url"`
@@ -1112,8 +1112,8 @@ type giteaPullRequestURL struct {
 		} `json:"repo"`
 	} `json:"head"`
 	MergeBase string      `json:"merge_base"`
-	DueDate   interface{} `json:"due_date"`
+	DueDate   any `json:"due_date"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
-	ClosedAt  interface{} `json:"closed_at"`
+	ClosedAt  any `json:"closed_at"`
 }

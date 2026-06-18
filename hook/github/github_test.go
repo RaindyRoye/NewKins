@@ -77,18 +77,18 @@ func TestValidatePrefix(t *testing.T) {
 }
 
 func TestParsePushHook(t *testing.T) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"ref":    "refs/heads/main",
 		"before": "abc123",
 		"after":  "def456",
-		"commits": []map[string]interface{}{
+		"commits": []map[string]any{
 			{
 				"id":      "def456",
 				"message": "test commit",
 				"url":     "https://github.com/user/test-repo/commit/def456",
 			},
 		},
-		"repository": map[string]interface{}{
+		"repository": map[string]any{
 			"id":          1,
 			"name":        "test-repo",
 			"full_name":   "user/test-repo",
@@ -100,11 +100,11 @@ func TestParsePushHook(t *testing.T) {
 			"description": "A test repository",
 			"private":     false,
 			"created_at":  1609459200,
-			"owner": map[string]interface{}{
+			"owner": map[string]any{
 				"login": "testuser",
 			},
 		},
-		"sender": map[string]interface{}{
+		"sender": map[string]any{
 			"login": "testuser",
 		},
 	}
@@ -153,16 +153,16 @@ func TestParsePushHook(t *testing.T) {
 }
 
 func TestParsePullRequestHook(t *testing.T) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"action": "opened",
 		"number": 42,
-		"pull_request": map[string]interface{}{
+		"pull_request": map[string]any{
 			"title": "Test PR",
 			"body":  "PR body",
-			"head": map[string]interface{}{
+			"head": map[string]any{
 				"ref": "feature-branch",
 				"sha": "head123",
-				"repo": map[string]interface{}{
+				"repo": map[string]any{
 					"id":          2,
 					"name":        "test-repo-fork",
 					"full_name":   "forker/test-repo",
@@ -174,15 +174,15 @@ func TestParsePullRequestHook(t *testing.T) {
 					"created_at":  "2021-01-01T00:00:00Z",
 					"description": "forked repo",
 					"private":     false,
-					"owner": map[string]interface{}{
+					"owner": map[string]any{
 						"login": "forker",
 					},
 				},
 			},
-			"base": map[string]interface{}{
+			"base": map[string]any{
 				"ref": "main",
 				"sha": "base123",
-				"repo": map[string]interface{}{
+				"repo": map[string]any{
 					"id":          1,
 					"name":        "test-repo",
 					"full_name":   "user/test-repo",
@@ -194,21 +194,21 @@ func TestParsePullRequestHook(t *testing.T) {
 					"created_at":  "2021-01-01T00:00:00Z",
 					"description": "base repo",
 					"private":     false,
-					"owner": map[string]interface{}{
+					"owner": map[string]any{
 						"login": "user",
 					},
 				},
 			},
-			"user": map[string]interface{}{
+			"user": map[string]any{
 				"login": "prauthor",
 			},
 		},
-		"repository": map[string]interface{}{
+		"repository": map[string]any{
 			"id":        1,
 			"name":      "test-repo",
 			"full_name": "user/test-repo",
 		},
-		"sender": map[string]interface{}{
+		"sender": map[string]any{
 			"login": "prauthor",
 		},
 	}
@@ -269,14 +269,14 @@ func TestParseInvalidJSON(t *testing.T) {
 }
 
 func TestParsePRUnsupportedAction(t *testing.T) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"action": "closed",
-		"pull_request": map[string]interface{}{
-			"head": map[string]interface{}{
-				"repo": map[string]interface{}{},
+		"pull_request": map[string]any{
+			"head": map[string]any{
+				"repo": map[string]any{},
 			},
-			"base": map[string]interface{}{
-				"repo": map[string]interface{}{},
+			"base": map[string]any{
+				"repo": map[string]any{},
 			},
 		},
 	}

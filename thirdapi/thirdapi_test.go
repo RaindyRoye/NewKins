@@ -42,7 +42,7 @@ func TestRepositoryJSONMarshal(t *testing.T) {
 	}
 
 	// RepoType has json:"-" tag, so it should NOT be serialized
-	var rawMap map[string]interface{}
+	var rawMap map[string]any
 	if err := json.Unmarshal(data, &rawMap); err != nil {
 		t.Fatalf("unmarshal to map failed: %v", err)
 	}

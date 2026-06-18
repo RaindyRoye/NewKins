@@ -55,7 +55,7 @@ func CacheSet(key string, data []byte, outm ...time.Duration) error {
 	}
 	return nil
 }
-func CacheSets(key string, data interface{}, outm ...time.Duration) error {
+func CacheSets(key string, data any, outm ...time.Duration) error {
 	if BCache == nil {
 		return ErrCacheNotInit
 	}
@@ -135,7 +135,7 @@ func CacheGet(key string) ([]byte, error) {
 	}
 	return rt, err
 }
-func CacheGets(key string, data interface{}) error {
+func CacheGets(key string, data any) error {
 	if BCache == nil {
 		return ErrCacheNotInit
 	}

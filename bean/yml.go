@@ -52,7 +52,7 @@ type Step struct {
 	Repo         string            `yaml:"repo,omitempty" json:"repo"`
 	Input        map[string]string `yaml:"input,omitempty" json:"input"`
 	Env          map[string]string `yaml:"env,omitempty" json:"env"`
-	Commands     interface{}       `yaml:"commands,omitempty" json:"commands"`
+	Commands     any       `yaml:"commands,omitempty" json:"commands"`
 	Waits        []string          `yaml:"wait,omitempty" json:"wait"`
 	Image        string            `yaml:"image,omitempty" json:"image"`
 	Artifacts    []*Artifact       `yaml:"artifacts,omitempty" json:"artifacts"`
@@ -89,7 +89,7 @@ func (c *Pipeline) ConvertCmd() {
 			switch v := step.Commands.(type) {
 			case string:
 				step.Commands = v
-			case []interface{}:
+			case []any:
 				var ls []string
 				for _, v1 := range v {
 					ls = append(ls, fmt.Sprintf("%v", v1))

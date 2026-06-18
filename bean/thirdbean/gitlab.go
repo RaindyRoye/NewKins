@@ -11,13 +11,13 @@ type ResultGitlabRepo struct {
 	PathWithNamespace string        `json:"path_with_namespace"`
 	CreatedAt         time.Time     `json:"created_at"`
 	DefaultBranch     string        `json:"default_branch"`
-	TagList           []interface{} `json:"tag_list"`
-	Topics            []interface{} `json:"topics"`
+	TagList           []any `json:"tag_list"`
+	Topics            []any `json:"topics"`
 	SshUrlToRepo      string        `json:"ssh_url_to_repo"`
 	HttpUrlToRepo     string        `json:"http_url_to_repo"`
 	WebUrl            string        `json:"web_url"`
 	ReadmeUrl         string        `json:"readme_url"`
-	AvatarUrl         interface{}   `json:"avatar_url"`
+	AvatarUrl         any   `json:"avatar_url"`
 	ForksCount        int           `json:"forks_count"`
 	StarCount         int           `json:"star_count"`
 	LastActivityAt    time.Time     `json:"last_activity_at"`
@@ -27,7 +27,7 @@ type ResultGitlabRepo struct {
 		Path      string      `json:"path"`
 		Kind      string      `json:"kind"`
 		FullPath  string      `json:"full_path"`
-		ParentId  interface{} `json:"parent_id"`
+		ParentId  any `json:"parent_id"`
 		AvatarUrl string      `json:"avatar_url"`
 		WebUrl    string      `json:"web_url"`
 	} `json:"namespace"`
@@ -60,7 +60,7 @@ type ResultGitlabRepo struct {
 		KeepN         int         `json:"keep_n"`
 		OlderThan     string      `json:"older_than"`
 		NameRegex     string      `json:"name_regex"`
-		NameRegexKeep interface{} `json:"name_regex_keep"`
+		NameRegexKeep any `json:"name_regex_keep"`
 		NextRunAt     time.Time   `json:"next_run_at"`
 	} `json:"container_expiration_policy"`
 	IssuesEnabled                             bool          `json:"issues_enabled"`
@@ -82,7 +82,7 @@ type ResultGitlabRepo struct {
 	PagesAccessLevel                          string        `json:"pages_access_level"`
 	OperationsAccessLevel                     string        `json:"operations_access_level"`
 	AnalyticsAccessLevel                      string        `json:"analytics_access_level"`
-	EmailsDisabled                            interface{}   `json:"emails_disabled"`
+	EmailsDisabled                            any   `json:"emails_disabled"`
 	SharedRunnersEnabled                      bool          `json:"shared_runners_enabled"`
 	LfsEnabled                                bool          `json:"lfs_enabled"`
 	CreatorId                                 int           `json:"creator_id"`
@@ -93,31 +93,31 @@ type ResultGitlabRepo struct {
 	PublicJobs                                bool          `json:"public_jobs"`
 	BuildTimeout                              int           `json:"build_timeout"`
 	AutoCancelPendingPipelines                string        `json:"auto_cancel_pending_pipelines"`
-	BuildCoverageRegex                        interface{}   `json:"build_coverage_regex"`
+	BuildCoverageRegex                        any   `json:"build_coverage_regex"`
 	CiConfigPath                              string        `json:"ci_config_path"`
-	SharedWithGroups                          []interface{} `json:"shared_with_groups"`
+	SharedWithGroups                          []any `json:"shared_with_groups"`
 	OnlyAllowMergeIfPipelineSucceeds          bool          `json:"only_allow_merge_if_pipeline_succeeds"`
-	AllowMergeOnSkippedPipeline               interface{}   `json:"allow_merge_on_skipped_pipeline"`
+	AllowMergeOnSkippedPipeline               any   `json:"allow_merge_on_skipped_pipeline"`
 	RestrictUserDefinedVariables              bool          `json:"restrict_user_defined_variables"`
 	RequestAccessEnabled                      bool          `json:"request_access_enabled"`
 	OnlyAllowMergeIfAllDiscussionsAreResolved bool          `json:"only_allow_merge_if_all_discussions_are_resolved"`
 	RemoveSourceBranchAfterMerge              bool          `json:"remove_source_branch_after_merge"`
 	PrintingMergeRequestLinkEnabled           bool          `json:"printing_merge_request_link_enabled"`
 	MergeMethod                               string        `json:"merge_method"`
-	SuggestionCommitMessage                   interface{}   `json:"suggestion_commit_message"`
+	SuggestionCommitMessage                   any   `json:"suggestion_commit_message"`
 	AutoDevopsEnabled                         bool          `json:"auto_devops_enabled"`
 	AutoDevopsDeployStrategy                  string        `json:"auto_devops_deploy_strategy"`
 	AutocloseReferencedIssues                 bool          `json:"autoclose_referenced_issues"`
 	ExternalAuthorizationClassificationLabel  string        `json:"external_authorization_classification_label"`
 	RequirementsEnabled                       bool          `json:"requirements_enabled"`
 	SecurityAndComplianceEnabled              bool          `json:"security_and_compliance_enabled"`
-	ComplianceFrameworks                      []interface{} `json:"compliance_frameworks"`
+	ComplianceFrameworks                      []any `json:"compliance_frameworks"`
 	Permissions                               struct {
 		ProjectAccess struct {
 			AccessLevel       int `json:"access_level"`
 			NotificationLevel int `json:"notification_level"`
 		} `json:"project_access"`
-		GroupAccess interface{} `json:"group_access"`
+		GroupAccess any `json:"group_access"`
 	} `json:"permissions"`
 }
 

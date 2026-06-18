@@ -12,12 +12,12 @@ import (
 // Returns true if the record was found.
 // DB errors are logged but do not change the return value (false = not found or error).
 // Uses the global comm.Ctx; prefer GetIdOrAidCtx when a request context is available.
-func GetIdOrAid(id interface{}, e interface{}) bool {
+func GetIdOrAid(id any, e any) bool {
 	return GetIdOrAidCtx(comm.Ctx, id, e)
 }
 
 // GetIdOrAidCtx is the context-aware version of GetIdOrAid.
-func GetIdOrAidCtx(ctx context.Context, id interface{}, e interface{}) bool {
+func GetIdOrAidCtx(ctx context.Context, id any, e any) bool {
 	if id == nil || e == nil {
 		return false
 	}
@@ -42,12 +42,12 @@ func GetIdOrAidCtx(ctx context.Context, id interface{}, e interface{}) bool {
 // GetIdOrAidE is like GetIdOrAid but returns errors instead of logging them.
 // Use this in contexts where callers need to distinguish "not found" from "DB error".
 // Uses the global comm.Ctx; prefer GetIdOrAidECtx when a request context is available.
-func GetIdOrAidE(id interface{}, e interface{}) (bool, error) {
+func GetIdOrAidE(id any, e any) (bool, error) {
 	return GetIdOrAidECtx(comm.Ctx, id, e)
 }
 
 // GetIdOrAidECtx is the context-aware version of GetIdOrAidE.
-func GetIdOrAidECtx(ctx context.Context, id interface{}, e interface{}) (bool, error) {
+func GetIdOrAidECtx(ctx context.Context, id any, e any) (bool, error) {
 	if id == nil || e == nil {
 		return false, nil
 	}

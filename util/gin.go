@@ -30,7 +30,7 @@ func GinRegController(g *gin.Engine, gc GinController) {
 	}
 	gc.Routes(gp)
 }
-func GinReqParseJson(fn interface{}) gin.HandlerFunc {
+func GinReqParseJson(fn any) gin.HandlerFunc {
 	fnv := reflect.ValueOf(fn)
 	if fnv.Kind() != reflect.Func {
 		return nil

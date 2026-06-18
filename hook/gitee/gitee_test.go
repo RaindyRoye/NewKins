@@ -23,18 +23,18 @@ func newGiteeRequest(event string, body []byte, secret string) *http.Request {
 }
 
 func TestParsePushHook(t *testing.T) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"ref":    "refs/heads/main",
 		"before": "abc123",
 		"after":  "def456",
-		"commits": []map[string]interface{}{
+		"commits": []map[string]any{
 			{
 				"id":      "def456",
 				"message": "test commit",
 				"url":     "https://gitee.com/user/test-repo/commit/def456",
 			},
 		},
-		"repository": map[string]interface{}{
+		"repository": map[string]any{
 			"id":        1,
 			"name":      "test-repo",
 			"full_name": "user/test-repo",
@@ -42,7 +42,7 @@ func TestParsePushHook(t *testing.T) {
 			"ssh_url":   "git@gitee.com:user/test-repo.git",
 			"url":       "https://gitee.com/user/test-repo",
 		},
-		"sender": map[string]interface{}{
+		"sender": map[string]any{
 			"login": "testuser",
 		},
 	}
@@ -79,37 +79,37 @@ func TestParsePushHook(t *testing.T) {
 }
 
 func TestParsePullRequestHook(t *testing.T) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"action": "open",
 		"iid":    42,
 		"title":  "Test PR",
-		"head": map[string]interface{}{
+		"head": map[string]any{
 			"ref": "feature-branch",
 			"sha": "head123",
-			"repo": map[string]interface{}{
+			"repo": map[string]any{
 				"id":        2,
 				"name":      "test-repo-fork",
 				"full_name": "forker/test-repo",
 				"html_url":  "https://gitee.com/forker/test-repo",
 			},
 		},
-		"base": map[string]interface{}{
+		"base": map[string]any{
 			"ref": "main",
 			"sha": "base123",
-			"repo": map[string]interface{}{
+			"repo": map[string]any{
 				"id":        1,
 				"name":      "test-repo",
 				"full_name": "user/test-repo",
 				"html_url":  "https://gitee.com/user/test-repo",
 			},
 		},
-		"repository": map[string]interface{}{
+		"repository": map[string]any{
 			"id":        1,
 			"name":      "test-repo",
 			"full_name": "user/test-repo",
 			"html_url":  "https://gitee.com/user/test-repo",
 		},
-		"sender": map[string]interface{}{
+		"sender": map[string]any{
 			"login": "prauthor",
 		},
 	}
@@ -148,14 +148,14 @@ func TestParseUnknownEvent(t *testing.T) {
 }
 
 func TestParseInvalidSecret(t *testing.T) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"ref":    "refs/heads/main",
 		"before": "abc",
 		"after":  "def",
-		"commits": []map[string]interface{}{
+		"commits": []map[string]any{
 			{"id": "def", "message": "test"},
 		},
-		"repository": map[string]interface{}{},
+		"repository": map[string]any{},
 	}
 	body, _ := json.Marshal(payload)
 	req := newGiteeRequest(hook.GiteeEventPush, body, "correctsecret")
@@ -177,7 +177,7 @@ func TestParseInvalidJSON(t *testing.T) {
 }
 
 func TestParsePRUnsupportedAction(t *testing.T) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"action": "close",
 	}
 

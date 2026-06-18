@@ -29,7 +29,7 @@ type ResultGiteaRepo struct {
 	Private         bool        `json:"private"`
 	Fork            bool        `json:"fork"`
 	Template        bool        `json:"template"`
-	Parent          interface{} `json:"parent"`
+	Parent          any `json:"parent"`
 	Mirror          bool        `json:"mirror"`
 	Size            int         `json:"size"`
 	HtmlUrl         string      `json:"html_url"`
@@ -91,18 +91,18 @@ type ResultGiteaRepoBranch struct {
 			Verified  bool        `json:"verified"`
 			Reason    string      `json:"reason"`
 			Signature string      `json:"signature"`
-			Signer    interface{} `json:"signer"`
+			Signer    any `json:"signer"`
 			Payload   string      `json:"payload"`
 		} `json:"verification"`
 		Timestamp time.Time   `json:"timestamp"`
-		Added     interface{} `json:"added"`
-		Removed   interface{} `json:"removed"`
-		Modified  interface{} `json:"modified"`
+		Added     any `json:"added"`
+		Removed   any `json:"removed"`
+		Modified  any `json:"modified"`
 	} `json:"commit"`
 	Protected                     bool          `json:"protected"`
 	RequiredApprovals             int           `json:"required_approvals"`
 	EnableStatusCheck             bool          `json:"enable_status_check"`
-	StatusCheckContexts           []interface{} `json:"status_check_contexts"`
+	StatusCheckContexts           []any `json:"status_check_contexts"`
 	UserCanPush                   bool          `json:"user_can_push"`
 	UserCanMerge                  bool          `json:"user_can_merge"`
 	EffectiveBranchProtectionName string        `json:"effective_branch_protection_name"`

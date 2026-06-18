@@ -105,7 +105,7 @@ func (s *RepositoryService) CreateWebHooks(ctx context.Context, accessToken, own
 		return nil, fmt.Errorf("gitlab CreateWebHooks: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitlab Api CreateWebHooks url : %v", parse)
-	m := map[string]interface{}{}
+	m := map[string]any{}
 	m["url"] = backURL
 	m["token"] = password
 	logrus.Infof("gitlab CreateWebHooks backURL : %s", backURL)

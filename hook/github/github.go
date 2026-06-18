@@ -378,15 +378,15 @@ type githubPullRequestURL struct {
 	Body               string        `json:"body"`
 	CreatedAt          time.Time     `json:"created_at"`
 	UpdatedAt          time.Time     `json:"updated_at"`
-	ClosedAt           interface{}   `json:"closed_at"`
-	MergedAt           interface{}   `json:"merged_at"`
+	ClosedAt           any   `json:"closed_at"`
+	MergedAt           any   `json:"merged_at"`
 	MergeCommitSha     string        `json:"merge_commit_sha"`
-	Assignee           interface{}   `json:"assignee"`
-	Assignees          []interface{} `json:"assignees"`
-	RequestedReviewers []interface{} `json:"requested_reviewers"`
-	RequestedTeams     []interface{} `json:"requested_teams"`
-	Labels             []interface{} `json:"labels"`
-	Milestone          interface{}   `json:"milestone"`
+	Assignee           any   `json:"assignee"`
+	Assignees          []any `json:"assignees"`
+	RequestedReviewers []any `json:"requested_reviewers"`
+	RequestedTeams     []any `json:"requested_teams"`
+	Labels             []any `json:"labels"`
+	Milestone          any   `json:"milestone"`
 	Draft              bool          `json:"draft"`
 	CommitsUrl         string        `json:"commits_url"`
 	ReviewCommentsUrl  string        `json:"review_comments_url"`
@@ -444,7 +444,7 @@ type githubPullRequestURL struct {
 				SiteAdmin         bool   `json:"site_admin"`
 			} `json:"owner"`
 			HtmlUrl          string      `json:"html_url"`
-			Description      interface{} `json:"description"`
+			Description      any `json:"description"`
 			Fork             bool        `json:"fork"`
 			Url              string      `json:"url"`
 			ForksUrl         string      `json:"forks_url"`
@@ -490,7 +490,7 @@ type githubPullRequestURL struct {
 			SshUrl           string      `json:"ssh_url"`
 			CloneUrl         string      `json:"clone_url"`
 			SvnUrl           string      `json:"svn_url"`
-			Homepage         interface{} `json:"homepage"`
+			Homepage         any `json:"homepage"`
 			Size             int         `json:"size"`
 			StargazersCount  int         `json:"stargazers_count"`
 			WatchersCount    int         `json:"watchers_count"`
@@ -501,11 +501,11 @@ type githubPullRequestURL struct {
 			HasWiki          bool        `json:"has_wiki"`
 			HasPages         bool        `json:"has_pages"`
 			ForksCount       int         `json:"forks_count"`
-			MirrorUrl        interface{} `json:"mirror_url"`
+			MirrorUrl        any `json:"mirror_url"`
 			Archived         bool        `json:"archived"`
 			Disabled         bool        `json:"disabled"`
 			OpenIssuesCount  int         `json:"open_issues_count"`
-			License          interface{} `json:"license"`
+			License          any `json:"license"`
 			Forks            int         `json:"forks"`
 			OpenIssues       int         `json:"open_issues"`
 			Watchers         int         `json:"watchers"`
@@ -563,7 +563,7 @@ type githubPullRequestURL struct {
 				SiteAdmin         bool   `json:"site_admin"`
 			} `json:"owner"`
 			HtmlUrl          string      `json:"html_url"`
-			Description      interface{} `json:"description"`
+			Description      any `json:"description"`
 			Fork             bool        `json:"fork"`
 			Url              string      `json:"url"`
 			ForksUrl         string      `json:"forks_url"`
@@ -609,7 +609,7 @@ type githubPullRequestURL struct {
 			SshUrl           string      `json:"ssh_url"`
 			CloneUrl         string      `json:"clone_url"`
 			SvnUrl           string      `json:"svn_url"`
-			Homepage         interface{} `json:"homepage"`
+			Homepage         any `json:"homepage"`
 			Size             int         `json:"size"`
 			StargazersCount  int         `json:"stargazers_count"`
 			WatchersCount    int         `json:"watchers_count"`
@@ -620,11 +620,11 @@ type githubPullRequestURL struct {
 			HasWiki          bool        `json:"has_wiki"`
 			HasPages         bool        `json:"has_pages"`
 			ForksCount       int         `json:"forks_count"`
-			MirrorUrl        interface{} `json:"mirror_url"`
+			MirrorUrl        any `json:"mirror_url"`
 			Archived         bool        `json:"archived"`
 			Disabled         bool        `json:"disabled"`
 			OpenIssuesCount  int         `json:"open_issues_count"`
-			License          interface{} `json:"license"`
+			License          any `json:"license"`
 			Forks            int         `json:"forks"`
 			OpenIssues       int         `json:"open_issues"`
 			Watchers         int         `json:"watchers"`
@@ -658,13 +658,13 @@ type githubPullRequestURL struct {
 		} `json:"statuses"`
 	} `json:"_links"`
 	AuthorAssociation   string      `json:"author_association"`
-	AutoMerge           interface{} `json:"auto_merge"`
-	ActiveLockReason    interface{} `json:"active_lock_reason"`
+	AutoMerge           any `json:"auto_merge"`
+	ActiveLockReason    any `json:"active_lock_reason"`
 	Merged              bool        `json:"merged"`
 	Mergeable           bool        `json:"mergeable"`
 	Rebaseable          bool        `json:"rebaseable"`
 	MergeableState      string      `json:"mergeable_state"`
-	MergedBy            interface{} `json:"merged_by"`
+	MergedBy            any `json:"merged_by"`
 	Comments            int         `json:"comments"`
 	ReviewComments      int         `json:"review_comments"`
 	MaintainerCanModify bool        `json:"maintainer_can_modify"`
@@ -753,7 +753,7 @@ type githubPushHook struct {
 		SshUrl           string      `json:"ssh_url"`
 		CloneUrl         string      `json:"clone_url"`
 		SvnUrl           string      `json:"svn_url"`
-		Homepage         interface{} `json:"homepage"`
+		Homepage         any `json:"homepage"`
 		Size             int         `json:"size"`
 		StargazersCount  int         `json:"stargazers_count"`
 		WatchersCount    int         `json:"watchers_count"`
@@ -764,11 +764,11 @@ type githubPushHook struct {
 		HasWiki          bool        `json:"has_wiki"`
 		HasPages         bool        `json:"has_pages"`
 		ForksCount       int         `json:"forks_count"`
-		MirrorUrl        interface{} `json:"mirror_url"`
+		MirrorUrl        any `json:"mirror_url"`
 		Archived         bool        `json:"archived"`
 		Disabled         bool        `json:"disabled"`
 		OpenIssuesCount  int         `json:"open_issues_count"`
-		License          interface{} `json:"license"`
+		License          any `json:"license"`
 		Forks            int         `json:"forks"`
 		OpenIssues       int         `json:"open_issues"`
 		Watchers         int         `json:"watchers"`
@@ -803,7 +803,7 @@ type githubPushHook struct {
 	Created bool        `json:"created"`
 	Deleted bool        `json:"deleted"`
 	Forced  bool        `json:"forced"`
-	BaseRef interface{} `json:"base_ref"`
+	BaseRef any `json:"base_ref"`
 	Compare string      `json:"compare"`
 	Commits []struct {
 		Id        string    `json:"id"`
@@ -822,8 +822,8 @@ type githubPushHook struct {
 			Email    string `json:"email"`
 			Username string `json:"username"`
 		} `json:"committer"`
-		Added    []interface{} `json:"added"`
-		Removed  []interface{} `json:"removed"`
+		Added    []any `json:"added"`
+		Removed  []any `json:"removed"`
 		Modified []string      `json:"modified"`
 	} `json:"commits"`
 	HeadCommit struct {
@@ -843,8 +843,8 @@ type githubPushHook struct {
 			Email    string `json:"email"`
 			Username string `json:"username"`
 		} `json:"committer"`
-		Added    []interface{} `json:"added"`
-		Removed  []interface{} `json:"removed"`
+		Added    []any `json:"added"`
+		Removed  []any `json:"removed"`
 		Modified []string      `json:"modified"`
 	} `json:"head_commit"`
 }
@@ -886,15 +886,15 @@ type githubPRHook struct {
 		Body               string        `json:"body"`
 		CreatedAt          time.Time     `json:"created_at"`
 		UpdatedAt          time.Time     `json:"updated_at"`
-		ClosedAt           interface{}   `json:"closed_at"`
-		MergedAt           interface{}   `json:"merged_at"`
-		MergeCommitSha     interface{}   `json:"merge_commit_sha"`
-		Assignee           interface{}   `json:"assignee"`
-		Assignees          []interface{} `json:"assignees"`
-		RequestedReviewers []interface{} `json:"requested_reviewers"`
-		RequestedTeams     []interface{} `json:"requested_teams"`
-		Labels             []interface{} `json:"labels"`
-		Milestone          interface{}   `json:"milestone"`
+		ClosedAt           any   `json:"closed_at"`
+		MergedAt           any   `json:"merged_at"`
+		MergeCommitSha     any   `json:"merge_commit_sha"`
+		Assignee           any   `json:"assignee"`
+		Assignees          []any `json:"assignees"`
+		RequestedReviewers []any `json:"requested_reviewers"`
+		RequestedTeams     []any `json:"requested_teams"`
+		Labels             []any `json:"labels"`
+		Milestone          any   `json:"milestone"`
 		Draft              bool          `json:"draft"`
 		CommitsUrl         string        `json:"commits_url"`
 		ReviewCommentsUrl  string        `json:"review_comments_url"`
@@ -998,7 +998,7 @@ type githubPRHook struct {
 				SshUrl              string      `json:"ssh_url"`
 				CloneUrl            string      `json:"clone_url"`
 				SvnUrl              string      `json:"svn_url"`
-				Homepage            interface{} `json:"homepage"`
+				Homepage            any `json:"homepage"`
 				Size                int         `json:"size"`
 				StargazersCount     int         `json:"stargazers_count"`
 				WatchersCount       int         `json:"watchers_count"`
@@ -1009,11 +1009,11 @@ type githubPRHook struct {
 				HasWiki             bool        `json:"has_wiki"`
 				HasPages            bool        `json:"has_pages"`
 				ForksCount          int         `json:"forks_count"`
-				MirrorUrl           interface{} `json:"mirror_url"`
+				MirrorUrl           any `json:"mirror_url"`
 				Archived            bool        `json:"archived"`
 				Disabled            bool        `json:"disabled"`
 				OpenIssuesCount     int         `json:"open_issues_count"`
-				License             interface{} `json:"license"`
+				License             any `json:"license"`
 				Forks               int         `json:"forks"`
 				OpenIssues          int         `json:"open_issues"`
 				Watchers            int         `json:"watchers"`
@@ -1121,7 +1121,7 @@ type githubPRHook struct {
 				SshUrl              string      `json:"ssh_url"`
 				CloneUrl            string      `json:"clone_url"`
 				SvnUrl              string      `json:"svn_url"`
-				Homepage            interface{} `json:"homepage"`
+				Homepage            any `json:"homepage"`
 				Size                int         `json:"size"`
 				StargazersCount     int         `json:"stargazers_count"`
 				WatchersCount       int         `json:"watchers_count"`
@@ -1132,11 +1132,11 @@ type githubPRHook struct {
 				HasWiki             bool        `json:"has_wiki"`
 				HasPages            bool        `json:"has_pages"`
 				ForksCount          int         `json:"forks_count"`
-				MirrorUrl           interface{} `json:"mirror_url"`
+				MirrorUrl           any `json:"mirror_url"`
 				Archived            bool        `json:"archived"`
 				Disabled            bool        `json:"disabled"`
 				OpenIssuesCount     int         `json:"open_issues_count"`
-				License             interface{} `json:"license"`
+				License             any `json:"license"`
 				Forks               int         `json:"forks"`
 				OpenIssues          int         `json:"open_issues"`
 				Watchers            int         `json:"watchers"`
@@ -1174,13 +1174,13 @@ type githubPRHook struct {
 			} `json:"statuses"`
 		} `json:"_links"`
 		AuthorAssociation   string      `json:"author_association"`
-		AutoMerge           interface{} `json:"auto_merge"`
-		ActiveLockReason    interface{} `json:"active_lock_reason"`
+		AutoMerge           any `json:"auto_merge"`
+		ActiveLockReason    any `json:"active_lock_reason"`
 		Merged              bool        `json:"merged"`
-		Mergeable           interface{} `json:"mergeable"`
-		Rebaseable          interface{} `json:"rebaseable"`
+		Mergeable           any `json:"mergeable"`
+		Rebaseable          any `json:"rebaseable"`
 		MergeableState      string      `json:"mergeable_state"`
-		MergedBy            interface{} `json:"merged_by"`
+		MergedBy            any `json:"merged_by"`
 		Comments            int         `json:"comments"`
 		ReviewComments      int         `json:"review_comments"`
 		MaintainerCanModify bool        `json:"maintainer_can_modify"`
@@ -1262,7 +1262,7 @@ type githubPRHook struct {
 		SshUrl           string      `json:"ssh_url"`
 		CloneUrl         string      `json:"clone_url"`
 		SvnUrl           string      `json:"svn_url"`
-		Homepage         interface{} `json:"homepage"`
+		Homepage         any `json:"homepage"`
 		Size             int         `json:"size"`
 		StargazersCount  int         `json:"stargazers_count"`
 		WatchersCount    int         `json:"watchers_count"`
@@ -1273,11 +1273,11 @@ type githubPRHook struct {
 		HasWiki          bool        `json:"has_wiki"`
 		HasPages         bool        `json:"has_pages"`
 		ForksCount       int         `json:"forks_count"`
-		MirrorUrl        interface{} `json:"mirror_url"`
+		MirrorUrl        any `json:"mirror_url"`
 		Archived         bool        `json:"archived"`
 		Disabled         bool        `json:"disabled"`
 		OpenIssuesCount  int         `json:"open_issues_count"`
-		License          interface{} `json:"license"`
+		License          any `json:"license"`
 		Forks            int         `json:"forks"`
 		OpenIssues       int         `json:"open_issues"`
 		Watchers         int         `json:"watchers"`
@@ -1337,18 +1337,18 @@ type githubCommentHook struct {
 			Type              string `json:"type"`
 			SiteAdmin         bool   `json:"site_admin"`
 		} `json:"user"`
-		Labels            []interface{} `json:"labels"`
+		Labels            []any `json:"labels"`
 		State             string        `json:"state"`
 		Locked            bool          `json:"locked"`
-		Assignee          interface{}   `json:"assignee"`
-		Assignees         []interface{} `json:"assignees"`
-		Milestone         interface{}   `json:"milestone"`
+		Assignee          any   `json:"assignee"`
+		Assignees         []any `json:"assignees"`
+		Milestone         any   `json:"milestone"`
 		Comments          int           `json:"comments"`
 		CreatedAt         time.Time     `json:"created_at"`
 		UpdatedAt         time.Time     `json:"updated_at"`
-		ClosedAt          interface{}   `json:"closed_at"`
+		ClosedAt          any   `json:"closed_at"`
 		AuthorAssociation string        `json:"author_association"`
-		ActiveLockReason  interface{}   `json:"active_lock_reason"`
+		ActiveLockReason  any   `json:"active_lock_reason"`
 		PullRequest       struct {
 			Url      string `json:"url"`
 			HtmlUrl  string `json:"html_url"`
@@ -1356,7 +1356,7 @@ type githubCommentHook struct {
 			PatchUrl string `json:"patch_url"`
 		} `json:"pull_request"`
 		Body                  string      `json:"body"`
-		PerformedViaGithubApp interface{} `json:"performed_via_github_app"`
+		PerformedViaGithubApp any `json:"performed_via_github_app"`
 	} `json:"issue"`
 	Comment struct {
 		Url      string `json:"url"`
@@ -1388,7 +1388,7 @@ type githubCommentHook struct {
 		UpdatedAt             time.Time   `json:"updated_at"`
 		AuthorAssociation     string      `json:"author_association"`
 		Body                  string      `json:"body"`
-		PerformedViaGithubApp interface{} `json:"performed_via_github_app"`
+		PerformedViaGithubApp any `json:"performed_via_github_app"`
 	} `json:"comment"`
 	Repository struct {
 		Id       int    `json:"id"`
@@ -1463,7 +1463,7 @@ type githubCommentHook struct {
 		SshUrl           string      `json:"ssh_url"`
 		CloneUrl         string      `json:"clone_url"`
 		SvnUrl           string      `json:"svn_url"`
-		Homepage         interface{} `json:"homepage"`
+		Homepage         any `json:"homepage"`
 		Size             int         `json:"size"`
 		StargazersCount  int         `json:"stargazers_count"`
 		WatchersCount    int         `json:"watchers_count"`
@@ -1474,11 +1474,11 @@ type githubCommentHook struct {
 		HasWiki          bool        `json:"has_wiki"`
 		HasPages         bool        `json:"has_pages"`
 		ForksCount       int         `json:"forks_count"`
-		MirrorUrl        interface{} `json:"mirror_url"`
+		MirrorUrl        any `json:"mirror_url"`
 		Archived         bool        `json:"archived"`
 		Disabled         bool        `json:"disabled"`
 		OpenIssuesCount  int         `json:"open_issues_count"`
-		License          interface{} `json:"license"`
+		License          any `json:"license"`
 		Forks            int         `json:"forks"`
 		OpenIssues       int         `json:"open_issues"`
 		Watchers         int         `json:"watchers"`

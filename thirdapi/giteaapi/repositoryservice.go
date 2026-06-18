@@ -119,11 +119,11 @@ func (s *RepositoryService) CreateWebHooks(ctx context.Context, accessToken, own
 		return nil, fmt.Errorf("gitea CreateWebHooks: parse URL: %w", err)
 	}
 	logrus.Debugf("Gitea Api CreateWebHooks url : %s", parse.String())
-	m := map[string]interface{}{}
+	m := map[string]any{}
 	m["url"] = backURL
 	m["content_type"] = "json"
 	m["secret"] = password
-	obj := map[string]interface{}{}
+	obj := map[string]any{}
 	obj["config"] = m
 	obj["type"] = "gitea"
 	obj["active"] = true

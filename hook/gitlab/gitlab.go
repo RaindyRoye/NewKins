@@ -267,7 +267,7 @@ type gitlabPushHook struct {
 	After        string      `json:"after"`
 	Ref          string      `json:"ref"`
 	CheckoutSha  string      `json:"checkout_sha"`
-	Message      interface{} `json:"message"`
+	Message      any `json:"message"`
 	UserId       int         `json:"user_id"`
 	UserName     string      `json:"user_name"`
 	UserUsername string      `json:"user_username"`
@@ -279,7 +279,7 @@ type gitlabPushHook struct {
 		Name              string      `json:"name"`
 		Description       string      `json:"description"`
 		WebUrl            string      `json:"web_url"`
-		AvatarUrl         interface{} `json:"avatar_url"`
+		AvatarUrl         any `json:"avatar_url"`
 		GitSshUrl         string      `json:"git_ssh_url"`
 		GitHttpUrl        string      `json:"git_http_url"`
 		Namespace         string      `json:"namespace"`
@@ -302,9 +302,9 @@ type gitlabPushHook struct {
 			Name  string `json:"name"`
 			Email string `json:"email"`
 		} `json:"author"`
-		Added    []interface{} `json:"added"`
+		Added    []any `json:"added"`
 		Modified []string      `json:"modified"`
-		Removed  []interface{} `json:"removed"`
+		Removed  []any `json:"removed"`
 	} `json:"commits"`
 	TotalCommitsCount int `json:"total_commits_count"`
 	PushOptions       struct {
@@ -334,7 +334,7 @@ type gitlabPRHook struct {
 		Name              string      `json:"name"`
 		Description       string      `json:"description"`
 		WebUrl            string      `json:"web_url"`
-		AvatarUrl         interface{} `json:"avatar_url"`
+		AvatarUrl         any `json:"avatar_url"`
 		GitSshUrl         string      `json:"git_ssh_url"`
 		GitHttpUrl        string      `json:"git_http_url"`
 		Namespace         string      `json:"namespace"`
@@ -348,24 +348,24 @@ type gitlabPRHook struct {
 		HttpUrl           string      `json:"http_url"`
 	} `json:"project"`
 	ObjectAttributes struct {
-		AssigneeId     interface{} `json:"assignee_id"`
+		AssigneeId     any `json:"assignee_id"`
 		AuthorId       int         `json:"author_id"`
 		CreatedAt      string      `json:"created_at"`
 		Description    string      `json:"description"`
-		HeadPipelineId interface{} `json:"head_pipeline_id"`
+		HeadPipelineId any `json:"head_pipeline_id"`
 		Id             int         `json:"id"`
 		Iid            int64       `json:"iid"`
-		LastEditedAt   interface{} `json:"last_edited_at"`
-		LastEditedById interface{} `json:"last_edited_by_id"`
-		MergeCommitSha interface{} `json:"merge_commit_sha"`
-		MergeError     interface{} `json:"merge_error"`
+		LastEditedAt   any `json:"last_edited_at"`
+		LastEditedById any `json:"last_edited_by_id"`
+		MergeCommitSha any `json:"merge_commit_sha"`
+		MergeError     any `json:"merge_error"`
 		MergeParams    struct {
 			ForceRemoveSourceBranch string `json:"force_remove_source_branch"`
 		} `json:"merge_params"`
 		MergeStatus               string      `json:"merge_status"`
-		MergeUserId               interface{} `json:"merge_user_id"`
+		MergeUserId               any `json:"merge_user_id"`
 		MergeWhenPipelineSucceeds bool        `json:"merge_when_pipeline_succeeds"`
-		MilestoneId               interface{} `json:"milestone_id"`
+		MilestoneId               any `json:"milestone_id"`
 		SourceBranch              string      `json:"source_branch"`
 		SourceProjectId           int         `json:"source_project_id"`
 		StateId                   int         `json:"state_id"`
@@ -374,14 +374,14 @@ type gitlabPRHook struct {
 		TimeEstimate              int         `json:"time_estimate"`
 		Title                     string      `json:"title"`
 		UpdatedAt                 string      `json:"updated_at"`
-		UpdatedById               interface{} `json:"updated_by_id"`
+		UpdatedById               any `json:"updated_by_id"`
 		Url                       string      `json:"url"`
 		Source                    struct {
 			Id                int         `json:"id"`
 			Name              string      `json:"name"`
 			Description       string      `json:"description"`
 			WebUrl            string      `json:"web_url"`
-			AvatarUrl         interface{} `json:"avatar_url"`
+			AvatarUrl         any `json:"avatar_url"`
 			GitSshUrl         string      `json:"git_ssh_url"`
 			GitHttpUrl        string      `json:"git_http_url"`
 			Namespace         string      `json:"namespace"`
@@ -399,7 +399,7 @@ type gitlabPRHook struct {
 			Name              string      `json:"name"`
 			Description       string      `json:"description"`
 			WebUrl            string      `json:"web_url"`
-			AvatarUrl         interface{} `json:"avatar_url"`
+			AvatarUrl         any `json:"avatar_url"`
 			GitSshUrl         string      `json:"git_ssh_url"`
 			GitHttpUrl        string      `json:"git_http_url"`
 			Namespace         string      `json:"namespace"`
@@ -426,14 +426,14 @@ type gitlabPRHook struct {
 		WorkInProgress      bool          `json:"work_in_progress"`
 		TotalTimeSpent      int           `json:"total_time_spent"`
 		TimeChange          int           `json:"time_change"`
-		HumanTotalTimeSpent interface{}   `json:"human_total_time_spent"`
-		HumanTimeChange     interface{}   `json:"human_time_change"`
-		HumanTimeEstimate   interface{}   `json:"human_time_estimate"`
-		AssigneeIds         []interface{} `json:"assignee_ids"`
+		HumanTotalTimeSpent any   `json:"human_total_time_spent"`
+		HumanTimeChange     any   `json:"human_time_change"`
+		HumanTimeEstimate   any   `json:"human_time_estimate"`
+		AssigneeIds         []any `json:"assignee_ids"`
 		State               string        `json:"state"`
 		Action              string        `json:"action"`
 	} `json:"object_attributes"`
-	Labels  []interface{} `json:"labels"`
+	Labels  []any `json:"labels"`
 	Changes struct {
 		MergeStatus struct {
 			Previous string `json:"previous"`
@@ -463,7 +463,7 @@ type gitlabCommentHook struct {
 		Name              string      `json:"name"`
 		Description       string      `json:"description"`
 		WebUrl            string      `json:"web_url"`
-		AvatarUrl         interface{} `json:"avatar_url"`
+		AvatarUrl         any `json:"avatar_url"`
 		GitSshUrl         string      `json:"git_ssh_url"`
 		GitHttpUrl        string      `json:"git_http_url"`
 		Namespace         string      `json:"namespace"`
@@ -477,28 +477,28 @@ type gitlabCommentHook struct {
 		HttpUrl           string      `json:"http_url"`
 	} `json:"project"`
 	ObjectAttributes struct {
-		Attachment       interface{} `json:"attachment"`
+		Attachment       any `json:"attachment"`
 		AuthorId         int         `json:"author_id"`
-		ChangePosition   interface{} `json:"change_position"`
-		CommitId         interface{} `json:"commit_id"`
+		ChangePosition   any `json:"change_position"`
+		CommitId         any `json:"commit_id"`
 		CreatedAt        string      `json:"created_at"`
 		DiscussionId     string      `json:"discussion_id"`
 		Id               int         `json:"id"`
-		LineCode         interface{} `json:"line_code"`
+		LineCode         any `json:"line_code"`
 		Note             string      `json:"note"`
 		NoteableId       int         `json:"noteable_id"`   //nolint:misspell // GitLab API uses "noteable"
 		NoteableType     string      `json:"noteable_type"` //nolint:misspell // GitLab API uses "noteable"
-		OriginalPosition interface{} `json:"original_position"`
-		Position         interface{} `json:"position"`
+		OriginalPosition any `json:"original_position"`
+		Position         any `json:"position"`
 		ProjectId        int         `json:"project_id"`
-		ResolvedAt       interface{} `json:"resolved_at"`
-		ResolvedById     interface{} `json:"resolved_by_id"`
-		ResolvedByPush   interface{} `json:"resolved_by_push"`
-		StDiff           interface{} `json:"st_diff"`
+		ResolvedAt       any `json:"resolved_at"`
+		ResolvedById     any `json:"resolved_by_id"`
+		ResolvedByPush   any `json:"resolved_by_push"`
+		StDiff           any `json:"st_diff"`
 		System           bool        `json:"system"`
-		Type             interface{} `json:"type"`
+		Type             any `json:"type"`
 		UpdatedAt        string      `json:"updated_at"`
-		UpdatedById      interface{} `json:"updated_by_id"`
+		UpdatedById      any `json:"updated_by_id"`
 		Description      string      `json:"description"`
 		Url              string      `json:"url"`
 	} `json:"object_attributes"`
@@ -509,24 +509,24 @@ type gitlabCommentHook struct {
 		Homepage    string `json:"homepage"`
 	} `json:"repository"`
 	MergeRequest struct {
-		AssigneeId     interface{} `json:"assignee_id"`
+		AssigneeId     any `json:"assignee_id"`
 		AuthorId       int         `json:"author_id"`
 		CreatedAt      string      `json:"created_at"`
 		Description    string      `json:"description"`
-		HeadPipelineId interface{} `json:"head_pipeline_id"`
+		HeadPipelineId any `json:"head_pipeline_id"`
 		Id             int         `json:"id"`
 		Iid            int64       `json:"iid"`
-		LastEditedAt   interface{} `json:"last_edited_at"`
-		LastEditedById interface{} `json:"last_edited_by_id"`
-		MergeCommitSha interface{} `json:"merge_commit_sha"`
-		MergeError     interface{} `json:"merge_error"`
+		LastEditedAt   any `json:"last_edited_at"`
+		LastEditedById any `json:"last_edited_by_id"`
+		MergeCommitSha any `json:"merge_commit_sha"`
+		MergeError     any `json:"merge_error"`
 		MergeParams    struct {
 			ForceRemoveSourceBranch string `json:"force_remove_source_branch"`
 		} `json:"merge_params"`
 		MergeStatus               string      `json:"merge_status"`
-		MergeUserId               interface{} `json:"merge_user_id"`
+		MergeUserId               any `json:"merge_user_id"`
 		MergeWhenPipelineSucceeds bool        `json:"merge_when_pipeline_succeeds"`
-		MilestoneId               interface{} `json:"milestone_id"`
+		MilestoneId               any `json:"milestone_id"`
 		SourceBranch              string      `json:"source_branch"`
 		SourceProjectId           int         `json:"source_project_id"`
 		StateId                   int         `json:"state_id"`
@@ -535,14 +535,14 @@ type gitlabCommentHook struct {
 		TimeEstimate              int         `json:"time_estimate"`
 		Title                     string      `json:"title"`
 		UpdatedAt                 string      `json:"updated_at"`
-		UpdatedById               interface{} `json:"updated_by_id"`
+		UpdatedById               any `json:"updated_by_id"`
 		Url                       string      `json:"url"`
 		Source                    struct {
 			Id                int         `json:"id"`
 			Name              string      `json:"name"`
 			Description       string      `json:"description"`
 			WebUrl            string      `json:"web_url"`
-			AvatarUrl         interface{} `json:"avatar_url"`
+			AvatarUrl         any `json:"avatar_url"`
 			GitSshUrl         string      `json:"git_ssh_url"`
 			GitHttpUrl        string      `json:"git_http_url"`
 			Namespace         string      `json:"namespace"`
@@ -560,7 +560,7 @@ type gitlabCommentHook struct {
 			Name              string      `json:"name"`
 			Description       string      `json:"description"`
 			WebUrl            string      `json:"web_url"`
-			AvatarUrl         interface{} `json:"avatar_url"`
+			AvatarUrl         any `json:"avatar_url"`
 			GitSshUrl         string      `json:"git_ssh_url"`
 			GitHttpUrl        string      `json:"git_http_url"`
 			Namespace         string      `json:"namespace"`
@@ -587,10 +587,10 @@ type gitlabCommentHook struct {
 		WorkInProgress      bool          `json:"work_in_progress"`
 		TotalTimeSpent      int           `json:"total_time_spent"`
 		TimeChange          int           `json:"time_change"`
-		HumanTotalTimeSpent interface{}   `json:"human_total_time_spent"`
-		HumanTimeChange     interface{}   `json:"human_time_change"`
-		HumanTimeEstimate   interface{}   `json:"human_time_estimate"`
-		AssigneeIds         []interface{} `json:"assignee_ids"`
+		HumanTotalTimeSpent any   `json:"human_total_time_spent"`
+		HumanTimeChange     any   `json:"human_time_change"`
+		HumanTimeEstimate   any   `json:"human_time_estimate"`
+		AssigneeIds         []any `json:"assignee_ids"`
 		State               string        `json:"state"`
 	} `json:"merge_request"`
 }

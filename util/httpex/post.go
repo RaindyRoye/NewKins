@@ -78,12 +78,12 @@ func PostsCtx(ctx context.Context, ul string, params *url.Values, timeout time.D
 
 // PostJSON sends a POST request with a JSON body.
 // For context-aware usage, prefer PostJSONCtx.
-func PostJSON(ul string, params interface{}, timeout time.Duration, hds ...http.Header) (*http.Response, error) {
+func PostJSON(ul string, params any, timeout time.Duration, hds ...http.Header) (*http.Response, error) {
 	return PostJSONCtx(context.Background(), ul, params, timeout, hds...)
 }
 
 // PostJSONCtx sends a POST request with a JSON body and context support.
-func PostJSONCtx(ctx context.Context, ul string, params interface{}, timeout time.Duration, hds ...http.Header) (*http.Response, error) {
+func PostJSONCtx(ctx context.Context, ul string, params any, timeout time.Duration, hds ...http.Header) (*http.Response, error) {
 	js, err := json.Marshal(params)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling JSON body: %w", err)
@@ -105,12 +105,12 @@ func PostJSONCtx(ctx context.Context, ul string, params interface{}, timeout tim
 
 // PostResult sends a POST request and unmarshals the JSON response into result.
 // For context-aware usage, prefer PostResultCtx.
-func PostResult(ul string, params *url.Values, result interface{}, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
+func PostResult(ul string, params *url.Values, result any, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
 	return PostResultCtx(context.Background(), ul, params, result, timeout, hds...)
 }
 
 // PostResultCtx sends a POST request with context support and unmarshals the JSON response into result.
-func PostResultCtx(ctx context.Context, ul string, params *url.Values, result interface{}, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
+func PostResultCtx(ctx context.Context, ul string, params *url.Values, result any, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
 	if result == nil {
 		return 0, nil, errors.New("result is nil")
 	}
@@ -134,12 +134,12 @@ func PostResultCtx(ctx context.Context, ul string, params *url.Values, result in
 
 // PostJSONResult sends a POST request with a JSON body and unmarshals the response into result.
 // For context-aware usage, prefer PostJSONResultCtx.
-func PostJSONResult(ul string, params interface{}, result interface{}, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
+func PostJSONResult(ul string, params any, result any, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
 	return PostJSONResultCtx(context.Background(), ul, params, result, timeout, hds...)
 }
 
 // PostJSONResultCtx sends a POST request with a JSON body, context support, and unmarshals the response into result.
-func PostJSONResultCtx(ctx context.Context, ul string, params interface{}, result interface{}, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
+func PostJSONResultCtx(ctx context.Context, ul string, params any, result any, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
 	if result == nil {
 		return 0, nil, errors.New("result is nil")
 	}

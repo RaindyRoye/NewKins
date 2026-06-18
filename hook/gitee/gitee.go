@@ -304,8 +304,8 @@ type giteePushHook struct {
 			Email string `json:"email"`
 		} `json:"committer"`
 		Distinct bool          `json:"distinct"`
-		Added    []interface{} `json:"added"`
-		Removed  []interface{} `json:"removed"`
+		Added    []any `json:"added"`
+		Removed  []any `json:"removed"`
 		Modified []string      `json:"modified"`
 	} `json:"commits"`
 	HeadCommit struct {
@@ -329,8 +329,8 @@ type giteePushHook struct {
 			Email string `json:"email"`
 		} `json:"committer"`
 		Distinct bool          `json:"distinct"`
-		Added    []interface{} `json:"added"`
-		Removed  []interface{} `json:"removed"`
+		Added    []any `json:"added"`
+		Removed  []any `json:"removed"`
 		Modified []string      `json:"modified"`
 	} `json:"head_commit"`
 	Repository struct {
@@ -366,7 +366,7 @@ type giteePushHook struct {
 		GitHttpUrl        string      `json:"git_http_url"`
 		GitSshUrl         string      `json:"git_ssh_url"`
 		GitSvnUrl         string      `json:"git_svn_url"`
-		Homepage          interface{} `json:"homepage"`
+		Homepage          any `json:"homepage"`
 		StargazersCount   int         `json:"stargazers_count"`
 		WatchersCount     int         `json:"watchers_count"`
 		ForksCount        int         `json:"forks_count"`
@@ -414,7 +414,7 @@ type giteePushHook struct {
 		GitHttpUrl        string      `json:"git_http_url"`
 		GitSshUrl         string      `json:"git_ssh_url"`
 		GitSvnUrl         string      `json:"git_svn_url"`
-		Homepage          interface{} `json:"homepage"`
+		Homepage          any `json:"homepage"`
 		StargazersCount   int         `json:"stargazers_count"`
 		WatchersCount     int         `json:"watchers_count"`
 		ForksCount        int         `json:"forks_count"`
@@ -460,7 +460,7 @@ type giteePushHook struct {
 		Type      string `json:"type"`
 		SiteAdmin bool   `json:"site_admin"`
 	} `json:"sender"`
-	Enterprise interface{} `json:"enterprise"`
+	Enterprise any `json:"enterprise"`
 	HookName   string      `json:"hook_name"`
 	HookId     int         `json:"hook_id"`
 	HookUrl    string      `json:"hook_url"`
@@ -481,12 +481,12 @@ type giteePRHook struct {
 		PatchUrl           string        `json:"patch_url"`
 		Title              string        `json:"title"`
 		Body               string        `json:"body"`
-		Labels             []interface{} `json:"labels"`
-		Languages          []interface{} `json:"languages"`
+		Labels             []any `json:"labels"`
+		Languages          []any `json:"languages"`
 		CreatedAt          time.Time     `json:"created_at"`
 		UpdatedAt          time.Time     `json:"updated_at"`
-		ClosedAt           interface{}   `json:"closed_at"`
-		MergedAt           interface{}   `json:"merged_at"`
+		ClosedAt           any   `json:"closed_at"`
+		MergedAt           any   `json:"merged_at"`
 		MergeCommitSha     string        `json:"merge_commit_sha"`
 		MergeReferenceName string        `json:"merge_reference_name"`
 		User               struct {
@@ -502,7 +502,7 @@ type giteePRHook struct {
 			Type      string `json:"type"`
 			SiteAdmin bool   `json:"site_admin"`
 		} `json:"user"`
-		Assignee  interface{} `json:"assignee"`
+		Assignee  any `json:"assignee"`
 		Assignees []struct {
 			Id        int    `json:"id"`
 			Name      string `json:"name"`
@@ -516,7 +516,7 @@ type giteePRHook struct {
 			Type      string `json:"type"`
 			SiteAdmin bool   `json:"site_admin"`
 		} `json:"assignees"`
-		Tester  interface{} `json:"tester"`
+		Tester  any `json:"tester"`
 		Testers []struct {
 			Id        int    `json:"id"`
 			Name      string `json:"name"`
@@ -532,7 +532,7 @@ type giteePRHook struct {
 		} `json:"testers"`
 		NeedTest   bool        `json:"need_test"`
 		NeedReview bool        `json:"need_review"`
-		Milestone  interface{} `json:"milestone"`
+		Milestone  any `json:"milestone"`
 		Head       struct {
 			Label string `json:"label"`
 			Ref   string `json:"ref"`
@@ -583,7 +583,7 @@ type giteePRHook struct {
 				GitHttpUrl        string      `json:"git_http_url"`
 				GitSshUrl         string      `json:"git_ssh_url"`
 				GitSvnUrl         string      `json:"git_svn_url"`
-				Homepage          interface{} `json:"homepage"`
+				Homepage          any `json:"homepage"`
 				StargazersCount   int         `json:"stargazers_count"`
 				WatchersCount     int         `json:"watchers_count"`
 				ForksCount        int         `json:"forks_count"`
@@ -649,7 +649,7 @@ type giteePRHook struct {
 				GitHttpUrl        string      `json:"git_http_url"`
 				GitSshUrl         string      `json:"git_ssh_url"`
 				GitSvnUrl         string      `json:"git_svn_url"`
-				Homepage          interface{} `json:"homepage"`
+				Homepage          any `json:"homepage"`
 				StargazersCount   int         `json:"stargazers_count"`
 				WatchersCount     int         `json:"watchers_count"`
 				ForksCount        int         `json:"forks_count"`
@@ -691,7 +691,7 @@ type giteePRHook struct {
 	Iid            int           `json:"iid"`
 	Title          string        `json:"title"`
 	Body           string        `json:"body"`
-	Languages      []interface{} `json:"languages"`
+	Languages      []any `json:"languages"`
 	State          string        `json:"state"`
 	MergeStatus    string        `json:"merge_status"`
 	MergeCommitSha string        `json:"merge_commit_sha"`
@@ -731,7 +731,7 @@ type giteePRHook struct {
 			GitHttpUrl        string      `json:"git_http_url"`
 			GitSshUrl         string      `json:"git_ssh_url"`
 			GitSvnUrl         string      `json:"git_svn_url"`
-			Homepage          interface{} `json:"homepage"`
+			Homepage          any `json:"homepage"`
 			StargazersCount   int         `json:"stargazers_count"`
 			WatchersCount     int         `json:"watchers_count"`
 			ForksCount        int         `json:"forks_count"`
@@ -779,7 +779,7 @@ type giteePRHook struct {
 			GitHttpUrl        string      `json:"git_http_url"`
 			GitSshUrl         string      `json:"git_ssh_url"`
 			GitSvnUrl         string      `json:"git_svn_url"`
-			Homepage          interface{} `json:"homepage"`
+			Homepage          any `json:"homepage"`
 			StargazersCount   int         `json:"stargazers_count"`
 			WatchersCount     int         `json:"watchers_count"`
 			ForksCount        int         `json:"forks_count"`
@@ -830,7 +830,7 @@ type giteePRHook struct {
 			GitHttpUrl        string      `json:"git_http_url"`
 			GitSshUrl         string      `json:"git_ssh_url"`
 			GitSvnUrl         string      `json:"git_svn_url"`
-			Homepage          interface{} `json:"homepage"`
+			Homepage          any `json:"homepage"`
 			StargazersCount   int         `json:"stargazers_count"`
 			WatchersCount     int         `json:"watchers_count"`
 			ForksCount        int         `json:"forks_count"`
@@ -878,7 +878,7 @@ type giteePRHook struct {
 			GitHttpUrl        string      `json:"git_http_url"`
 			GitSshUrl         string      `json:"git_ssh_url"`
 			GitSvnUrl         string      `json:"git_svn_url"`
-			Homepage          interface{} `json:"homepage"`
+			Homepage          any `json:"homepage"`
 			StargazersCount   int         `json:"stargazers_count"`
 			WatchersCount     int         `json:"watchers_count"`
 			ForksCount        int         `json:"forks_count"`
@@ -927,7 +927,7 @@ type giteePRHook struct {
 		GitHttpUrl        string      `json:"git_http_url"`
 		GitSshUrl         string      `json:"git_ssh_url"`
 		GitSvnUrl         string      `json:"git_svn_url"`
-		Homepage          interface{} `json:"homepage"`
+		Homepage          any `json:"homepage"`
 		StargazersCount   int         `json:"stargazers_count"`
 		WatchersCount     int         `json:"watchers_count"`
 		ForksCount        int         `json:"forks_count"`
@@ -975,7 +975,7 @@ type giteePRHook struct {
 		GitHttpUrl        string      `json:"git_http_url"`
 		GitSshUrl         string      `json:"git_ssh_url"`
 		GitSvnUrl         string      `json:"git_svn_url"`
-		Homepage          interface{} `json:"homepage"`
+		Homepage          any `json:"homepage"`
 		StargazersCount   int         `json:"stargazers_count"`
 		WatchersCount     int         `json:"watchers_count"`
 		ForksCount        int         `json:"forks_count"`
@@ -1029,8 +1029,8 @@ type giteePRHook struct {
 		Type      string `json:"type"`
 		SiteAdmin bool   `json:"site_admin"`
 	} `json:"sender"`
-	TargetUser interface{} `json:"target_user"`
-	Enterprise interface{} `json:"enterprise"`
+	TargetUser any `json:"target_user"`
+	Enterprise any `json:"enterprise"`
 	HookName   string      `json:"hook_name"`
 	HookId     int         `json:"hook_id"`
 	HookUrl    string      `json:"hook_url"`
@@ -1094,7 +1094,7 @@ type giteeCommentHook struct {
 		GitHttpUrl        string      `json:"git_http_url"`
 		GitSshUrl         string      `json:"git_ssh_url"`
 		GitSvnUrl         string      `json:"git_svn_url"`
-		Homepage          interface{} `json:"homepage"`
+		Homepage          any `json:"homepage"`
 		StargazersCount   int         `json:"stargazers_count"`
 		WatchersCount     int         `json:"watchers_count"`
 		ForksCount        int         `json:"forks_count"`
@@ -1142,7 +1142,7 @@ type giteeCommentHook struct {
 		GitHttpUrl        string      `json:"git_http_url"`
 		GitSshUrl         string      `json:"git_ssh_url"`
 		GitSvnUrl         string      `json:"git_svn_url"`
-		Homepage          interface{} `json:"homepage"`
+		Homepage          any `json:"homepage"`
 		StargazersCount   int         `json:"stargazers_count"`
 		WatchersCount     int         `json:"watchers_count"`
 		ForksCount        int         `json:"forks_count"`
@@ -1189,8 +1189,8 @@ type giteeCommentHook struct {
 	NoteableId    int         `json:"noteable_id"`   //nolint:misspell // Gitee/GitLab API field name
 	Title         string      `json:"title"`
 	PerIid        string      `json:"per_iid"`
-	ShortCommitId interface{} `json:"short_commit_id"`
-	Enterprise    interface{} `json:"enterprise"`
+	ShortCommitId any `json:"short_commit_id"`
+	Enterprise    any `json:"enterprise"`
 	PullRequest   struct {
 		Id                 int           `json:"id"`
 		Number             int64         `json:"number"`
@@ -1200,12 +1200,12 @@ type giteeCommentHook struct {
 		PatchUrl           string        `json:"patch_url"`
 		Title              string        `json:"title"`
 		Body               string        `json:"body"`
-		Labels             []interface{} `json:"labels"`
-		Languages          []interface{} `json:"languages"`
+		Labels             []any `json:"labels"`
+		Languages          []any `json:"languages"`
 		CreatedAt          time.Time     `json:"created_at"`
 		UpdatedAt          time.Time     `json:"updated_at"`
-		ClosedAt           interface{}   `json:"closed_at"`
-		MergedAt           interface{}   `json:"merged_at"`
+		ClosedAt           any   `json:"closed_at"`
+		MergedAt           any   `json:"merged_at"`
 		MergeCommitSha     string        `json:"merge_commit_sha"`
 		MergeReferenceName string        `json:"merge_reference_name"`
 		User               struct {
@@ -1221,7 +1221,7 @@ type giteeCommentHook struct {
 			Type      string `json:"type"`
 			SiteAdmin bool   `json:"site_admin"`
 		} `json:"user"`
-		Assignee  interface{} `json:"assignee"`
+		Assignee  any `json:"assignee"`
 		Assignees []struct {
 			Id        int    `json:"id"`
 			Name      string `json:"name"`
@@ -1235,7 +1235,7 @@ type giteeCommentHook struct {
 			Type      string `json:"type"`
 			SiteAdmin bool   `json:"site_admin"`
 		} `json:"assignees"`
-		Tester  interface{} `json:"tester"`
+		Tester  any `json:"tester"`
 		Testers []struct {
 			Id        int    `json:"id"`
 			Name      string `json:"name"`
@@ -1251,7 +1251,7 @@ type giteeCommentHook struct {
 		} `json:"testers"`
 		NeedTest   bool        `json:"need_test"`
 		NeedReview bool        `json:"need_review"`
-		Milestone  interface{} `json:"milestone"`
+		Milestone  any `json:"milestone"`
 		Head       struct {
 			Label string `json:"label"`
 			Ref   string `json:"ref"`
@@ -1302,7 +1302,7 @@ type giteeCommentHook struct {
 				GitHttpUrl        string      `json:"git_http_url"`
 				GitSshUrl         string      `json:"git_ssh_url"`
 				GitSvnUrl         string      `json:"git_svn_url"`
-				Homepage          interface{} `json:"homepage"`
+				Homepage          any `json:"homepage"`
 				StargazersCount   int         `json:"stargazers_count"`
 				WatchersCount     int         `json:"watchers_count"`
 				ForksCount        int         `json:"forks_count"`
@@ -1368,7 +1368,7 @@ type giteeCommentHook struct {
 				GitHttpUrl        string      `json:"git_http_url"`
 				GitSshUrl         string      `json:"git_ssh_url"`
 				GitSvnUrl         string      `json:"git_svn_url"`
-				Homepage          interface{} `json:"homepage"`
+				Homepage          any `json:"homepage"`
 				StargazersCount   int         `json:"stargazers_count"`
 				WatchersCount     int         `json:"watchers_count"`
 				ForksCount        int         `json:"forks_count"`

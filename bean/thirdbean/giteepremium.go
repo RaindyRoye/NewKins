@@ -9,7 +9,7 @@ type ResultGiteePremiumCreateHooks struct {
 	Password            string      `json:"password"`
 	ProjectId           int         `json:"project_id"`
 	Result              string      `json:"result"`
-	ResultCode          interface{} `json:"result_code"`
+	ResultCode          any `json:"result_code"`
 	PushEvents          bool        `json:"push_events"`
 	TagPushEvents       bool        `json:"tag_push_events"`
 	IssuesEvents        bool        `json:"issues_events"`
@@ -75,7 +75,7 @@ type ResultGiteePremiumRepo struct {
 	LabelsUrl           string      `json:"labels_url"`
 	ReleasesUrl         string      `json:"releases_url"`
 	Recommend           bool        `json:"recommend"`
-	Homepage            interface{} `json:"homepage"`
+	Homepage            any `json:"homepage"`
 	Language            string      `json:"language"`
 	ForksCount          int         `json:"forks_count"`
 	StargazersCount     int         `json:"stargazers_count"`
@@ -95,8 +95,8 @@ type ResultGiteePremiumRepo struct {
 	PushedAt            time.Time   `json:"pushed_at"`
 	CreatedAt           time.Time   `json:"created_at"`
 	UpdatedAt           time.Time   `json:"updated_at"`
-	Parent              interface{} `json:"parent"`
-	Paas                interface{} `json:"paas"`
+	Parent              any `json:"parent"`
+	Paas                any `json:"paas"`
 	Stared              bool        `json:"stared"`
 	Watched             bool        `json:"watched"`
 	Permission          struct {

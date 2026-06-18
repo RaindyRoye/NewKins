@@ -172,10 +172,10 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 	switch cmd := job.step.Commands.(type) {
 	case string:
 		c.appendcmds(runjb, cmd)
-	case []interface{}:
+	case []any:
 		err = c.gencmds(runjb, cmd)
 	case []string:
-		var ls []interface{}
+		var ls []any
 		for _, v := range cmd {
 			ls = append(ls, v)
 		}
@@ -244,7 +244,7 @@ func (c *BuildTask) appendcmds(runjb *runners.RunJob, conts string) {
 	// job.Commands[m.Id] = m
 	runjb.Commands = append(runjb.Commands, m)
 }
-func (c *BuildTask) gencmds(runjb *runners.RunJob, cmds []interface{}) (rterr error) {
+func (c *BuildTask) gencmds(runjb *runners.RunJob, cmds []any) (rterr error) {
 	defer func() {
 		if r := recover(); r != nil {
 			logrus.Warnf("BuildTask gencmds recover:%v", r)
@@ -260,27 +260,27 @@ func (c *BuildTask) gencmds(runjb *runners.RunJob, cmds []interface{}) (rterr er
 		switch val := v.(type) {
 		case string:
 			c.appendcmds(runjb, val)
-		case []interface{}:
+		case []any:
 			for _, v1 := range val {
 				c.appendcmds(runjb, fmt.Sprintf("%v", v1))
 			}
-		case map[interface{}]interface{}:
+		case map[any]any:
 			for _, v1 := range val {
 				switch tv := v1.(type) {
 				case string:
 					c.appendcmds(runjb, tv)
-				case []interface{}:
+				case []any:
 					for _, v2 := range tv {
 						c.appendcmds(runjb, fmt.Sprintf("%v", v2))
 					}
 				}
 			}
-		case map[string]interface{}:
+		case map[string]any:
 			for _, v1 := range val {
 				switch tv := v1.(type) {
 				case string:
 					c.appendcmds(runjb, tv)
-				case []interface{}:
+				case []any:
 					for _, v2 := range tv {
 						c.appendcmds(runjb, fmt.Sprintf("%v", v2))
 					}

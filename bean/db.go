@@ -5,11 +5,11 @@ type Page struct {
 	Size  int64       `json:"size"`
 	Total int64       `json:"total"`
 	Pages int64       `json:"pages"`
-	Data  interface{} `json:"data"`
+	Data  any `json:"data"`
 }
 type PageGen struct {
 	SQL       string
-	Args      []interface{}
+	Args      []any
 	CountCols string
 	FindCols  string
 }

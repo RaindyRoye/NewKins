@@ -87,7 +87,7 @@ func TestTimerEngineResetOneOnceTimer(t *testing.T) {
 	}
 	// Create a one-time timer set in the future
 	futureTime := time.Now().Add(time.Hour)
-	params := map[string]interface{}{
+	params := map[string]any{
 		"timerType": 0, // once
 		"dates":     futureTime.Format(time.RFC3339Nano),
 	}
@@ -118,7 +118,7 @@ func TestTimerEngineResetOneMinuteTimer(t *testing.T) {
 		tasks: make(map[string]*timerExec),
 	}
 	// Create a recurring minute timer
-	params := map[string]interface{}{
+	params := map[string]any{
 		"timerType": 1, // minute
 		"dates":     time.Now().Format(time.RFC3339Nano),
 	}
@@ -201,7 +201,7 @@ func TestTimerEngineConcurrentResetOneAndDelete(t *testing.T) {
 		go func(n int) {
 			defer wg.Done()
 			futureTime := time.Now().Add(time.Hour)
-			params := map[string]interface{}{
+			params := map[string]any{
 				"timerType": 1,
 				"dates":     futureTime.Format(time.RFC3339Nano),
 			}
@@ -242,7 +242,7 @@ func TestTimerEngineConcurrentReadsAndWrites(t *testing.T) {
 		go func(n int) {
 			defer wg.Done()
 			futureTime := time.Now().Add(time.Hour)
-			params := map[string]interface{}{
+			params := map[string]any{
 				"timerType": 2,
 				"dates":     futureTime.Format(time.RFC3339Nano),
 			}

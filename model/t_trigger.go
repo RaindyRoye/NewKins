@@ -19,5 +19,5 @@ type TTrigger struct {
 	Created    time.Time `xorm:"DATETIME" json:"created"`
 	Updated    time.Time `xorm:"DATETIME" json:"updated"`
 
-	Param map[string]interface{} `xorm:"-" json:"params"`
+	Param map[string]any `xorm:"-" json:"params"`
 }

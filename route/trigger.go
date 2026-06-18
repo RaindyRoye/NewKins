@@ -74,7 +74,7 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 			logrus.Warnf("trigger list: unmarshal params (trigger=%s): %v", v.Id, err)
 		}
 	}
-	ms := map[string]interface{}{}
+	ms := map[string]any{}
 	ms["page"] = page
 	ms["host"] = comm.Cfg.Server.Host
 	c.JSON(200, ms)

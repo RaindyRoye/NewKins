@@ -316,7 +316,7 @@ func TestPipelineConvertCmd(t *testing.T) {
 					{
 						Name: "build",
 						Steps: []*Step{
-							{Step: "shell", Name: "run", Commands: []interface{}{"echo hello", "echo world"}},
+							{Step: "shell", Name: "run", Commands: []any{"echo hello", "echo world"}},
 						},
 					},
 				},
@@ -378,7 +378,7 @@ func TestPipelineConvertCmd(t *testing.T) {
 						Name: "build",
 						Steps: []*Step{
 							{Step: "shell", Name: "s1", Commands: "cmd1"},
-							{Step: "shell", Name: "s2", Commands: []interface{}{"cmd2a", "cmd2b"}},
+							{Step: "shell", Name: "s2", Commands: []any{"cmd2a", "cmd2b"}},
 						},
 					},
 					{
@@ -420,7 +420,7 @@ func TestPipelineToJson(t *testing.T) {
 			{
 				Name: "build",
 				Steps: []*Step{
-					{Step: "shell", Name: "run", Commands: []interface{}{"echo hello"}},
+					{Step: "shell", Name: "run", Commands: []any{"echo hello"}},
 				},
 			},
 		},

@@ -60,12 +60,12 @@ func SetParamCtx(ctx context.Context, key string, data []byte, tit ...string) er
 
 // SetsParam serializes data as JSON and stores it using the global context.
 // Prefer SetsParamCtx when a request context is available.
-func SetsParam(key string, data interface{}, tit ...string) error {
+func SetsParam(key string, data any, tit ...string) error {
 	return SetsParamCtx(comm.Ctx, key, data, tit...)
 }
 
 // SetsParamCtx serializes data as JSON and stores it with the provided context.
-func SetsParamCtx(ctx context.Context, key string, data interface{}, tit ...string) error {
+func SetsParamCtx(ctx context.Context, key string, data any, tit ...string) error {
 	if data == nil {
 		return ErrParamDataNil
 	}
@@ -93,12 +93,12 @@ func GetParamCtx(ctx context.Context, key string) ([]byte, error) {
 
 // GetsParam deserializes a param into data using the global context.
 // Prefer GetsParamCtx when a request context is available.
-func GetsParam(key string, data interface{}) error {
+func GetsParam(key string, data any) error {
 	return GetsParamCtx(comm.Ctx, key, data)
 }
 
 // GetsParamCtx deserializes a param into data with the provided context.
-func GetsParamCtx(ctx context.Context, key string, data interface{}) error {
+func GetsParamCtx(ctx context.Context, key string, data any) error {
 	if data == nil {
 		return ErrParamDataNil
 	}
@@ -114,12 +114,12 @@ func GetsParamCtx(ctx context.Context, key string, data interface{}) error {
 
 // GetsParamCache retrieves a param with caching using the global context.
 // Prefer GetsParamCacheCtx when a request context is available.
-func GetsParamCache(key string, data interface{}, outm ...time.Duration) error {
+func GetsParamCache(key string, data any, outm ...time.Duration) error {
 	return GetsParamCacheCtx(comm.Ctx, key, data, outm...)
 }
 
 // GetsParamCacheCtx retrieves a param with caching and the provided context.
-func GetsParamCacheCtx(ctx context.Context, key string, data interface{}, outm ...time.Duration) error {
+func GetsParamCacheCtx(ctx context.Context, key string, data any, outm ...time.Duration) error {
 	err := comm.CacheGets(key, data)
 	if err == nil {
 		return nil

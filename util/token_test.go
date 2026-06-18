@@ -26,7 +26,7 @@ func TestCreateToken_Success(t *testing.T) {
 	}
 
 	// Verify the token can be parsed back
-	parsed, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
+	parsed, err := jwt.Parse(token, func(tk *jwt.Token) (any, error) {
 		return []byte(key), nil
 	})
 	if err != nil {
@@ -63,7 +63,7 @@ func TestCreateToken_ZeroTimeout(t *testing.T) {
 		t.Fatalf("CreateToken returned error: %v", err)
 	}
 
-	parsed, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
+	parsed, err := jwt.Parse(token, func(tk *jwt.Token) (any, error) {
 		return []byte(key), nil
 	})
 	if err != nil {

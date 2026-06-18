@@ -26,7 +26,7 @@ func newGitlabRequest(event string, body []byte, secret string) *http.Request {
 }
 
 func TestParsePushHook(t *testing.T) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"object_kind":   "push",
 		"event_name":    "push",
 		"ref":           "refs/heads/main",
@@ -34,7 +34,7 @@ func TestParsePushHook(t *testing.T) {
 		"after":         "def456",
 		"user_username": "testuser",
 		"project_id":    1,
-		"project": map[string]interface{}{
+		"project": map[string]any{
 			"id":                  1,
 			"name":                "test-repo",
 			"path_with_namespace": "group/test-repo",
@@ -44,14 +44,14 @@ func TestParsePushHook(t *testing.T) {
 			"ssh_url":             "git@gitlab.com:group/test-repo.git",
 			"http_url":            "https://gitlab.com/group/test-repo.git",
 		},
-		"commits": []map[string]interface{}{
+		"commits": []map[string]any{
 			{
 				"id":      "def456",
 				"message": "test commit",
 				"url":     "https://gitlab.com/group/test-repo/-/commit/def456",
 			},
 		},
-		"repository": map[string]interface{}{
+		"repository": map[string]any{
 			"name":             "test-repo",
 			"url":              "git@gitlab.com:group/test-repo.git",
 			"description":      "A test repository",
@@ -103,15 +103,15 @@ func TestParsePushHook(t *testing.T) {
 }
 
 func TestParsePullRequestHook(t *testing.T) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"object_kind": "merge_request",
 		"event_type":  "merge_request",
-		"user": map[string]interface{}{
+		"user": map[string]any{
 			"id":       1,
 			"name":     "Test User",
 			"username": "testuser",
 		},
-		"project": map[string]interface{}{
+		"project": map[string]any{
 			"id":                  1,
 			"name":                "test-repo",
 			"path_with_namespace": "group/test-repo",
@@ -121,7 +121,7 @@ func TestParsePullRequestHook(t *testing.T) {
 			"ssh_url":             "git@gitlab.com:group/test-repo.git",
 			"http_url":            "https://gitlab.com/group/test-repo.git",
 		},
-		"object_attributes": map[string]interface{}{
+		"object_attributes": map[string]any{
 			"id":            1,
 			"iid":           42,
 			"title":         "Test MR",
@@ -129,7 +129,7 @@ func TestParsePullRequestHook(t *testing.T) {
 			"target_branch": "main",
 			"action":        "open",
 			"state":         "opened",
-			"source": map[string]interface{}{
+			"source": map[string]any{
 				"id":                  2,
 				"name":                "test-repo-fork",
 				"description":         "forked repo",
@@ -141,7 +141,7 @@ func TestParsePullRequestHook(t *testing.T) {
 				"url":                 "git@gitlab.com:forker/test-repo.git",
 				"path_with_namespace": "forker/test-repo",
 			},
-			"target": map[string]interface{}{
+			"target": map[string]any{
 				"id":                  1,
 				"name":                "test-repo",
 				"description":         "base repo",
@@ -153,7 +153,7 @@ func TestParsePullRequestHook(t *testing.T) {
 				"url":                 "git@gitlab.com:group/test-repo.git",
 				"path_with_namespace": "group/test-repo",
 			},
-			"last_commit": map[string]interface{}{
+			"last_commit": map[string]any{
 				"id":      "commitsha123",
 				"message": "latest commit",
 			},
@@ -197,15 +197,15 @@ func TestParseUnknownEvent(t *testing.T) {
 }
 
 func TestParseInvalidSecret(t *testing.T) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"ref":    "refs/heads/main",
 		"before": "abc",
 		"after":  "def",
-		"commits": []map[string]interface{}{
+		"commits": []map[string]any{
 			{"id": "def", "message": "test"},
 		},
-		"project":    map[string]interface{}{"id": 1},
-		"repository": map[string]interface{}{},
+		"project":    map[string]any{"id": 1},
+		"repository": map[string]any{},
 	}
 	body, _ := json.Marshal(payload)
 	req := newGitlabRequest(hook.GitlabEventPush, body, "correctsecret")
@@ -227,11 +227,11 @@ func TestParseInvalidJSON(t *testing.T) {
 }
 
 func TestParsePRUnsupportedAction(t *testing.T) {
-	payload := map[string]interface{}{
-		"object_attributes": map[string]interface{}{
+	payload := map[string]any{
+		"object_attributes": map[string]any{
 			"action": "close",
-			"source": map[string]interface{}{},
-			"target": map[string]interface{}{},
+			"source": map[string]any{},
+			"target": map[string]any{},
 		},
 	}
 

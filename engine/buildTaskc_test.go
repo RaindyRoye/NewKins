@@ -13,7 +13,7 @@ func TestGencmds_StringCommands(t *testing.T) {
 		build: &runtime.Build{Id: "test-build"},
 	}
 	runjb := &runners.RunJob{}
-	cmds := []interface{}{"echo hello", "ls -la", "pwd"}
+	cmds := []any{"echo hello", "ls -la", "pwd"}
 
 	err := task.gencmds(runjb, cmds)
 	if err != nil {
@@ -38,7 +38,7 @@ func TestGencmds_EmptyCommands(t *testing.T) {
 		build: &runtime.Build{Id: "test-build"},
 	}
 	runjb := &runners.RunJob{}
-	cmds := []interface{}{}
+	cmds := []any{}
 
 	err := task.gencmds(runjb, cmds)
 	if err != nil {
@@ -54,8 +54,8 @@ func TestGencmds_NestedArray(t *testing.T) {
 		build: &runtime.Build{Id: "test-build"},
 	}
 	runjb := &runners.RunJob{}
-	cmds := []interface{}{
-		[]interface{}{"echo a", "echo b"},
+	cmds := []any{
+		[]any{"echo a", "echo b"},
 		"echo c",
 	}
 
@@ -74,10 +74,10 @@ func TestGencmds_MapStringInterface(t *testing.T) {
 		build: &runtime.Build{Id: "test-build"},
 	}
 	runjb := &runners.RunJob{}
-	cmds := []interface{}{
-		map[string]interface{}{
+	cmds := []any{
+		map[string]any{
 			"key1": "echo from map",
-			"key2": []interface{}{"echo nested1", "echo nested2"},
+			"key2": []any{"echo nested1", "echo nested2"},
 		},
 	}
 
@@ -97,7 +97,7 @@ func TestGencmds_UnknownTypesSkipped(t *testing.T) {
 	}
 	runjb := &runners.RunJob{}
 	// int is not a recognized type, so it should be silently ignored
-	cmds := []interface{}{42, true, 3.14}
+	cmds := []any{42, true, 3.14}
 
 	err := task.gencmds(runjb, cmds)
 	if err != nil {
@@ -137,9 +137,9 @@ func TestGencmds_MixedTypes(t *testing.T) {
 		build: &runtime.Build{Id: "test-build"},
 	}
 	runjb := &runners.RunJob{}
-	cmds := []interface{}{
+	cmds := []any{
 		"echo first",
-		[]interface{}{"echo second", "echo third"},
+		[]any{"echo second", "echo third"},
 		"echo fourth",
 	}
 

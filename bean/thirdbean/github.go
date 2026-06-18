@@ -86,7 +86,7 @@ type ResultGithubRepo struct {
 	HasWiki          bool        `json:"has_wiki"`
 	HasPages         bool        `json:"has_pages"`
 	ForksCount       int         `json:"forks_count"`
-	MirrorUrl        interface{} `json:"mirror_url"`
+	MirrorUrl        any `json:"mirror_url"`
 	Archived         bool        `json:"archived"`
 	Disabled         bool        `json:"disabled"`
 	OpenIssuesCount  int         `json:"open_issues_count"`
@@ -141,8 +141,8 @@ type ResultGetGithubHook struct {
 	TestUrl      string    `json:"test_url"`
 	PingUrl      string    `json:"ping_url"`
 	LastResponse struct {
-		Code    interface{} `json:"code"`
+		Code    any `json:"code"`
 		Status  string      `json:"status"`
-		Message interface{} `json:"message"`
+		Message any `json:"message"`
 	} `json:"last_response"`
 }

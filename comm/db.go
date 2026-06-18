@@ -14,7 +14,7 @@ import (
 
 type SesFuncHandler = func(ses *xorm.Session)
 
-func findCount(cds builder.Cond, data interface{}) (int64, error) {
+func findCount(cds builder.Cond, data any) (int64, error) {
 	if data == nil {
 		return 0, errors.New("findCount: data must be a non-nil pointer to a slice")
 	}
@@ -37,14 +37,14 @@ func findCount(cds builder.Cond, data interface{}) (int64, error) {
 	return 0, fmt.Errorf("findCount: expected pointer to slice, got %T", data)
 }
 
-func FindPage(ses *xorm.Session, ls interface{}, page int64, size ...int64) (*bean.Page, error) {
+func FindPage(ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
 	count, err := findCount(ses.Conds(), ls)
 	if err != nil {
 		return nil, err
 	}
 	return findPages(ses, ls, count, page, size...)
 }
-func findPages(ses *xorm.Session, ls interface{}, count, page int64, size ...int64) (*bean.Page, error) {
+func findPages(ses *xorm.Session, ls any, count, page int64, size ...int64) (*bean.Page, error) {
 	var pageno int64 = 1
 	var sizeno int64 = 10
 	var pagesno int64
@@ -74,14 +74,14 @@ func findPages(ses *xorm.Session, ls interface{}, count, page int64, size ...int
 		Data:  ls,
 	}, nil
 }
-func FindPages(gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*bean.Page, error) {
+func FindPages(gen *bean.PageGen, ls any, page int64, size ...int64) (*bean.Page, error) {
 	return FindPagesCtx(Ctx, gen, ls, page, size...)
 }
 
 // FindPagesCtx is the context-aware version of FindPages.
 // It passes ctx to both the count and data queries so they can be
 // canceled when the HTTP request times out or the client disconnects.
-func FindPagesCtx(ctx context.Context, gen *bean.PageGen, ls interface{}, page int64, size ...int64) (*bean.Page, error) {
+func FindPagesCtx(ctx context.Context, gen *bean.PageGen, ls any, page int64, size ...int64) (*bean.Page, error) {
 	var count int64
 	counts := "count(*)"
 	if gen.CountCols != "" {

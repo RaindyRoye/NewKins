@@ -54,7 +54,7 @@ func TestFindPages_MissingOrderByClause(t *testing.T) {
 		FindCols: "*",
 	}
 
-	var results []interface{}
+	var results []any
 	_, err := FindPages(gen, &results, 1)
 	if err == nil {
 		t.Fatal("expected error for SQL without ORDER BY clause, got nil")
@@ -70,7 +70,7 @@ func TestFindPages_EmptySQL(t *testing.T) {
 		FindCols: "*",
 	}
 
-	var results []interface{}
+	var results []any
 	_, err := FindPages(gen, &results, 1)
 	if err == nil {
 		t.Fatal("expected error for empty SQL, got nil")
@@ -84,7 +84,7 @@ func TestFindPages_SQLWithOrderByButNoSelect(t *testing.T) {
 		FindCols: "*",
 	}
 
-	var results []interface{}
+	var results []any
 	// Db is nil in test context, so this should panic or return a nil pointer error
 	// We only verify the ORDER BY parsing doesn't return an error
 	defer func() {

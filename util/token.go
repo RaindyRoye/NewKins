@@ -91,7 +91,7 @@ func GetTokens(s string, key string) jwt.MapClaims {
 	if s == "" {
 		return nil
 	}
-	token, err := jwt.Parse(s, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(s, func(token *jwt.Token) (any, error) {
 		// Validate the signing method to prevent algorithm confusion attacks.
 		// We only accept HMAC-based signing (HS512) since that's what CreateToken uses.
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

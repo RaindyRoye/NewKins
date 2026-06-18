@@ -73,18 +73,18 @@ func TestValidatePrefix(t *testing.T) {
 }
 
 func TestParsePushHook(t *testing.T) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"ref":    "refs/heads/main",
 		"before": "abc123",
 		"after":  "def456",
-		"commits": []map[string]interface{}{
+		"commits": []map[string]any{
 			{
 				"id":      "def456",
 				"message": "test commit",
 				"url":     "https://gitea.example.com/commit/def456",
 			},
 		},
-		"repository": map[string]interface{}{
+		"repository": map[string]any{
 			"id":          1,
 			"name":        "test-repo",
 			"full_name":   "user/test-repo",
@@ -93,11 +93,11 @@ func TestParsePushHook(t *testing.T) {
 			"ssh_url":     "git@gitea.example.com:user/test-repo.git",
 			"description": "A test repository",
 			"private":     false,
-			"owner": map[string]interface{}{
+			"owner": map[string]any{
 				"login": "testuser",
 			},
 		},
-		"sender": map[string]interface{}{
+		"sender": map[string]any{
 			"login": "testuser",
 		},
 	}
@@ -146,16 +146,16 @@ func TestParsePushHook(t *testing.T) {
 }
 
 func TestParsePullRequestHook(t *testing.T) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"action": "opened",
-		"pull_request": map[string]interface{}{
+		"pull_request": map[string]any{
 			"id":     1,
 			"title":  "Test PR",
 			"number": 42,
-			"head": map[string]interface{}{
+			"head": map[string]any{
 				"ref": "feature-branch",
 				"sha": "head123",
-				"repo": map[string]interface{}{
+				"repo": map[string]any{
 					"id":        2,
 					"name":      "test-repo-fork",
 					"full_name": "forker/test-repo",
@@ -163,10 +163,10 @@ func TestParsePullRequestHook(t *testing.T) {
 					"html_url":  "https://gitea.example.com/forker/test-repo",
 				},
 			},
-			"base": map[string]interface{}{
+			"base": map[string]any{
 				"ref": "main",
 				"sha": "base123",
-				"repo": map[string]interface{}{
+				"repo": map[string]any{
 					"id":        1,
 					"name":      "test-repo",
 					"full_name": "user/test-repo",
@@ -174,18 +174,18 @@ func TestParsePullRequestHook(t *testing.T) {
 					"html_url":  "https://gitea.example.com/user/test-repo",
 				},
 			},
-			"user": map[string]interface{}{
+			"user": map[string]any{
 				"login": "prauthor",
 			},
 		},
-		"repository": map[string]interface{}{
+		"repository": map[string]any{
 			"id":        1,
 			"name":      "test-repo",
 			"full_name": "user/test-repo",
 			"clone_url": "https://gitea.example.com/user/test-repo.git",
 			"html_url":  "https://gitea.example.com/user/test-repo",
 		},
-		"sender": map[string]interface{}{
+		"sender": map[string]any{
 			"login": "prauthor",
 		},
 	}

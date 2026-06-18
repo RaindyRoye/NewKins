@@ -128,12 +128,12 @@ func (s *RepositoryService) CreateWebHooks(ctx context.Context, accessToken, own
 		return nil, fmt.Errorf("github CreateWebHooks: parse URL: %w", err)
 	}
 	logrus.Debugf("Github Api CreateWebHooks url : %s", parse.String())
-	m := map[string]interface{}{}
+	m := map[string]any{}
 	m["url"] = backURL
 	m["content_type"] = "json"
 	m["secret"] = password
 	m["token"] = accessToken
-	obj := map[string]map[string]interface{}{}
+	obj := map[string]map[string]any{}
 	obj["config"] = m
 	marshal, err := json.Marshal(obj)
 	if err != nil {

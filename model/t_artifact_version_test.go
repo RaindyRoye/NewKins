@@ -109,7 +109,7 @@ func TestTArtifactVersion_ReadFiles_WithSubdirs(t *testing.T) {
 	}
 
 	// Find the directory entry and verify it has children
-	var dirEntry map[string]interface{}
+	var dirEntry map[string]any
 	for _, f := range av.Files {
 		if isDir, ok := f["dir"].(bool); ok && isDir {
 			dirEntry = f
