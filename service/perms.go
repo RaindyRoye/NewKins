@@ -1,7 +1,10 @@
 package service
 
 import (
+	"context"
+
 	"github.com/gin-gonic/gin"
+	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
 )
 
@@ -14,8 +17,18 @@ const (
 // AdminUserName is the reserved name for the super-admin account.
 const AdminUserName = "admin"
 
+// CheckPermission checks whether a user identified by uid has the given
+// permission level, using the global comm.Ctx.
+// Prefer CheckPermissionCtx when a request context is available.
 func CheckPermission(uid string, perms string) bool {
-	usr, ok := GetUser(uid)
+	return CheckPermissionCtx(comm.Ctx, uid, perms)
+}
+
+// CheckPermissionCtx is the context-aware version of CheckPermission.
+// It fetches the user with the provided context (enabling cancellation/timeout)
+// and then delegates to CheckUPermission.
+func CheckPermissionCtx(ctx context.Context, uid string, perms string) bool {
+	usr, ok := GetUserCtx(ctx, uid)
 	if !ok {
 		return false
 	}

@@ -259,7 +259,9 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 			}
 			ls = append(ls, e)
 		}
-		for !hbtp.EndContext(comm.Ctx) {
+		// Use the task's own context (which has a timeout) instead of the global
+		// comm.Ctx, so that step waits are properly bounded by the build deadline.
+		for !hbtp.EndContext(c.ctx) {
 			time.Sleep(time.Millisecond * 100)
 			if c.stopd() {
 				job.status(common.BuildStatusCancel, "")
@@ -303,7 +305,9 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 		return
 	}
 	logrus.Debugf("BuildTask put step:%s", job.step.Name)
-	for !hbtp.EndContext(comm.Ctx) {
+	// Use the task's own context (with timeout) instead of the global comm.Ctx
+	// so that the polling loop respects the build deadline.
+	for !hbtp.EndContext(c.ctx) {
 		job.Lock()
 		stats := job.step.Status
 		job.Unlock()
