@@ -145,7 +145,7 @@ func setupTestCache(t *testing.T) func() {
 
 	oldCache := BCache
 	BCache = db
-	mainCacheClearTime = time.Now()
+	mainCacheClearTime.Store(time.Now().UnixNano())
 
 	return func() {
 		_ = db.Close()
@@ -398,13 +398,13 @@ func TestMainCacheClear_UpdatesTimestamp(t *testing.T) {
 	cleanup := setupTestCache(t)
 	defer cleanup()
 
-	before := mainCacheClearTime
+	before := mainCacheClearTime.Load()
 	// Ensure some time passes
 	time.Sleep(10 * time.Millisecond)
 
 	mainCacheClear()
 
-	if !mainCacheClearTime.After(before) {
+	if mainCacheClearTime.Load() <= before {
 		t.Error("mainCacheClearTime should be updated after mainCacheClear")
 	}
 }

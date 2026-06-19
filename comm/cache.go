@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
@@ -130,7 +131,7 @@ func CacheGet(key string) ([]byte, error) {
 			}
 		}()
 	}
-	if time.Since(mainCacheClearTime).Hours() > 30 {
+	if time.Since(time.Unix(0, mainCacheClearTime.Load())).Hours() > 30 {
 		go mainCacheClear()
 	}
 	return rt, err
@@ -165,7 +166,7 @@ func CacheFlush() error {
 	return nil
 }
 
-var mainCacheClearTime time.Time
+var mainCacheClearTime atomic.Int64 // stores UnixNano timestamp of last cache clear
 
 func mainCacheClear() {
 	defer func() {
@@ -180,7 +181,7 @@ func mainCacheClear() {
 	/*if time.Now().Hour()!=3|| time.Since(mainCacheClearTime).Hours() < 30 {
 		return
 	}*/
-	mainCacheClearTime = time.Now()
+	mainCacheClearTime.Store(time.Now().UnixNano())
 	/*if err := CacheFlush(); err != nil {
 		logrus.Errorf("mainCacheClear err:%v", err)
 	}*/
