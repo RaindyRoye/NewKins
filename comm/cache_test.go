@@ -3,6 +3,7 @@ package comm
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -407,4 +408,35 @@ func TestMainCacheClear_UpdatesTimestamp(t *testing.T) {
 	if mainCacheClearTime.Load() <= before {
 		t.Error("mainCacheClearTime should be updated after mainCacheClear")
 	}
+}
+
+// TestCacheConcurrentAccess verifies that CacheGet and mainCacheClear can
+// run concurrently without data races (the mainCacheClearTime atomic fix).
+func TestCacheConcurrentAccess(t *testing.T) {
+	cleanup := setupTestCache(t)
+	defer cleanup()
+
+	// Seed some cache entries
+	for i := 0; i < 10; i++ {
+		key := fmt.Sprintf("key-%d", i)
+		if err := CacheSet(key, []byte(fmt.Sprintf("value-%d", i)), time.Hour); err != nil {
+			t.Fatalf("CacheSet %s: %v", key, err)
+		}
+	}
+
+	// Run CacheGet and mainCacheClear concurrently
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < 50; i++ {
+			key := fmt.Sprintf("key-%d", i%10)
+			_, _ = CacheGet(key)
+		}
+	}()
+
+	for i := 0; i < 10; i++ {
+		mainCacheClear()
+	}
+
+	<-done
 }
