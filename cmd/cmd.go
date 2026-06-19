@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/gokins/core"
@@ -12,6 +14,7 @@ import (
 	"github.com/gokins/gokins/server"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -88,6 +91,44 @@ var versionCmd = &cobra.Command{
 	},
 }
 
+var configCmd = &cobra.Command{
+	Use:   "config",
+	Short: "Configuration management commands",
+	Long: `Commands for managing Gokins configuration files.
+
+Use 'config validate' to check your app.yml before starting the server.
+Use 'config show' to display the parsed configuration (sensitive values are redacted).`,
+}
+
+var configValidateCmd = &cobra.Command{
+	Use:   "validate [file]",
+	Short: "Validate a configuration file",
+	Long: `Parse and validate the specified configuration file (or the default app.yml
+in the working directory) without starting the server.
+
+This is useful for CI/CD pipelines or pre-flight checks before deployment.`,
+	Example: `  gokins config validate                    # Validate default app.yml
+  gokins config validate /etc/gokins.yml    # Validate specific file
+  gokins config validate -w /opt/gokins     # Validate in custom workdir`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return validateConfig(cmd, args)
+	},
+}
+
+var configShowCmd = &cobra.Command{
+	Use:   "show [file]",
+	Short: "Show the parsed configuration (sensitive values redacted)",
+	Long: `Parse the configuration file and display the effective settings.
+Sensitive values like database URLs and secrets are redacted for safety.`,
+	Example: `  gokins config show                        # Show default config
+  gokins config show -w /opt/gokins         # Show config from custom workdir`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return showConfig(cmd, args)
+	},
+}
+
 func init() {
 	rootCmd.PersistentFlags().StringVar(&webHost, "web", ":8030", "HTTP listen address (e.g. :8030, 0.0.0.0:8080)")
 	rootCmd.PersistentFlags().StringVarP(&workPath, "workdir", "w", "", "working directory for config and data (default: current dir)")
@@ -98,6 +139,9 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(daemonCmd)
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(configCmd)
+	configCmd.AddCommand(configValidateCmd)
+	configCmd.AddCommand(configShowCmd)
 
 	rootCmd.SetVersionTemplate("gokins version: {{.Version}}\n")
 }
@@ -156,4 +200,126 @@ func runProcess() error {
 		hbtp.Debug = true
 	}
 	return server.Run()
+}
+
+// resolveConfigPath determines the config file path from args or defaults.
+func resolveConfigPath(args []string) (string, error) {
+	if len(args) > 0 {
+		return args[0], nil
+	}
+	wp := workPath
+	if wp == "" {
+		wp = "."
+	}
+	// Try app.yml first, then app.yaml
+	for _, name := range []string{"app.yml", "app.yaml"} {
+		pth := filepath.Join(wp, name)
+		if _, err := os.Stat(pth); err == nil {
+			return pth, nil
+		}
+	}
+	return "", fmt.Errorf("no configuration file found in %s (tried app.yml, app.yaml)", wp)
+}
+
+// loadConfigFile reads and parses a config file, returning the parsed Config.
+func loadConfigFile(pth string) (*comm.Config, error) {
+	bts, err := os.ReadFile(pth)
+	if err != nil {
+		return nil, fmt.Errorf("read config file %s: %w", pth, err)
+	}
+	cfg := &comm.Config{}
+	if err := yaml.Unmarshal(bts, cfg); err != nil {
+		return nil, fmt.Errorf("parse config yaml %s: %w", pth, err)
+	}
+	return cfg, nil
+}
+
+// validateConfig implements the 'config validate' subcommand.
+func validateConfig(cmd *cobra.Command, args []string) error {
+	pth, err := resolveConfigPath(args)
+	if err != nil {
+		return err
+	}
+	cfg, err := loadConfigFile(pth)
+	if err != nil {
+		return err
+	}
+	if err := cfg.Validate(); err != nil {
+		cmd.Printf("❌ Configuration invalid: %v\n", err)
+		cmd.Printf("   File: %s\n", pth)
+		return err
+	}
+	cmd.Printf("✅ Configuration valid: %s\n", pth)
+	cmd.Printf("   Driver: %s\n", cfg.Datasource.Driver)
+	if cfg.Server.Host != "" {
+		cmd.Printf("   Server: %s\n", cfg.Server.Host)
+	}
+	if cfg.Server.RunLimit > 0 {
+		cmd.Printf("   Run limit: %d\n", cfg.Server.RunLimit)
+	}
+	return nil
+}
+
+// redactURL masks the password portion of a database URL for safe display.
+func redactURL(url string) string {
+	if url == "" {
+		return "(empty)"
+	}
+	// For URLs with @, redact the credentials part
+	if idx := strings.LastIndex(url, "@"); idx > 0 {
+		return "***@" + url[idx+1:]
+	}
+	// For DSN-style strings (user:pass@protocol(addr)/db), redact between : and @
+	if strings.Contains(url, ":") && strings.Contains(url, "(") {
+		return "***" + url[strings.Index(url, "("):]
+	}
+	// For simple file paths (like sqlite), show as-is
+	if len(url) < 3 {
+		return "***"
+	}
+	return url[:2] + "***"
+}
+
+// showConfig implements the 'config show' subcommand.
+func showConfig(cmd *cobra.Command, args []string) error {
+	pth, err := resolveConfigPath(args)
+	if err != nil {
+		return err
+	}
+	cfg, err := loadConfigFile(pth)
+	if err != nil {
+		return err
+	}
+	cmd.Printf("Configuration: %s\n", pth)
+	cmd.Printf("───────────────────────────────────\n")
+	cmd.Printf("Datasource:\n")
+	cmd.Printf("  Driver:  %s\n", cfg.Datasource.Driver)
+	cmd.Printf("  URL:     %s\n", redactURL(cfg.Datasource.Url))
+	cmd.Printf("Server:\n")
+	if cfg.Server.Host != "" {
+		cmd.Printf("  Host:      %s\n", cfg.Server.Host)
+	}
+	cmd.Printf("  RunLimit:  %d\n", cfg.Server.RunLimit)
+	if cfg.Server.HbtpHost != "" {
+		cmd.Printf("  HbtpHost:  %s\n", cfg.Server.HbtpHost)
+	}
+	if cfg.Server.LoginKey != "" {
+		cmd.Printf("  LoginKey:  ***\n")
+	}
+	if cfg.Server.Secret != "" {
+		cmd.Printf("  Secret:    ***\n")
+	}
+	if len(cfg.Server.Shells) > 0 {
+		cmd.Printf("  Shells:    %v\n", cfg.Server.Shells)
+	}
+	if cfg.Server.DownToken != "" {
+		cmd.Printf("  DownToken: ***\n")
+	}
+	validationErr := "valid"
+	if err := cfg.Validate(); err != nil {
+		validationErr = fmt.Sprintf("INVALID: %v", err)
+	}
+	cmd.Printf("───────────────────────────────────\n")
+	cmd.Printf("Validation: %s\n", validationErr)
+	return nil
 }

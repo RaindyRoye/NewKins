@@ -1,47 +1,47 @@
-# NewKins CI/CD - Example Configuration
-# Copy this file to app.yml (or app.yaml) in your GOKINS_WORKPATH directory.
-# Default workpath: ~/.gokins (override with GOKINS_WORKPATH env var)
+# Gokins (NewKins) Configuration Example
+# Copy this file to app.yml (or app.yaml) and edit for your environment.
+# Location: <workdir>/app.yml (default workdir: ~/.gokins)
 
 server:
-  # External access URL for the web interface
-  host: "http://localhost:8080"
-  
-  # Secret key for JWT token signing and HBTP authentication.
-  # IMPORTANT: Change this to a random string in production!
-  # Generate with: openssl rand -hex 32
-  secret: "change-me-to-a-random-secret"
-  
-  # Login encryption key (optional, for enhanced security)
-  # loginKey: ""
-  
-  # Maximum number of concurrent pipeline runs (0 = unlimited)
-  runLimit: 0
-  
-  # HBTP (HyperByte Transfer Protocol) listening address.
-  # Used for communication with remote runners.
-  hbtpHost: "0.0.0.0:9711"
-  
-  # Download token for artifact access (optional, auto-generated if empty)
-  # DownToken: ""
-  
-  # Additional runner shell plugins to load.
-  # Built-in: "shell@ssh" (SSH runner), "gokins@git" (Git runner)
-  shells:
-    - "shell@ssh"
-    - "gokins@git"
+  # External access URL for the web UI (used in webhook callbacks, emails, etc.)
+  # Example: https://ci.example.com
+  host: ""
+
+  # JWT signing key for user authentication tokens.
+  # Generate a secure random string: openssl rand -hex 32
+  loginKey: ""
+
+  # Maximum number of concurrent builds. Default: 5
+  runLimit: 5
+
+  # HyperByte Transfer Protocol listen address (for runner communication).
+  # Leave empty to auto-detect.
+  hbtpHost: ""
+
+  # Secret used for runner authentication.
+  # Generate a secure random string: openssl rand -hex 32
+  secret: ""
+
+  # Additional shell runner plugins to load.
+  # Built-in: "shell@ssh", "gokins@git"
+  # Add custom plugins as needed.
+  shells: []
+
+  # Token for downloading artifacts (optional).
+  DownToken: ""
 
 datasource:
   # Database driver: "sqlite", "mysql", or "postgres"
   driver: "sqlite"
-  
-  # Database connection URL.
-  # SQLite example:
+
+  # Database connection string.
+  #
+  # SQLite (default, no setup required):
+  #   url: "./gokins.db"
+  #
+  # MySQL:
+  #   url: "root:password@tcp(localhost:3306)/gokins?charset=utf8mb4&parseTime=true"
+  #
+  # PostgreSQL:
+  #   url: "postgres://user:password@localhost:5432/gokins?sslmode=disable"
   url: "./gokins.db"
-  
-  # MySQL example:
-  # driver: "mysql"
-  # url: "root:password@tcp(localhost:3306)/gokins?charset=utf8mb4&parseTime=true"
-  
-  # PostgreSQL example:
-  # driver: "postgres"
-  # url: "postgres://user:password@localhost:5432/gokins?sslmode=disable"
