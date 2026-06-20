@@ -1,0 +1,74 @@
+# Docker Compose example for NewKins CI/CD Platform
+#
+# Usage:
+#   1. Copy this file to docker-compose.yml
+#   2. Edit environment variables and volumes as needed
+#   3. Run: docker-compose up -d
+#
+# For production, use a proper database (MySQL/PostgreSQL) instead of SQLite.
+
+version: "3.8"
+
+services:
+  gokins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: "1.3.7"
+    container_name: gokins
+    restart: unless-stopped
+    ports:
+      - "8030:8030"  # Web UI
+      - "9711:9711"  # HBTP (runner communication)
+    volumes:
+      - gokins-data:/data
+      # Mount your config file (optional)
+      # - ./app.yml:/data/app.yml:ro
+    environment:
+      - GOKINS_WORKPATH=/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8030/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Optional: MySQL database for production use
+  # Uncomment and configure as needed
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: gokins-mysql
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: changeme
+  #     MYSQL_DATABASE: gokins
+  #     MYSQL_USER: gokins
+  #     MYSQL_PASSWORD: changeme
+  #   volumes:
+  #     - mysql-data:/var/lib/mysql
+  #   ports:
+  #     - "3306:3306"
+
+  # Optional: PostgreSQL database for production use
+  # Uncomment and configure as needed
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: gokins-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: gokins
+  #     POSTGRES_USER: gokins
+  #     POSTGRES_PASSWORD: changeme
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+volumes:
+  gokins-data:
+    driver: local
+  # mysql-data:
+  #   driver: local
+  # postgres-data:
+  #   driver: local
