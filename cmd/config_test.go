@@ -91,7 +91,7 @@ func TestResolveConfigPath_FindsAppYml(t *testing.T) {
 	// Create a temp directory with an app.yml file
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "app.yml")
-	if err := os.WriteFile(configPath, []byte("server:\n  host: test\n"), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte("server:\n  host: test\n"), 0600); err != nil {
 		t.Fatalf("failed to create test config: %v", err)
 	}
 
@@ -112,7 +112,7 @@ func TestResolveConfigPath_FindsAppYaml(t *testing.T) {
 	// Create a temp directory with an app.yaml file (not app.yml)
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "app.yaml")
-	if err := os.WriteFile(configPath, []byte("server:\n  host: test\n"), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte("server:\n  host: test\n"), 0600); err != nil {
 		t.Fatalf("failed to create test config: %v", err)
 	}
 
@@ -140,7 +140,7 @@ datasource:
   driver: sqlite
   url: ./test.db
 `
-	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
 		t.Fatalf("failed to create test config: %v", err)
 	}
 
@@ -176,14 +176,14 @@ func TestLoadConfigFile_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "bad.yml")
 	// Use content that will actually fail YAML parsing (tab characters in wrong places)
-	if err := os.WriteFile(configPath, []byte("server:\n\t- invalid:\n\t  broken:\n\t\t: bad"), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte("server:\n\t- invalid:\n\t  broken:\n\t\t: bad"), 0600); err != nil {
 		t.Fatalf("failed to create test config: %v", err)
 	}
 
 	_, err := loadConfigFile(configPath)
 	if err == nil {
 		// If YAML is lenient with this too, try binary content
-		if err := os.WriteFile(configPath, []byte("\x00\x01\x02\x03"), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte("\x00\x01\x02\x03"), 0600); err != nil {
 			t.Fatalf("failed to create test config: %v", err)
 		}
 		_, err = loadConfigFile(configPath)
@@ -204,7 +204,7 @@ datasource:
   driver: sqlite
   url: ./test.db
 `
-	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
 		t.Fatalf("failed to create test config: %v", err)
 	}
 
@@ -229,7 +229,7 @@ datasource:
   driver: oracle
   url: something
 `
-	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
 		t.Fatalf("failed to create test config: %v", err)
 	}
 
@@ -256,7 +256,7 @@ datasource:
   driver: mysql
   url: root:secret@tcp(localhost:3306)/gokins
 `
-	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
 		t.Fatalf("failed to create test config: %v", err)
 	}
 
