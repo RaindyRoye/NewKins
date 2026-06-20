@@ -1,5 +1,9 @@
 package hook
 
+// MaxWebhookBodySize is the maximum number of bytes read from a webhook
+// request body (10 MB). Larger payloads are truncated to prevent memory abuse.
+const MaxWebhookBodySize = 10_000_000
+
 // 触发事件
 const (
 	// EventsTypeComment 评论事件

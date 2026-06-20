@@ -30,7 +30,7 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 	}()
 	logrus.Debugf("Gitea Parse ~")
 	data, err := io.ReadAll(
-		io.LimitReader(req.Body, 10000000),
+		io.LimitReader(req.Body, hook.MaxWebhookBodySize),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("gitea: read request body: %w", err)
