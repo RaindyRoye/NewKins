@@ -20,11 +20,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Parse(req *http.Request, secret string) (hook.WebHook, error) {
+func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("WebhookService Parse err:%+v", err)
+		if r := recover(); r != nil {
+			logrus.Warnf("WebhookService Parse err:%+v", r)
 			logrus.Warnf("%s", string(debug.Stack()))
+			err = fmt.Errorf("gitea: panic in Parse: %v", r)
 		}
 	}()
 	logrus.Debugf("Gitea Parse ~")
@@ -34,7 +35,6 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gitea: read request body: %w", err)
 	}
-	var wb hook.WebHook
 	switch req.Header.Get(hook.GiteaEvent) {
 	case hook.GiteaEventPush:
 		wb, err = parsePushHook(data)
@@ -226,11 +226,12 @@ func convertPullRequestHook(gp *giteaPRHook) *hook.PullRequestHook {
 		Sender: hook.User{},
 	}
 }
-func convertPullRequestURL(gc *giteaCommentHook) (*giteaPullRequestURL, error) {
+func convertPullRequestURL(gc *giteaCommentHook) (result *giteaPullRequestURL, err error) {
 	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("convertPullRequestURL err:%+v", err)
+		if r := recover(); r != nil {
+			logrus.Warnf("convertPullRequestURL err:%+v", r)
 			logrus.Warnf("%s", string(debug.Stack()))
+			err = fmt.Errorf("gitea: panic in convertPullRequestURL: %v", r)
 		}
 	}()
 	// TODO 请求gitea api 获取pr 详情

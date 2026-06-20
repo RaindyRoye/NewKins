@@ -21,11 +21,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Parse(req *http.Request, secret string) (hook.WebHook, error) {
+func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("WebhookService Parse err:%+v", err)
+		if r := recover(); r != nil {
+			logrus.Warnf("WebhookService Parse err:%+v", r)
 			logrus.Warnf("%s", string(debug.Stack()))
+			err = fmt.Errorf("github: panic in Parse: %v", r)
 		}
 	}()
 	data, err := io.ReadAll(
@@ -34,7 +35,6 @@ func Parse(req *http.Request, secret string) (hook.WebHook, error) {
 	if err != nil {
 		return nil, fmt.Errorf("github: read request body: %w", err)
 	}
-	var wb hook.WebHook
 	switch req.Header.Get(hook.GithubEvent) {
 	case hook.GithubEventPush:
 		wb, err = parsePushHook(data)
