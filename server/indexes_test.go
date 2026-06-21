@@ -43,10 +43,29 @@ func TestEnsureIndexes_WithSQLite(t *testing.T) {
 	_, err = db.Exec(`CREATE TABLE t_build (
 		id VARCHAR(64) PRIMARY KEY,
 		pipeline_id VARCHAR(64),
-		pipeline_version_id VARCHAR(64)
+		pipeline_version_id VARCHAR(64),
+		status VARCHAR(50)
 	)`)
 	if err != nil {
 		t.Fatalf("create table: %v", err)
+	}
+
+	_, err = db.Exec(`CREATE TABLE t_org_pipe (
+		aid BIGINT PRIMARY KEY,
+		org_id VARCHAR(64),
+		pipe_id VARCHAR(64)
+	)`)
+	if err != nil {
+		t.Fatalf("create org_pipe table: %v", err)
+	}
+
+	_, err = db.Exec(`CREATE TABLE t_artifact_package (
+		id VARCHAR(64) PRIMARY KEY,
+		repo_id VARCHAR(64),
+		deleted INT
+	)`)
+	if err != nil {
+		t.Fatalf("create artifact_package table: %v", err)
 	}
 
 	// Run ensureIndexes — should not error or panic
@@ -60,6 +79,36 @@ func TestEnsureIndexes_WithSQLite(t *testing.T) {
 	}
 	if count != 1 {
 		t.Errorf("expected index idx_build_pipeline_id to exist, got count=%d", count)
+	}
+
+	// Verify composite index on t_org_pipe
+	var orgPipeCount int
+	_, err = db.SQL("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_orgpipe_org_pipe'").Get(&orgPipeCount)
+	if err != nil {
+		t.Fatalf("query org_pipe index: %v", err)
+	}
+	if orgPipeCount != 1 {
+		t.Errorf("expected index idx_orgpipe_org_pipe to exist, got count=%d", orgPipeCount)
+	}
+
+	// Verify index on t_artifact_package
+	var artPkgCount int
+	_, err = db.SQL("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_artpkg_deleted_repo'").Get(&artPkgCount)
+	if err != nil {
+		t.Fatalf("query artifact_package index: %v", err)
+	}
+	if artPkgCount != 1 {
+		t.Errorf("expected index idx_artpkg_deleted_repo to exist, got count=%d", artPkgCount)
+	}
+
+	// Verify index on t_build status
+	var buildStatusCount int
+	_, err = db.SQL("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_build_status'").Get(&buildStatusCount)
+	if err != nil {
+		t.Fatalf("query build status index: %v", err)
+	}
+	if buildStatusCount != 1 {
+		t.Errorf("expected index idx_build_status to exist, got count=%d", buildStatusCount)
 	}
 
 	// Run ensureIndexes again — should be idempotent (no error)
