@@ -21,6 +21,7 @@ linters:
     - prealloc       # Find slice declarations that could be preallocated
     - errorlint      # Check for error wrapping best practices (errors.Is, %w)
     - gosec          # Inspect source code for security problems
+    - unparam        # Report unused function parameters
 
 linters-settings:
   errcheck:

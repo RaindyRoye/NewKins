@@ -226,6 +226,8 @@ func convertPullRequestHook(gp *giteaPRHook) *hook.PullRequestHook {
 		Sender: hook.User{},
 	}
 }
+
+//nolint:unparam // gc will be used when TODO (gitea API PR lookup) is implemented
 func convertPullRequestURL(gc *giteaCommentHook) (result *giteaPullRequestURL, err error) {
 	defer func() {
 		if r := recover(); r != nil {

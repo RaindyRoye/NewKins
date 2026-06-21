@@ -92,12 +92,12 @@ func TestBuildEngineConcurrentGetAndPut(t *testing.T) {
 	// Concurrent reads via Get
 	for i := 0; i < 20; i++ {
 		wg.Add(1)
-		go func(n int) {
+		go func() {
 			defer wg.Done()
 			for j := 0; j < 50; j++ {
 				c.Get(fmt.Sprintf("build-%d", j))
 			}
-		}(i)
+		}()
 	}
 	// Concurrent writes to task queue via Put
 	for i := 0; i < 10; i++ {
