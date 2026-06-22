@@ -262,7 +262,7 @@ func convertPullRequestURL(gc *giteaCommentHook) (result *giteaPullRequestURL, e
 func convertCommentHook(gp *giteaCommentHook) (*hook.PullRequestCommentHook, error) {
 	pullRequestHook, err := convertPullRequestURL(gp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gitea: convert comment hook: %w", err)
 	}
 	return &hook.PullRequestCommentHook{
 		Action: hook.EventsTypeComment,

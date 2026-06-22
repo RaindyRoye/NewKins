@@ -112,6 +112,36 @@ func TestRateLimiter_CleanupExitsOnStop(t *testing.T) {
 	// Stop() doesn't hang or panic is sufficient.
 }
 
+func TestRateLimiter_CleanupRemovesStaleEntries(t *testing.T) {
+	// Use a very short window so the cleanup ticker fires quickly.
+	// cleanup runs every window*2 and removes entries older than window*2.
+	window := 20 * time.Millisecond
+	rl := NewRateLimiter(100, window)
+	defer rl.Stop()
+
+	// Add entries
+	rl.Allow("stale-key-1")
+	rl.Allow("stale-key-2")
+
+	rl.mu.Lock()
+	if len(rl.entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(rl.entries))
+	}
+	rl.mu.Unlock()
+
+	// Wait for entries to become stale (> window*2) plus one cleanup cycle (window*2).
+	// Total wait: ~4*window = 80ms. Add margin for timing.
+	time.Sleep(100 * time.Millisecond)
+
+	rl.mu.Lock()
+	remaining := len(rl.entries)
+	rl.mu.Unlock()
+
+	if remaining != 0 {
+		t.Errorf("expected 0 entries after cleanup, got %d", remaining)
+	}
+}
+
 func TestMidRateLimit_GinMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	rl := NewRateLimiter(2, time.Minute)

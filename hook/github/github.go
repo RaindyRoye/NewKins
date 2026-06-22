@@ -239,25 +239,21 @@ func convertPullRequestURL(u string) (*githubPullRequestURL, error) {
 	}
 	request, err := http.NewRequestWithContext(context.Background(), "GET", u, nil)
 	if err != nil {
-		logrus.Errorf("github convertPullRequestURL CommentsUrl err %v", err)
-		return nil, err
+		return nil, fmt.Errorf("github: build PR request for %q: %w", u, err)
 	}
 	res, err := client.Do(request)
 	if err != nil {
-		logrus.Errorf("github convertPullRequestURL Do err %v", err)
-		return nil, err
+		return nil, fmt.Errorf("github: fetch PR info from %q: %w", u, err)
 	}
-	all, err := io.ReadAll(res.Body)
 	defer func() { _ = res.Body.Close() }()
+	all, err := io.ReadAll(res.Body)
 	if err != nil {
-		logrus.Errorf("github convertPullRequestURL ReadAll err %v", err)
-		return nil, err
+		return nil, fmt.Errorf("github: read PR response body: %w", err)
 	}
 	requestURL := &githubPullRequestURL{}
 	err = json.Unmarshal(all, requestURL)
 	if err != nil {
-		logrus.Errorf("github convertPullRequestURL Unmarshal err %v", err)
-		return nil, err
+		return nil, fmt.Errorf("github: parse PR response: %w", err)
 	}
 	return requestURL, nil
 }
@@ -265,7 +261,7 @@ func convertCommentHook(gp *githubCommentHook) (*hook.PullRequestCommentHook, er
 	ul := gp.Issue.PullRequest.Url
 	pullRequestHook, err := convertPullRequestURL(ul)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("github: convert comment hook: %w", err)
 	}
 	return &hook.PullRequestCommentHook{
 		Action: hook.EventsTypeComment,
