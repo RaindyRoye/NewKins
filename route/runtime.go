@@ -44,14 +44,33 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
+
+	// Collect stage IDs for batch step query
+	stageIds := make([]string, len(ls))
+	for i, v := range ls {
+		stageIds[i] = v.Id
+		v.Stepids = make([]string, 0)
+	}
+
+	// Batch fetch all steps for all stages (eliminates N+1 queries)
+	stepsMap := map[string][]*model.RunStep{}
+	if len(stageIds) > 0 {
+		var allSteps []*model.RunStep
+		if err := comm.Db.Context(ctx).In("stage_id", stageIds).OrderBy("sort ASC").Find(&allSteps); err != nil {
+			util.RespInternalErr(c, "batch query steps", err)
+			return
+		}
+		for _, step := range allSteps {
+			stepsMap[step.StageId] = append(stepsMap[step.StageId], step)
+		}
+	}
+
 	ids := make([]string, 0)
 	stages := map[string]*model.RunStage{}
 	steps := map[string]*model.RunStep{}
 	for _, v := range ls {
-		v.Stepids = make([]string, 0)
-		var spls []*model.RunStep
-		err := comm.Db.Context(ctx).Where("stage_id=?", v.Id).OrderBy("sort ASC").Find(&spls)
-		if err == nil {
+		spls := stepsMap[v.Id]
+		if len(spls) >= 0 {
 			ids = append(ids, v.Id)
 			stages[v.Id] = v
 			for _, step := range spls {
