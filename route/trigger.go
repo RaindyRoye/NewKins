@@ -1,7 +1,9 @@
 package route
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -64,9 +66,23 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
+	// Batch fetch users to eliminate N+1 queries
+	uidSet := make(map[string]struct{})
 	for _, v := range ls {
-		usr, ok := service.GetUserCtx(ctx, v.Uid)
-		if ok {
+		if v.Uid != "" {
+			uidSet[v.Uid] = struct{}{}
+		}
+	}
+	uids := make([]string, 0, len(uidSet))
+	for uid := range uidSet {
+		uids = append(uids, uid)
+	}
+	userMap, err := service.BatchGetUsers(ctx, uids)
+	if err != nil {
+		logrus.Warnf("trigger list: batch get users: %v", err)
+	}
+	for _, v := range ls {
+		if usr, ok := userMap[v.Uid]; ok {
 			v.Nick = usr.Nick
 			v.Avat = usr.Avatar
 		}
@@ -203,24 +219,47 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
+	// Batch fetch pipeline version info to eliminate N+1 queries
+	pvIds := make([]string, 0, len(ls))
 	for _, v := range ls {
-		if v.Error != "" || v.PipeVersionId == "" {
-			continue
+		if v.Error == "" && v.PipeVersionId != "" {
+			pvIds = append(pvIds, v.PipeVersionId)
 		}
-		rpv := &model.RunPipelineVersion{}
-		ok, err = comm.Db.Context(ctx).Table("t_pipeline_version").
-			Where("t_pipeline_version.id = ?", v.PipeVersionId).
-			Join("left", "t_build", "t_build.pipeline_version_id = ?", v.PipeVersionId).
-			Get(rpv)
+	}
+	if len(pvIds) > 0 {
+		pvMap, err := batchRunPipelineVersions(ctx, pvIds)
 		if err != nil {
-			logrus.Warnf("trigger runs: query pipeline version (pv=%s): %v", v.PipeVersionId, err)
+			logrus.Warnf("trigger runs: batch query pipeline versions: %v", err)
 		}
-		if ok {
-			v.Number = rpv.Number
-			v.PipelineName = rpv.PipelineName
-			v.PipelineDisplayName = rpv.PipelineDisplayName
-			v.BStatus = rpv.Status
+		for _, v := range ls {
+			if rpv, ok := pvMap[v.PipeVersionId]; ok {
+				v.Number = rpv.Number
+				v.PipelineName = rpv.PipelineName
+				v.PipelineDisplayName = rpv.PipelineDisplayName
+				v.BStatus = rpv.Status
+			}
 		}
 	}
 	c.JSON(200, page)
+}
+
+// batchRunPipelineVersions fetches pipeline version info for multiple IDs in a single query,
+// eliminating N+1 queries in the trigger runs endpoint.
+func batchRunPipelineVersions(ctx context.Context, versionIds []string) (map[string]*model.RunPipelineVersion, error) {
+	if len(versionIds) == 0 {
+		return map[string]*model.RunPipelineVersion{}, nil
+	}
+	var versions []*model.RunPipelineVersion
+	err := comm.Db.Context(ctx).Table("t_pipeline_version").
+		In("t_pipeline_version.id", versionIds).
+		Join("left", "t_build", "t_build.pipeline_version_id = t_pipeline_version.id").
+		Find(&versions)
+	if err != nil {
+		return nil, fmt.Errorf("batch run pipeline versions: %w", err)
+	}
+	result := make(map[string]*model.RunPipelineVersion, len(versions))
+	for _, v := range versions {
+		result[v.Id] = v
+	}
+	return result, nil
 }
