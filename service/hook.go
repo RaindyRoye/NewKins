@@ -20,7 +20,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TriggerHook processes a webhook trigger using the request's context.
+// Prefer TriggerHookCtx when a request context is available explicitly.
 func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err error) {
+	return TriggerHookCtx(req.Context(), tt, req)
+}
+
+// TriggerHookCtx processes a webhook trigger with an explicit context for
+// database operations and cancellation. The req parameter is used to parse
+// the webhook payload from the HTTP request body and headers.
+func TriggerHookCtx(ctx context.Context, tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err error) {
 	tvpId := ""
 	infos := "{}"
 	defer func() {
@@ -36,14 +45,14 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 		if infos != "" {
 			ttr.Infos = infos
 		}
-		if _, err := comm.Db.Context(req.Context()).InsertOne(ttr); err != nil {
-			logrus.Errorf("TriggerHook: failed to save trigger run: %v", err)
+		if _, err := comm.Db.Context(ctx).InsertOne(ttr); err != nil {
+			logrus.Errorf("TriggerHookCtx: failed to save trigger run: %v", err)
 		}
 	}()
 	if tt.Params == "" {
 		return nil, ErrTriggerNoParams
 	}
-	err = TriggerPermCtx(req.Context(), tt)
+	err = TriggerPermCtx(ctx, tt)
 	if err != nil {
 		return nil, fmt.Errorf("check trigger permissions (trigger=%s): %w", tt.Id, err)
 	}
@@ -100,7 +109,7 @@ func TriggerHook(tt *model.TTrigger, req *http.Request) (rb *runtime.Build, err 
 		return nil, ErrBranchMismatch
 	}
 
-	tvp, rb, err := Run(req.Context(), tt.Uid, tt.PipelineId, sha, "webHook")
+	tvp, rb, err := Run(ctx, tt.Uid, tt.PipelineId, sha, "webHook")
 	if err != nil {
 		return nil, fmt.Errorf("run pipeline (trigger=%s, pipeline=%s): %w", tt.Id, tt.PipelineId, err)
 	}
