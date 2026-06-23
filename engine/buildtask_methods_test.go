@@ -8,6 +8,7 @@ import (
 
 	"github.com/gokins/core/common"
 	"github.com/gokins/core/runtime"
+	"github.com/gokins/gokins/comm"
 )
 
 // --- NewBuildTask ---
@@ -448,5 +449,59 @@ func TestUpJob_EmptyStatus(t *testing.T) {
 	bt.UpJob(job, "", "", 0)
 	if job.step.Status != "" {
 		t.Errorf("step status should remain empty, got %q", job.step.Status)
+	}
+}
+
+// --- BuildTask.taskCtx ---
+
+func TestTaskCtx_NilContextFallsBackToGlobal(t *testing.T) {
+	bt := &BuildTask{build: &runtime.Build{}}
+	// When c.ctx is nil, taskCtx() should return the global comm.Ctx
+	got := bt.taskCtx()
+	if got == nil {
+		t.Fatal("taskCtx() should never return nil")
+	}
+	// It should be comm.Ctx (which is set in comm.init())
+	if got != comm.Ctx {
+		t.Error("taskCtx() should return comm.Ctx when task context is nil")
+	}
+}
+
+func TestTaskCtx_WithActiveContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	bt := &BuildTask{build: &runtime.Build{}, ctx: ctx}
+	got := bt.taskCtx()
+	if got != ctx {
+		t.Error("taskCtx() should return the task's own context when set")
+	}
+}
+
+func TestTaskCtx_WithTimeoutContext(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	bt := &BuildTask{build: &runtime.Build{}, ctx: ctx}
+	got := bt.taskCtx()
+	if got != ctx {
+		t.Error("taskCtx() should return the task's timeout context")
+	}
+	// Verify it has a deadline (proving it's the task context, not global)
+	_, ok := got.Deadline()
+	if !ok {
+		t.Error("taskCtx() returned context should have a deadline")
+	}
+}
+
+func TestTaskCtx_CanceledTaskContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+	bt := &BuildTask{build: &runtime.Build{}, ctx: ctx}
+	got := bt.taskCtx()
+	// Even if canceled, it should return the task's context (not fallback)
+	if got != ctx {
+		t.Error("taskCtx() should return the task's context even if canceled")
+	}
+	if got.Err() == nil {
+		t.Error("returned context should be canceled")
 	}
 }

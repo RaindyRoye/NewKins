@@ -225,9 +225,9 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 				cmd.Content = strings.ReplaceAll(cmd.Content, zs[0], vas)
 			}
 		}
-		_, err = comm.Db.Context(comm.Ctx).InsertOne(cmd)
+		_, err = comm.Db.Context(c.taskCtx()).InsertOne(cmd)
 		if err != nil {
-			if _, delErr := comm.Db.Context(comm.Ctx).Where("build_id=? and step_id=?", cmd.BuildId, cmd.StepId).Delete(cmd); delErr != nil {
+			if _, delErr := comm.Db.Context(c.taskCtx()).Where("build_id=? and step_id=?", cmd.BuildId, cmd.StepId).Delete(cmd); delErr != nil {
 				logrus.Errorf("appendcmds: failed to cleanup cmd after insert error: %v", delErr)
 			}
 			return fmt.Errorf("insert cmd %s: %w", cmd.Id, err)
