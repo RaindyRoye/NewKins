@@ -25,7 +25,11 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 		if r := recover(); r != nil {
 			logrus.Warnf("WebhookService Parse err:%+v", r)
 			logrus.Warnf("%s", string(debug.Stack()))
-			err = fmt.Errorf("gitea: panic in Parse: %v", r)
+			if e, ok := r.(error); ok {
+				err = fmt.Errorf("gitea: panic in Parse: %w", e)
+			} else {
+				err = fmt.Errorf("gitea: panic in Parse: %v", r)
+			}
 		}
 	}()
 	logrus.Debugf("Gitea Parse ~")
@@ -233,7 +237,11 @@ func convertPullRequestURL(gc *giteaCommentHook) (result *giteaPullRequestURL, e
 		if r := recover(); r != nil {
 			logrus.Warnf("convertPullRequestURL err:%+v", r)
 			logrus.Warnf("%s", string(debug.Stack()))
-			err = fmt.Errorf("gitea: panic in convertPullRequestURL: %v", r)
+			if e, ok := r.(error); ok {
+				err = fmt.Errorf("gitea: panic in convertPullRequestURL: %w", e)
+			} else {
+				err = fmt.Errorf("gitea: panic in convertPullRequestURL: %v", r)
+			}
 		}
 	}()
 	// TODO 请求gitea api 获取pr 详情

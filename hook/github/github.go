@@ -26,7 +26,11 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 		if r := recover(); r != nil {
 			logrus.Warnf("WebhookService Parse err:%+v", r)
 			logrus.Warnf("%s", string(debug.Stack()))
-			err = fmt.Errorf("github: panic in Parse: %v", r)
+			if e, ok := r.(error); ok {
+				err = fmt.Errorf("github: panic in Parse: %w", e)
+			} else {
+				err = fmt.Errorf("github: panic in Parse: %v", r)
+			}
 		}
 	}()
 	data, err := io.ReadAll(

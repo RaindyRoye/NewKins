@@ -3,8 +3,10 @@ package gitee
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gokins/gokins/hook"
@@ -188,5 +190,29 @@ func TestParsePRUnsupportedAction(t *testing.T) {
 	_, err := Parse(req, secret)
 	if err == nil {
 		t.Fatal("expected error for unsupported PR action 'close'")
+	}
+}
+
+// TestParseErrorWrapping verifies that errors from Parse use %w for proper
+// error chain propagation, enabling errors.Is and errors.As to work correctly.
+func TestParseErrorWrapping(t *testing.T) {
+	// Invalid JSON should produce a wrapped error that contains the JSON syntax error
+	body := []byte(`{invalid json`)
+	req := newGiteeRequest(hook.GiteeEventPush, body, "secret")
+
+	_, err := Parse(req, "secret")
+	if err == nil {
+		t.Fatal("expected error for invalid JSON")
+	}
+
+	// The error message should contain the "gitee:" prefix
+	if !strings.Contains(err.Error(), "gitee:") {
+		t.Errorf("expected error to contain 'gitee:' prefix, got: %v", err)
+	}
+
+	// errors.Unwrap should return a non-nil error (proving %w was used)
+	unwrapped := errors.Unwrap(err)
+	if unwrapped == nil {
+		t.Error("expected errors.Unwrap to return a non-nil error, proving %w wrapping is used")
 	}
 }
