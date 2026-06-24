@@ -319,8 +319,13 @@ func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	var err error
+	var isup bool
 	ne := &model.TUserOrg{}
-	isup, _ := comm.Db.Context(ctx).Where("uid=? and org_id=?", usr.Id, perm.Org().Id).Get(ne)
+	isup, err = comm.Db.Context(ctx).Where("uid=? and org_id=?", usr.Id, perm.Org().Id).Get(ne)
+	if err != nil {
+		util.RespInternalErr(c, "check user org membership", err)
+		return
+	}
 	if usr.Id == perm.LgUser().Id {
 		c.String(511, "can't edit yourself")
 		return

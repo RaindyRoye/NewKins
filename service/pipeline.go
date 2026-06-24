@@ -60,11 +60,14 @@ func preBuild(ctx context.Context, uid string, pipe *bean.Pipeline, tpipe *model
 	tvp ...*model.TPipelineVersion) (*model.TPipelineVersion, *runtime.Build, error) {
 	db := comm.Db.Context(ctx)
 	tp := &model.TPipeline{}
-	ok, _ := db.Where("id=? and deleted != 1", tpipe.PipelineId).Get(tp)
+	ok, err := db.Where("id=? and deleted != 1", tpipe.PipelineId).Get(tp)
+	if err != nil {
+		return nil, nil, fmt.Errorf("query pipeline %q: %w", tpipe.PipelineId, err)
+	}
 	if !ok {
 		return nil, nil, ErrPipelineNotFound
 	}
-	err := pipe.Check()
+	err = pipe.Check()
 	if err != nil {
 		return nil, nil, fmt.Errorf("pipeline config check: %w", err)
 	}

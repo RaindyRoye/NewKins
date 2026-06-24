@@ -176,7 +176,11 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 		ne.Identifier = strings.ToLower(utils.RandomString(8))
 		for !hbtp.EndContext(c) {
 			ln++
-			n, _ := comm.Db.Context(ctx).Where("identifier=?", ne.Identifier).Count(ne)
+			n, countErr := comm.Db.Context(ctx).Where("identifier=?", ne.Identifier).Count(ne)
+			if countErr != nil {
+				util.RespInternalErr(c, "check identifier uniqueness", countErr)
+				return
+			}
 			if n <= 0 {
 				break
 			}
