@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -217,5 +218,102 @@ func TestGracefulShutdown(t *testing.T) {
 		// Server shut down successfully
 	case <-time.After(2 * time.Second):
 		t.Error("server did not shut down within timeout")
+	}
+}
+
+func TestGetFile_EmptyPath(t *testing.T) {
+	_, err := getFile("")
+	if err == nil {
+		t.Fatal("expected error for empty path, got nil")
+	}
+	if err.Error() != "getFile: path parameter is empty" {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestGetFile_PathTraversal(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+	}{
+		{"parent directory", "../etc/passwd"},
+		{"absolute path", "/etc/passwd"},
+		{"double dot in middle", "foo/../../bar"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := getFile(tt.path)
+			if err == nil {
+				t.Fatal("expected error for path traversal, got nil")
+			}
+			if err.Error() != "getFile: invalid path" {
+				t.Errorf("unexpected error message: %v", err)
+			}
+		})
+	}
+}
+
+func TestGetFile_FileNotFound(t *testing.T) {
+	// Reset the zip reader to ensure clean state
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	// With no StaticPkg set, getRdr will fail
+	origStaticPkg := comm.StaticPkg
+	defer func() { comm.StaticPkg = origStaticPkg }()
+	comm.StaticPkg = ""
+
+	_, err := getFile("nonexistent.html")
+	if err == nil {
+		t.Fatal("expected error when zip reader fails, got nil")
+	}
+}
+
+func TestMidUiHandle_NotInstalled(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+	router.GET("/install", func(c *gin.Context) {
+		c.String(http.StatusOK, "install page")
+	})
+
+	origInstalled := comm.Installed
+	defer func() { comm.Installed = origInstalled }()
+	comm.Installed = false
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/some-page", nil)
+	router.ServeHTTP(w, req)
+
+	// Should redirect to /install when not installed
+	// ResMsgUrl returns status 302 with an HTML redirect page
+	if w.Code != http.StatusFound {
+		t.Errorf("expected status 302 (redirect), got %d", w.Code)
+	}
+}
+
+func TestMidUiHandle_FileFound(t *testing.T) {
+	// This test would require setting up a valid StaticPkg with actual zip content
+	// For now, we just verify the middleware doesn't panic
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+	router.GET("/test", func(c *gin.Context) {
+		c.String(http.StatusOK, "test")
+	})
+
+	origInstalled := comm.Installed
+	defer func() { comm.Installed = origInstalled }()
+	comm.Installed = true
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/test", nil)
+	router.ServeHTTP(w, req)
+
+	// Should return 200 from the handler
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w.Code)
 	}
 }
