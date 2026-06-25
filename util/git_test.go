@@ -190,5 +190,3 @@ func TestCheckOut_NilRepo(t *testing.T) {
 		t.Errorf("error should mention 'repository is nil', got: %v", err)
 	}
 }
-
-
