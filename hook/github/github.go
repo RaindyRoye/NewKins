@@ -238,14 +238,13 @@ func convertPushHook(gp *githubPushHook) *hook.PushHook {
 	}
 }
 func convertPullRequestURL(u string) (*githubPullRequestURL, error) {
-	client := &http.Client{
-		Timeout: time.Second * 8,
-	}
-	request, err := http.NewRequestWithContext(context.Background(), "GET", u, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancel()
+	request, err := http.NewRequestWithContext(ctx, "GET", u, nil)
 	if err != nil {
 		return nil, fmt.Errorf("github: build PR request for %q: %w", u, err)
 	}
-	res, err := client.Do(request)
+	res, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("github: fetch PR info from %q: %w", u, err)
 	}
