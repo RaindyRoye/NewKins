@@ -132,7 +132,7 @@ func (c *BuildTask) run() {
 	c.repoPaths = filepath.Join(c.buildPath, common.PathRepo)
 	err := os.MkdirAll(c.buildPath, 0750)
 	if err != nil {
-		c.status(common.BuildStatusError, "build path err:"+err.Error(), common.BuildEventPath)
+		c.status(common.BuildStatusError, fmt.Errorf("create build path: %w", err).Error(), common.BuildEventPath)
 		return
 	}
 
@@ -151,7 +151,7 @@ func (c *BuildTask) run() {
 	err = c.getRepo()
 	if err != nil {
 		logrus.Errorf("clone repo err:%v", err)
-		c.status(common.BuildStatusError, "repo err:"+err.Error(), common.BuildEventGetRepo)
+		c.status(common.BuildStatusError, fmt.Errorf("clone repository: %w", err).Error(), common.BuildEventGetRepo)
 		return
 	}
 	c.build.Status = common.BuildStatusRunning
