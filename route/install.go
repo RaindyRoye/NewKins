@@ -65,8 +65,7 @@ func checkUrl(host string) bool {
 	if err != nil {
 		return false
 	}
-	cli := http.Client{}
-	res, err := cli.Do(req)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return false
 	}

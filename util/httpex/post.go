@@ -7,12 +7,28 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 )
 
+// defaultClient is a shared HTTP client with connection pooling enabled.
+// Creating a new http.Client per request disables keep-alive and connection
+// reuse, which hurts latency and throughput. This client uses the default
+// transport with sensible pool sizes.
+var defaultClient = &http.Client{
+	Transport: &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     90 * time.Second,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+	},
+}
 // Post sends a POST request with form-encoded parameters.
 // For context-aware usage, prefer PostCtx.
 func Post(ul string, params *url.Values, timeout time.Duration, hds ...http.Header) (*http.Response, error) {
@@ -35,7 +51,7 @@ func PostCtx(ctx context.Context, ul string, params *url.Values, timeout time.Du
 	}
 	header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
 	request.Header = header
-	client := &http.Client{}
+	client := *defaultClient
 	client.Timeout = time.Second * timeout
 	return client.Do(request)
 }
@@ -61,7 +77,7 @@ func PostsCtx(ctx context.Context, ul string, params *url.Values, timeout time.D
 	}
 	header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
 	request.Header = header
-	client := &http.Client{}
+	client := *defaultClient
 	client.Timeout = time.Second * timeout
 	res, err := client.Do(request)
 	if err != nil {
@@ -98,7 +114,7 @@ func PostJSONCtx(ctx context.Context, ul string, params any, timeout time.Durati
 	}
 	header.Add("Content-Type", "application/json; charset=utf-8")
 	request.Header = header
-	client := &http.Client{}
+	client := *defaultClient
 	client.Timeout = time.Second * timeout
 	return client.Do(request)
 }
