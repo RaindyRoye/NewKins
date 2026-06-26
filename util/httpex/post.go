@@ -29,6 +29,7 @@ var defaultClient = &http.Client{
 		}).DialContext,
 	},
 }
+
 // Post sends a POST request with form-encoded parameters.
 // For context-aware usage, prefer PostCtx.
 func Post(ul string, params *url.Values, timeout time.Duration, hds ...http.Header) (*http.Response, error) {

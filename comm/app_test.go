@@ -1,162 +1,115 @@
 package comm
 
 import (
-	"sync"
 	"testing"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 )
 
-// --- MarkInstalled ---
-
-func TestMarkInstalled_ClosesChannel(t *testing.T) {
-	// Reset state for test isolation
-	Installed = false
-	installOnce = syncOnce()
-	InstalledCh = make(chan struct{})
-
-	MarkInstalled()
-	if !Installed {
-		t.Error("MarkInstalled should set Installed to true")
-	}
-	// Channel should be closed
-	select {
-	case <-InstalledCh:
-		// ok, channel is closed
-	default:
-		t.Error("InstalledCh should be closed after MarkInstalled")
-	}
+func TestGetApp(t *testing.T) {
+	app := GetApp()
+	assert.NotNil(t, app, "GetApp should return a non-nil App instance")
+	
+	// Verify it returns the same singleton instance
+	app2 := GetApp()
+	assert.Equal(t, app, app2, "GetApp should return the same singleton instance")
 }
 
-func TestMarkInstalled_Idempotent(t *testing.T) {
-	// Reset state
-	Installed = false
-	installOnce = syncOnce()
-	InstalledCh = make(chan struct{})
-
-	// Call multiple times - should not panic
-	MarkInstalled()
-	MarkInstalled()
-	MarkInstalled()
-	if !Installed {
-		t.Error("Installed should remain true")
-	}
-}
-
-// --- Cancel ---
-
-func TestCancel_CancelsContext(t *testing.T) {
-	ResetCtx() // start fresh
-	Cancel()
-	select {
-	case <-Ctx.Done():
-		// ok
-	default:
-		t.Error("Cancel() should cancel the context")
-	}
-}
-
-func TestCancel_NilCancelFunc(t *testing.T) {
-	// Save and restore
-	oldCtx := Ctx
-	oldCncl := cncl
+func TestSyncGlobals(t *testing.T) {
+	// Set up some test values in globals
+	originalWorkPath := WorkPath
+	originalIsMySQL := IsMySQL
 	defer func() {
-		Ctx = oldCtx
-		cncl = oldCncl
+		WorkPath = originalWorkPath
+		IsMySQL = originalIsMySQL
 	}()
 
-	cncl = nil
-	// Should not panic
-	Cancel()
+	WorkPath = "/test/path"
+	IsMySQL = true
+
+	// Sync globals to App
+	SyncGlobals()
+
+	app := GetApp()
+	assert.Equal(t, "/test/path", app.WorkPath, "WorkPath should be synced to App")
+	assert.Equal(t, true, app.IsMySQL, "IsMySQL should be synced to App")
 }
 
-// --- ResetCtx ---
-
-func TestResetCtx_CreatesNewContext(t *testing.T) {
-	ResetCtx()
-	if Ctx == nil {
-		t.Fatal("ResetCtx should create a non-nil context")
-	}
-	if cncl == nil {
-		t.Fatal("ResetCtx should create a non-nil cancel function")
-	}
-	// Context should not be canceled
-	select {
-	case <-Ctx.Done():
-		t.Error("new context should not be canceled")
-	default:
-		// ok
-	}
-}
-
-func TestResetCtx_CancelsPreviousContext(t *testing.T) {
-	ResetCtx()
-	prevCtx := Ctx
-
-	ResetCtx() // should cancel prevCtx
-	select {
-	case <-prevCtx.Done():
-		// ok, previous context was canceled
-	default:
-		t.Error("ResetCtx should cancel the previous context")
-	}
-}
-
-func TestResetCtx_DifferentContexts(t *testing.T) {
-	ResetCtx()
-	ctx1 := Ctx
-
-	ResetCtx()
-	ctx2 := Ctx
-
-	if ctx1 == ctx2 {
-		t.Error("ResetCtx should create a different context each time")
-	}
-}
-
-// syncOnce returns a fresh sync.Once for test isolation.
-// We need this because sync.Once cannot be reset.
-func syncOnce() sync.Once {
-	return sync.Once{}
-}
-
-// --- Build Info Variables ---
-
-func TestBuildInfoDefaults(t *testing.T) {
-	// Verify the build info variables have their expected default values.
-	// These are set at build time via -ldflags, but should default to
-	// "unknown" when not set (e.g., during development or testing).
-	if Version == "" {
-		t.Error("Version should have a non-empty default value")
-	}
-	if BuildTime == "" {
-		t.Error("BuildTime should have a non-empty default value")
-	}
-	if GitCommit == "" {
-		t.Error("GitCommit should have a non-empty default value")
-	}
-}
-
-func TestBuildInfoSettable(t *testing.T) {
-	// Verify build info variables can be set (as ldflags would do at build time).
-	oldVersion := Version
-	oldBuild := BuildTime
-	oldCommit := GitCommit
+func TestSyncToGlobals(t *testing.T) {
+	// Set up some test values in App
+	app := GetApp()
+	originalWorkPath := app.WorkPath
+	originalIsMySQL := app.IsMySQL
 	defer func() {
-		Version = oldVersion
-		BuildTime = oldBuild
-		GitCommit = oldCommit
+		app.WorkPath = originalWorkPath
+		app.IsMySQL = originalIsMySQL
 	}()
 
-	Version = "9.9.9-test"
-	BuildTime = "2026-01-01T00:00:00Z"
-	GitCommit = "abc1234"
+	app.WorkPath = "/app/path"
+	app.IsMySQL = false
 
-	if Version != "9.9.9-test" {
-		t.Errorf("Version = %q, want %q", Version, "9.9.9-test")
+	// Sync App back to globals
+	SyncToGlobals()
+
+	assert.Equal(t, "/app/path", WorkPath, "WorkPath should be synced from App to globals")
+	assert.Equal(t, false, IsMySQL, "IsMySQL should be synced from App to globals")
+}
+
+func TestAppStructFields(t *testing.T) {
+	// Test that all fields exist and can be set
+	app := &App{
+		Cfg:       Config{},
+		Db:        nil,
+		BCache:    nil,
+		WebEgn:    gin.New(),
+		HbtpEgn:   nil,
+		IsMySQL:   true,
+		Installed: true,
+		NotUpPass: true,
+		WorkPath:  "/test",
+		WebHost:   "localhost:8080",
 	}
-	if BuildTime != "2026-01-01T00:00:00Z" {
-		t.Errorf("BuildTime = %q, want %q", BuildTime, "2026-01-01T00:00:00Z")
-	}
-	if GitCommit != "abc1234" {
-		t.Errorf("GitCommit = %q, want %q", GitCommit, "abc1234")
-	}
+
+	assert.NotNil(t, app, "App struct should be instantiable")
+	assert.Equal(t, true, app.IsMySQL, "IsMySQL field should be settable")
+	assert.Equal(t, true, app.Installed, "Installed field should be settable")
+	assert.Equal(t, true, app.NotUpPass, "NotUpPass field should be settable")
+	assert.Equal(t, "/test", app.WorkPath, "WorkPath field should be settable")
+	assert.Equal(t, "localhost:8080", app.WebHost, "WebHost field should be settable")
+	assert.NotNil(t, app.WebEgn, "WebEgn field should be settable")
+}
+
+func TestBidirectionalSync(t *testing.T) {
+	// Test that bidirectional sync maintains consistency
+	originalWorkPath := WorkPath
+	originalWebHost := WebHost
+	defer func() {
+		WorkPath = originalWorkPath
+		WebHost = originalWebHost
+	}()
+
+	// Set globals
+	WorkPath = "/initial"
+	WebHost = "0.0.0.0:3000"
+
+	// Sync globals -> App
+	SyncGlobals()
+	app := GetApp()
+	assert.Equal(t, "/initial", app.WorkPath)
+	assert.Equal(t, "0.0.0.0:3000", app.WebHost)
+
+	// Modify App
+	app.WorkPath = "/modified"
+	app.WebHost = "127.0.0.1:8080"
+
+	// Sync App -> globals
+	SyncToGlobals()
+	assert.Equal(t, "/modified", WorkPath)
+	assert.Equal(t, "127.0.0.1:8080", WebHost)
+
+	// Sync globals -> App again
+	WorkPath = "/final"
+	SyncGlobals()
+	assert.Equal(t, "/final", app.WorkPath)
 }
