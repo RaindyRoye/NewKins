@@ -59,13 +59,11 @@ func TriggerHookCtx(ctx context.Context, tt *model.TTrigger, req *http.Request) 
 	m := map[string]string{}
 	err = json.Unmarshal([]byte(tt.Params), &m)
 	if err != nil {
-		err = fmt.Errorf("trigger config params invalid: %w", err)
-		return nil, err
+		return nil, fmt.Errorf("unmarshal trigger params (trigger=%s): %w", tt.Id, err)
 	}
 	hookType, ok := m["hookType"]
 	if !ok {
-		err = ErrHookTypeEmpty
-		return nil, err
+		return nil, ErrHookTypeEmpty
 	}
 	secret := ""
 	if s, ok := m["secret"]; ok {
@@ -144,17 +142,14 @@ func TriggerWeb(ctx context.Context, tt *model.TTrigger, secret string) (rb *run
 	m := map[string]string{}
 	err = json.Unmarshal([]byte(tt.Params), &m)
 	if err != nil {
-		err = fmt.Errorf("trigger config params invalid: %w", err)
-		return nil, err
+		return nil, fmt.Errorf("unmarshal trigger params (trigger=%s): %w", tt.Id, err)
 	}
 	pSecret, ok := m["secret"]
 	if !ok {
-		err = ErrTriggerNoSecret
-		return nil, err
+		return nil, ErrTriggerNoSecret
 	}
 	if secret != pSecret {
-		err = ErrTriggerSecretMismatch
-		return nil, err
+		return nil, ErrTriggerSecretMismatch
 	}
 	branch := ""
 	if s, ok := m["branch"]; ok {
@@ -191,7 +186,7 @@ func TriggerTimer(ctx context.Context, tt *model.TTrigger) (rb *runtime.Build, e
 		return nil, fmt.Errorf("run pipeline (trigger=%s, pipeline=%s): %w", tt.Id, tt.PipelineId, err)
 	}
 	ttr.PipeVersionId = tvp.Id
-	return rb, err
+	return rb, nil
 }
 
 func parseHook(hookType string, req *http.Request, secret string) (hook.WebHook, error) {
