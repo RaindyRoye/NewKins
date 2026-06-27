@@ -1,6 +1,7 @@
 package route
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/gokins/core/runtime"
@@ -11,8 +12,8 @@ func TestPrebuild_NilBuild(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil build, got nil")
 	}
-	if err.Error() != "build is empty" {
-		t.Fatalf("unexpected error message: %s", err.Error())
+	if !errors.Is(err, ErrBuildEmpty) {
+		t.Fatalf("unexpected error: %v, want ErrBuildEmpty", err)
 	}
 }
 
@@ -22,8 +23,8 @@ func TestPrebuild_EmptyStages(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty stages, got nil")
 	}
-	if err.Error() != "stages is empty" {
-		t.Fatalf("unexpected error message: %s", err.Error())
+	if !errors.Is(err, ErrStagesEmpty) {
+		t.Fatalf("unexpected error: %v, want ErrStagesEmpty", err)
 	}
 }
 

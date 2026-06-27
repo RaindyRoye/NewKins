@@ -1,6 +1,8 @@
 package comm
 
 import (
+	"context"
+	"sync"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -112,4 +114,142 @@ func TestBidirectionalSync(t *testing.T) {
 	WorkPath = "/final"
 	SyncGlobals()
 	assert.Equal(t, "/final", app.WorkPath)
+}
+
+func TestMarkInstalled(t *testing.T) {
+	// Reset state for this test
+	oldInstalled := Installed
+	oldCh := InstalledCh
+	defer func() {
+		Installed = oldInstalled
+		InstalledCh = oldCh
+		installOnce = sync.Once{}
+	}()
+
+	Installed = false
+	InstalledCh = make(chan struct{})
+	installOnce = sync.Once{}
+
+	MarkInstalled()
+	assert.True(t, Installed, "Installed should be true after MarkInstalled")
+
+	// Channel should be closed
+	select {
+	case <-InstalledCh:
+		// OK, channel is closed
+	default:
+		t.Fatal("InstalledCh should be closed after MarkInstalled")
+	}
+
+	// Calling again should not panic
+	MarkInstalled()
+	assert.True(t, Installed, "Installed should remain true after second call")
+}
+
+func TestCancel(t *testing.T) {
+	// Save original context state
+	oldCtx := Ctx
+	oldCncl := cncl
+	defer func() {
+		Ctx = oldCtx
+		cncl = oldCncl
+	}()
+
+	// Create a fresh context
+	ResetCtx()
+
+	// Cancel should not panic
+	Cancel()
+
+	// Context should be canceled
+	select {
+	case <-Ctx.Done():
+		// OK
+	default:
+		t.Fatal("Ctx should be done after Cancel")
+	}
+}
+
+func TestResetCtx(t *testing.T) {
+	// Save original context state
+	oldCtx := Ctx
+	oldCncl := cncl
+	defer func() {
+		Ctx = oldCtx
+		cncl = oldCncl
+	}()
+
+	// Reset context
+	ResetCtx()
+	ctx1 := Ctx
+
+	// Verify context is not canceled
+	select {
+	case <-ctx1.Done():
+		t.Fatal("new context should not be canceled")
+	default:
+		// OK
+	}
+
+	// Reset again should create a new context
+	ResetCtx()
+	ctx2 := Ctx
+
+	if ctx1 == ctx2 {
+		t.Error("ResetCtx should create a new context instance")
+	}
+
+	// Old context should be canceled
+	select {
+	case <-ctx1.Done():
+		// OK
+	default:
+		t.Fatal("old context should be canceled after ResetCtx")
+	}
+}
+
+func TestCancel_NilCancel(t *testing.T) {
+	// Save original state
+	oldCncl := cncl
+	defer func() { cncl = oldCncl }()
+
+	// Set cncl to nil
+	cncl = nil
+
+	// Should not panic
+	Cancel()
+}
+
+func TestCtx_IsBackground(t *testing.T) {
+	// Ctx should be initialized in init()
+	assert.NotNil(t, Ctx, "Ctx should be initialized")
+	assert.NotNil(t, cncl, "cncl should be initialized")
+
+	// Verify it's a valid context by accessing its Deadline and Value methods
+	_, ok := Ctx.Deadline()
+	assert.False(t, ok, "background context should have no deadline")
+	assert.Nil(t, Ctx.Value("nonexistent"), "context should return nil for unknown keys")
+}
+
+func TestCtx_Cancellation(t *testing.T) {
+	// Save original state
+	oldCtx := Ctx
+	oldCncl := cncl
+	defer func() {
+		Ctx = oldCtx
+		cncl = oldCncl
+	}()
+
+	ResetCtx()
+
+	// Verify context starts uncanceled
+	err := Ctx.Err()
+	assert.NoError(t, err, "new context should not be canceled")
+
+	// Cancel it
+	Cancel()
+
+	// Verify context is now canceled
+	err = Ctx.Err()
+	assert.ErrorIs(t, err, context.Canceled, "context should be canceled")
 }

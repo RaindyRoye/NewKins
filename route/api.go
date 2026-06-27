@@ -16,6 +16,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// ErrBuildEmpty is returned when a build request has a nil body.
+var ErrBuildEmpty = errors.New("build is empty")
+
+// ErrStagesEmpty is returned when a build has no stages defined.
+var ErrStagesEmpty = errors.New("stages is empty")
+
 type ApiController struct{}
 
 func (ApiController) GetPath() string {
@@ -82,10 +88,10 @@ func (ApiController) test(c *gin.Context) {
 
 func prebuild(b *runtime.Build) error {
 	if b == nil {
-		return errors.New("build is empty")
+		return ErrBuildEmpty
 	}
 	if len(b.Stages) == 0 {
-		return errors.New("stages is empty")
+		return ErrStagesEmpty
 	}
 	pipelineId := utils.NewXid()
 	buildId := utils.NewXid()
