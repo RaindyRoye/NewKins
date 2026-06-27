@@ -379,3 +379,39 @@ func TestBatchGetUsers_EmptyInput(t *testing.T) {
 		t.Errorf("BatchGetUsers([]) should return empty map, got %v", result)
 	}
 }
+
+func TestBatchCountArtifactPackages_EmptyInput(t *testing.T) {
+	result, err := BatchCountArtifactPackages(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("BatchCountArtifactPackages(nil) error = %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchCountArtifactPackages(nil) should return empty map, got %v", result)
+	}
+
+	result, err = BatchCountArtifactPackages(context.Background(), []string{})
+	if err != nil {
+		t.Fatalf("BatchCountArtifactPackages([]) error = %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchCountArtifactPackages([]) should return empty map, got %v", result)
+	}
+}
+
+func TestBatchCountArtifactVersions_EmptyInput(t *testing.T) {
+	result, err := BatchCountArtifactVersions(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("BatchCountArtifactVersions(nil) error = %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchCountArtifactVersions(nil) should return empty map, got %v", result)
+	}
+
+	result, err = BatchCountArtifactVersions(context.Background(), []string{})
+	if err != nil {
+		t.Fatalf("BatchCountArtifactVersions([]) error = %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("BatchCountArtifactVersions([]) should return empty map, got %v", result)
+	}
+}

@@ -83,17 +83,41 @@ func (ArtifactController) orgList(c *gin.Context, m *hbtp.Map) {
 	}
 	//}
 	ctx := c.Request.Context()
+	// Batch load users for all repos to avoid N+1 queries
+	uidSet := make(map[string]bool)
 	for _, v := range ls {
-		usr, ok := service.GetUserCtx(ctx, v.Uid)
-		if ok {
+		if v.Uid != "" {
+			uidSet[v.Uid] = true
+		}
+	}
+	var uids []string
+	for uid := range uidSet {
+		uids = append(uids, uid)
+	}
+	userMap, err := service.BatchGetUsers(ctx, uids)
+	if err != nil {
+		util.RespInternalErr(c, "batch get users", err)
+		return
+	}
+
+	// Batch count packages for all repos to avoid N+1 queries
+	repoIds := make([]string, len(ls))
+	for i, v := range ls {
+		repoIds[i] = v.Id
+	}
+	pkgCountMap, err := service.BatchCountArtifactPackages(ctx, repoIds)
+	if err != nil {
+		util.RespInternalErr(c, "batch count packages", err)
+		return
+	}
+
+	// Enrich repos with batch data
+	for _, v := range ls {
+		if usr, ok := userMap[v.Uid]; ok {
 			v.Nick = usr.Nick
 			v.Avat = usr.Avatar
 		}
-		e := &model.TArtifactPackage{}
-		v.Artln, err = comm.Db.Context(ctx).Where("repo_id=?", v.Id).Count(e)
-		if err != nil {
-			logrus.Warnf("artifact list: count packages (repo=%s): %v", v.Id, err)
-		}
+		v.Artln = pkgCountMap[v.Id]
 	}
 	c.JSON(http.StatusOK, page)
 }
@@ -250,17 +274,18 @@ func (ArtifactController) packageList(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
+	// Batch count versions for all packages to avoid N+1 queries
+	pkgIds := make([]string, len(ls))
+	for i, v := range ls {
+		pkgIds[i] = v.Id
+	}
+	verCountMap, err := service.BatchCountArtifactVersions(c.Request.Context(), pkgIds)
+	if err != nil {
+		util.RespInternalErr(c, "batch count versions", err)
+		return
+	}
 	for _, v := range ls {
-		/*usr, ok := service.GetUser(v.Uid)
-		if ok {
-			v.Nick = usr.Nick
-			v.Avat = usr.Avatar
-		}*/
-		e := &model.TArtifactVersion{}
-		v.Verln, err = comm.Db.Context(c.Request.Context()).Where("package_id=?", v.Id).Count(e)
-		if err != nil {
-			logrus.Warnf("artifact versionList: count versions (pkg=%s): %v", v.Id, err)
-		}
+		v.Verln = verCountMap[v.Id]
 	}
 	c.JSON(200, page)
 }

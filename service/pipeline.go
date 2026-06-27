@@ -458,6 +458,58 @@ func BatchGetUsers(ctx context.Context, uids []string) (map[string]*model.TUser,
 	return result, nil
 }
 
+// BatchCountArtifactPackages counts packages for multiple repository IDs in a single query.
+// Returns a map from repo_id to package count.
+func BatchCountArtifactPackages(ctx context.Context, repoIds []string) (map[string]int64, error) {
+	if len(repoIds) == 0 {
+		return map[string]int64{}, nil
+	}
+	result := make(map[string]int64)
+	type countRow struct {
+		RepoId string `xorm:"repo_id"`
+		Count  int64  `xorm:"cnt"`
+	}
+	var rows []countRow
+	err := comm.Db.Context(ctx).Table("t_artifact_package").
+		Select("repo_id, COUNT(*) as cnt").
+		In("repo_id", repoIds).
+		GroupBy("repo_id").
+		Find(&rows)
+	if err != nil {
+		return nil, fmt.Errorf("batch count artifact packages: %w", err)
+	}
+	for _, row := range rows {
+		result[row.RepoId] = row.Count
+	}
+	return result, nil
+}
+
+// BatchCountArtifactVersions counts versions for multiple package IDs in a single query.
+// Returns a map from package_id to version count.
+func BatchCountArtifactVersions(ctx context.Context, packageIds []string) (map[string]int64, error) {
+	if len(packageIds) == 0 {
+		return map[string]int64{}, nil
+	}
+	result := make(map[string]int64)
+	type countRow struct {
+		PackageId string `xorm:"package_id"`
+		Count     int64  `xorm:"cnt"`
+	}
+	var rows []countRow
+	err := comm.Db.Context(ctx).Table("t_artifact_version").
+		Select("package_id, COUNT(*) as cnt").
+		In("package_id", packageIds).
+		GroupBy("package_id").
+		Find(&rows)
+	if err != nil {
+		return nil, fmt.Errorf("batch count artifact versions: %w", err)
+	}
+	for _, row := range rows {
+		result[row.PackageId] = row.Count
+	}
+	return result, nil
+}
+
 func replace(s string, mVars map[string]*runtime.Variables, mustShow ...bool) (string, bool) {
 	if s == "" {
 		return "", false
