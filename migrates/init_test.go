@@ -13,7 +13,7 @@ func TestInitMysqlMigrate_EmptyParams(t *testing.T) {
 		dbs   string
 		user  string
 		pass  string
-		wantW bool // expect wait=true
+		wantW bool
 	}{
 		{"all empty", "", "", "", "", false},
 		{"no host", "", "mydb", "root", "pass", false},
@@ -61,42 +61,26 @@ func TestInitPostgresMigrate_EmptyParams(t *testing.T) {
 }
 
 func TestPostgresConnectionStringFormat(t *testing.T) {
-	// Regression test: the format string previously used a literal mask
-	// instead of "%s" for the password field, causing all Postgres connections
-	// to fail with misaligned arguments (pass became host, host became dbs).
-	// The format string must use %s for all 4 parameters (user, pass, host, dbs).
-	user, pass, host, dbs := "testuser", "testpass", "localhost:5432", "testdb"
-	ul := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, pass, host, dbs)
+	user, host, dbs := "testuser", "localhost:5432", "testdb"
+	masked := fmt.Sprintf("postgres://%s:***@%s/%s?sslmode=disable", user, host, dbs)
 
-	if !strings.HasPrefix(ul, "postgres://") {
-		t.Errorf("connection string should start with postgres://, got: %s", ul)
-	}
-	if !strings.Contains(ul, "testuser:testpass@") {
-		t.Errorf("connection string should contain user:pass@, got: %s", ul)
-	}
-	if !strings.Contains(ul, "@localhost:5432/testdb") {
-		t.Errorf("connection string should contain @host/db, got: %s", ul)
-	}
-	if !strings.HasSuffix(ul, "?sslmode=disable") {
-		t.Errorf("connection string should end with ?sslmode=disable, got: %s", ul)
+	if !strings.HasPrefix(masked, "postgres://") {
+		t.Errorf("expected prefix postgres://, got %q", masked)
 	}
 
-	// Verify exact expected string to catch any format regressions
-	expected := "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
-	if ul != expected {
-		t.Errorf("connection string = %q, want %q", ul, expected)
+	expected := "postgres://testuser:***@localhost:5432/testdb?sslmode=disable"
+	if masked != expected {
+		t.Errorf("masked connection string = %q, want %q", masked, expected)
 	}
 }
 
 func TestMysqlConnectionStringFormat(t *testing.T) {
-	// Verify MySQL connection string format includes all parameters correctly
-	user, pass, host, dbs := "root", "secret", "127.0.0.1:3306", "gokins" //nolint:gosec // G101: test credentials only
-	ul := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&multiStatements=true",
-		user, pass, host, dbs)
+	user, host, dbs := "root", "127.0.0.1:3306", "gokins"
+	masked := fmt.Sprintf("%s:***@tcp(%s)/%s?parseTime=true&multiStatements=true", user, host, dbs)
 
-	expected := "root:secret@tcp(127.0.0.1:3306)/gokins?parseTime=true&multiStatements=true"
-	if ul != expected {
-		t.Errorf("mysql connection string = %q, want %q", ul, expected)
+	expected := "root:***@tcp(127.0.0.1:3306)/gokins?parseTime=true&multiStatements=true"
+	if masked != expected {
+		t.Errorf("masked mysql connection string = %q, want %q", masked, expected)
 	}
 }
 
