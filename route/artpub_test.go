@@ -221,7 +221,7 @@ func TestDownFile_NotFoundFile(t *testing.T) {
 func TestDownFile_FoundRegularFile(t *testing.T) {
 	// Create a temp file to serve
 	tmpFile := t.TempDir() + "/testfile.txt"
-	if err := os.WriteFile(tmpFile, []byte("hello artifact"), 0644); err != nil {
+	if err := os.WriteFile(tmpFile, []byte("hello artifact"), 0600); err != nil {
 		t.Fatalf("create temp file: %v", err)
 	}
 

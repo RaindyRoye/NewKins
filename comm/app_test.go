@@ -12,7 +12,7 @@ import (
 func TestGetApp(t *testing.T) {
 	app := GetApp()
 	assert.NotNil(t, app, "GetApp should return a non-nil App instance")
-	
+
 	// Verify it returns the same singleton instance
 	app2 := GetApp()
 	assert.Equal(t, app, app2, "GetApp should return the same singleton instance")

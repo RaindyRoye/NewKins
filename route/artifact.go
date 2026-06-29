@@ -90,7 +90,7 @@ func (ArtifactController) orgList(c *gin.Context, m *hbtp.Map) {
 			uidSet[v.Uid] = true
 		}
 	}
-	var uids []string
+	uids := make([]string, 0, len(uidSet))
 	for uid := range uidSet {
 		uids = append(uids, uid)
 	}
