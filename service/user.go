@@ -74,7 +74,15 @@ func ClearUserCache(uid string) {
 		logrus.Warnf("ClearUserCache: failed to clear cache for uid %s: %v", uid, err)
 	}
 }
+// GetUserCache retrieves a user from cache or database using the global context.
+// Prefer GetUserCacheCtx when a request context is available for cancellation/timeout support.
 func GetUserCache(uid string) (*model.TUser, bool) {
+	return GetUserCacheCtx(comm.Ctx, uid)
+}
+
+// GetUserCacheCtx retrieves a user from cache or database with context support.
+// This enables request-scoped cancellation and timeout for database queries.
+func GetUserCacheCtx(ctx context.Context, uid string) (*model.TUser, bool) {
 	var ok bool
 	e := &model.TUser{}
 	uids := fmt.Sprintf("user:%s", uid)
@@ -82,10 +90,10 @@ func GetUserCache(uid string) (*model.TUser, bool) {
 	if err == nil {
 		return e, true
 	}
-	e, ok = GetUser(uid)
+	e, ok = GetUserCtx(ctx, uid)
 	if ok {
 		if err := comm.CacheSets(uids, e); err != nil {
-			logrus.Warnf("GetUserCache: failed to cache user %s: %v", uid, err)
+			logrus.Warnf("GetUserCacheCtx: failed to cache user %s: %v", uid, err)
 		}
 	}
 	return e, ok

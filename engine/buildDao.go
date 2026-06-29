@@ -26,8 +26,7 @@ func (c *BuildTask) taskCtx() context.Context {
 func (c *BuildTask) updateBuild(build *runtime.Build) {
 	defer func() {
 		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask updateBuild recover:%v", err)
-			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
+			logrus.Warnf("BuildTask updateBuild panic: %v\n%s", err, string(debug.Stack()))
 		}
 	}()
 
@@ -86,8 +85,7 @@ func (c *BuildTask) updateBuild(build *runtime.Build) {
 func (c *BuildTask) updateStage(stage *runtime.Stage) {
 	defer func() {
 		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask updateStage recover:%v", err)
-			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
+			logrus.Warnf("BuildTask updateStage panic: %v\n%s", err, string(debug.Stack()))
 		}
 	}()
 
@@ -124,8 +122,7 @@ func (c *BuildTask) updateStage(stage *runtime.Stage) {
 func (c *BuildTask) updateStep(job *jobSync) {
 	defer func() {
 		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask updateStep recover:%v", err)
-			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
+			logrus.Warnf("BuildTask updateStep panic: %v\n%s", err, string(debug.Stack()))
 		}
 	}()
 
@@ -165,8 +162,7 @@ func (c *BuildTask) updateStep(job *jobSync) {
 func (c *BuildTask) updateStepCmd(cmd *cmdSync) {
 	defer func() {
 		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask updateStepCmd recover:%v", err)
-			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
+			logrus.Warnf("BuildTask updateStepCmd panic: %v\n%s", err, string(debug.Stack()))
 		}
 	}()
 
