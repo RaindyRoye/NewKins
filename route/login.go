@@ -1,6 +1,7 @@
 package route
 
 import (
+	"net/http"
 	"strings"
 	"time"
 
@@ -61,16 +62,16 @@ func (LoginController) login(c *gin.Context, m *bean.LoginReq) {
 		return
 	}
 	if !service.IsAdmin(usr) && usr.Active != 1 {
-		c.String(513, "user not active")
+		c.String(http.StatusForbidden, "user account is not active")
 		return
 	}
 	if usr.Pass != utils.Md5String(m.Pass) {
-		c.String(511, "password err")
+		c.String(http.StatusUnauthorized, "invalid username or password")
 		return
 	}
 	key := comm.Cfg.Server.LoginKey
 	if key == "" {
-		c.String(512, "no set login key")
+		c.String(http.StatusInternalServerError, "server configuration error: login key not set")
 		return
 	}
 	token, err := util.CreateToken(jwt.MapClaims{
