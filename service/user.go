@@ -74,6 +74,7 @@ func ClearUserCache(uid string) {
 		logrus.Warnf("ClearUserCache: failed to clear cache for uid %s: %v", uid, err)
 	}
 }
+
 // GetUserCache retrieves a user from cache or database using the global context.
 // Prefer GetUserCacheCtx when a request context is available for cancellation/timeout support.
 func GetUserCache(uid string) (*model.TUser, bool) {

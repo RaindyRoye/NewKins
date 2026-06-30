@@ -1,6 +1,8 @@
 package route
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
@@ -22,7 +24,7 @@ func (c *PipelineVersionController) Routes(g gin.IRoutes) {
 func (PipelineVersionController) delete(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
@@ -33,16 +35,16 @@ func (PipelineVersionController) delete(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !ok {
-		c.String(404, "not found pipe_var")
+		c.String(http.StatusNotFound, "not found pipe_var")
 		return
 	}
 	perm := service.NewPipePermCtx(c.Request.Context(), service.GetMidLgUser(c), tpv.PipelineId)
 	if perm.Pipeline() == nil {
-		c.String(404, "not found pipe")
+		c.String(http.StatusNotFound, "not found pipe")
 		return
 	}
 	if !perm.CanWrite() {
-		c.String(405, "no permission")
+		c.String(http.StatusForbidden, "no permission")
 		return
 	}
 	tpv.Deleted = 1
@@ -51,5 +53,5 @@ func (PipelineVersionController) delete(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.String(200, "ok")
+	c.String(http.StatusOK, "ok")
 }
