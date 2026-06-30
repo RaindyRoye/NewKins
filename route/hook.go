@@ -1,6 +1,7 @@
 package route
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +29,7 @@ func (c *HookController) Routes(g gin.IRoutes) {
 func (HookController) hooks(c *gin.Context) {
 	triggerId := c.Param("triggerId")
 	if triggerId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	tt := &model.TTrigger{}
@@ -38,7 +39,7 @@ func (HookController) hooks(c *gin.Context) {
 		return
 	}
 	if !ok {
-		c.String(404, "触发器不存在或者未激活")
+		c.String(http.StatusNotFound, "触发器不存在或者未激活")
 		return
 	}
 	rb, err := service.TriggerHook(tt, c.Request)
@@ -47,7 +48,7 @@ func (HookController) hooks(c *gin.Context) {
 		return
 	}
 	engine.Mgr.BuildEgn().Put(rb)
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"msg": "ok",
 	})
 }
@@ -56,7 +57,7 @@ func (HookController) web(c *gin.Context, m *hbtp.Map) {
 	triggerId := c.Param("triggerId")
 	secret := m.GetString("secret")
 	if triggerId == "" || secret == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	tt := &model.TTrigger{}
@@ -66,7 +67,7 @@ func (HookController) web(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !ok {
-		c.String(404, "触发器不存在或者未激活")
+		c.String(http.StatusNotFound, "触发器不存在或者未激活")
 		return
 	}
 	rb, err := service.TriggerWeb(c.Request.Context(), tt, secret)
@@ -75,7 +76,7 @@ func (HookController) web(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	engine.Mgr.BuildEgn().Put(rb)
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"msg": "ok",
 	})
 }
