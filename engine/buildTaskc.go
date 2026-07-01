@@ -247,13 +247,9 @@ func (c *BuildTask) appendcmds(runjb *runners.RunJob, conts string) {
 func (c *BuildTask) gencmds(runjb *runners.RunJob, cmds []any) (rterr error) {
 	defer func() {
 		if r := recover(); r != nil {
-			logrus.Warnf("BuildTask gencmds recover:%v", r)
-			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
-			if err, ok := r.(error); ok {
-				rterr = fmt.Errorf("gencmds panic: %w", err)
-			} else {
-				rterr = fmt.Errorf("gencmds panic: %v", r)
-			}
+			logrus.Warnf("gencmds recover:%v", r)
+			logrus.Warnf("stack:%s", string(debug.Stack()))
+			rterr = fmt.Errorf("gencmds panic: %w", fmt.Errorf("%v", r))
 		}
 	}()
 	for _, v := range cmds {

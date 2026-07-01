@@ -23,7 +23,7 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 			if e, ok := r.(error); ok {
 				err = fmt.Errorf("gitee: panic in Parse: %w", e)
 			} else {
-				err = fmt.Errorf("gitee: panic in Parse: %v", r)
+				err = fmt.Errorf("gitee: panic in Parse: %w", fmt.Errorf("%v", r))
 			}
 		}
 	}()
@@ -44,7 +44,7 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 	// case "issues":
 	// case "issue_comment":
 	default:
-		return nil, fmt.Errorf("hook contains unknown header: %v", req.Header.Get(hook.GiteeEvent))
+		return nil, fmt.Errorf("hook contains unknown header: %w", fmt.Errorf("%s", req.Header.Get(hook.GiteeEvent)))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("gitee: %w", err)
@@ -73,7 +73,7 @@ func parsePullRequestHook(data []byte) (*hook.PullRequestHook, error) {
 	}
 	if gp.Action != "" {
 		if gp.Action != hook.ActionOpen && gp.Action != hook.ActionUpdate {
-			return nil, fmt.Errorf("action is %v", gp.Action)
+			return nil, fmt.Errorf("action is %w", fmt.Errorf("%s", gp.Action))
 		}
 	}
 	return convertPullRequestHook(gp), nil

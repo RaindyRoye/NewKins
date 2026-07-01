@@ -117,7 +117,7 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 			if err, ok := r.(error); ok {
 				rterr = fmt.Errorf("panic in resetOne: %w", err)
 			} else {
-				rterr = fmt.Errorf("panic in resetOne: %v", r)
+				rterr = fmt.Errorf("panic in resetOne: %w", fmt.Errorf("%v", r))
 			}
 		}
 	}()

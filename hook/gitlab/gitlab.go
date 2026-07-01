@@ -26,7 +26,7 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 			if e, ok := r.(error); ok {
 				err = fmt.Errorf("gitlab: panic in Parse: %w", e)
 			} else {
-				err = fmt.Errorf("gitlab: panic in Parse: %v", r)
+				err = fmt.Errorf("gitlab: panic in Parse: %w", fmt.Errorf("%v", r))
 			}
 		}
 	}()
@@ -44,7 +44,7 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 	case hook.GitlabEventPR:
 		wb, err = parsePullRequestHook(data)
 	default:
-		return nil, fmt.Errorf("hook contains unknown header: %v", req.Header.Get(hook.GitlabEvent))
+		return nil, fmt.Errorf("hook contains unknown header: %w", fmt.Errorf("%s", req.Header.Get(hook.GitlabEvent)))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("gitlab: %w", err)
@@ -88,7 +88,7 @@ func parsePullRequestHook(data []byte) (*hook.PullRequestHook, error) {
 	}
 	if gp.ObjectAttributes.Action != "" {
 		if gp.ObjectAttributes.Action != hook.ActionOpen && gp.ObjectAttributes.Action != hook.ActionUpdate {
-			return nil, fmt.Errorf("action is %v", gp.ObjectAttributes.Action)
+			return nil, fmt.Errorf("action is %w", fmt.Errorf("%s", gp.ObjectAttributes.Action))
 		}
 	}
 	return convertPullRequestHook(gp), nil
