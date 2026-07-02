@@ -2,7 +2,6 @@ package engine
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"runtime/debug"
 	"sync"
@@ -122,7 +121,7 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 		}
 	}()
 	if tmr.Types != "timer" {
-		return fmt.Errorf("expected trigger type 'timer', got '%s'", tmr.Types)
+		return fmt.Errorf("%w: expected 'timer', got %q", ErrInvalidTriggerType, tmr.Types)
 	}
 	mp := hbtp.Map{}
 	err := json.Unmarshal([]byte(tmr.Params), &mp)
@@ -199,7 +198,7 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 }
 func (c *TimerEngine) Refresh(tmrid string) error {
 	if tmrid == "" {
-		return errors.New("timer id is empty")
+		return fmt.Errorf("%w: timer id is empty", ErrTimerNotFound)
 	}
 	tmr := &model.TTrigger{}
 	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", tmrid).Get(tmr)
@@ -208,7 +207,7 @@ func (c *TimerEngine) Refresh(tmrid string) error {
 	}
 	if !ok || tmr.Enabled != 1 {
 		c.Delete(tmrid)
-		return fmt.Errorf("trigger %s not found or disabled", tmrid)
+		return fmt.Errorf("%w: %q", ErrTimerNotFound, tmrid)
 	}
 	return c.resetOne(tmr)
 }

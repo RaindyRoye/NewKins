@@ -2,6 +2,7 @@ package engine
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -59,9 +60,8 @@ func TestTimerEngineResetOneInvalidType(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for invalid trigger type")
 	}
-	expected := "expected trigger type 'timer', got 'webhook'"
-	if err.Error() != expected {
-		t.Fatalf("expected error %q, got %q", expected, err.Error())
+	if !errors.Is(err, ErrInvalidTriggerType) {
+		t.Fatalf("expected ErrInvalidTriggerType, got %q", err.Error())
 	}
 }
 
@@ -155,8 +155,8 @@ func TestTimerEngineRefreshEmptyID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty timer ID")
 	}
-	if err.Error() != "timer id is empty" {
-		t.Fatalf("expected 'timer id is empty', got %q", err.Error())
+	if !errors.Is(err, ErrTimerNotFound) {
+		t.Fatalf("expected ErrTimerNotFound, got %q", err.Error())
 	}
 }
 

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"container/list"
+	"errors"
 	"sync"
 	"testing"
 
@@ -21,8 +22,8 @@ func TestJobEnginePutNilJob(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil job, got nil")
 	}
-	if err.Error() != "step plugin empty" {
-		t.Errorf("error = %q, want %q", err.Error(), "step plugin empty")
+	if !errors.Is(err, ErrStepPluginEmpty) {
+		t.Errorf("error = %q, want ErrStepPluginEmpty", err.Error())
 	}
 }
 
@@ -35,8 +36,8 @@ func TestJobEnginePutEmptyStep(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty step plugin, got nil")
 	}
-	if err.Error() != "step plugin empty" {
-		t.Errorf("error = %q, want %q", err.Error(), "step plugin empty")
+	if !errors.Is(err, ErrStepPluginEmpty) {
+		t.Errorf("error = %q, want ErrStepPluginEmpty", err.Error())
 	}
 }
 
@@ -49,8 +50,8 @@ func TestJobEnginePutNoExecuter(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error when no executer registered for plugin")
 	}
-	if err.Error() != "not found plugin:myplugin" {
-		t.Errorf("error = %q, want %q", err.Error(), "not found plugin:myplugin")
+	if !errors.Is(err, ErrPluginNotFound) {
+		t.Errorf("error = %q, want ErrPluginNotFound", err.Error())
 	}
 }
 

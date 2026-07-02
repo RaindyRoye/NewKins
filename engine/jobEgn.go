@@ -2,7 +2,6 @@ package engine
 
 import (
 	"container/list"
-	"errors"
 	"fmt"
 	"runtime/debug"
 	"sync"
@@ -127,13 +126,13 @@ func (c *JobEngine) rmExec(k string, ex *executer) {
 }
 func (c *JobEngine) Put(job *jobSync) error {
 	if job == nil || job.step.Step == "" {
-		return errors.New("step plugin empty")
+		return ErrStepPluginEmpty
 	}
 	c.exelk.RLock()
 	e, ok := c.execs[job.step.Step]
 	c.exelk.RUnlock()
 	if !ok {
-		return fmt.Errorf("not found plugin:%s", job.step.Step)
+		return fmt.Errorf("%w: %q", ErrPluginNotFound, job.step.Step)
 	}
 	e.Lock()
 	defer e.Unlock()
