@@ -12,6 +12,7 @@ import (
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
+	"net/http"
 	"github.com/sirupsen/logrus"
 )
 
@@ -116,14 +117,14 @@ func (OrgController) list(c *gin.Context, m *hbtp.Map) {
 		v.Pipeln = pipeCounts[v.Id]
 		v.Userln = userCounts[v.Id]
 	}
-	c.JSON(200, page)
+	c.JSON(http.StatusOK, page)
 }
 func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 	name := m.GetString("name")
 	desc := m.GetString("desc")
 	pub := m.GetBool("public")
 	if name == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
@@ -131,7 +132,7 @@ func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 	if !service.IsAdmin(lgusr) {
 		uf, ok := service.GetUserInfoCtx(ctx, lgusr.Id)
 		if !ok || uf.PermOrg != 1 {
-			c.String(405, "no permission")
+			c.String(http.StatusMethodNotAllowed, "no permission")
 			return
 		}
 	}
@@ -151,7 +152,7 @@ func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.JSON(200, &bean.IdsRes{
+	c.JSON(http.StatusOK, &bean.IdsRes{
 		Id:  ne.Id,
 		Aid: ne.Aid,
 	})
@@ -160,29 +161,29 @@ func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 func (OrgController) info(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	org := &model.TOrg{}
 	ctx := c.Request.Context()
 	ok := service.GetIdOrAidCtx(ctx, id, org)
 	if !ok || org.Deleted == 1 {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	perm := service.NewOrgPermCtx(ctx, service.GetMidLgUser(c), org.Id)
 	if !perm.CanRead() {
-		c.String(405, "no permission")
+		c.String(http.StatusMethodNotAllowed, "no permission")
 		return
 	}
 	usr := &model.TUser{}
 	ok = service.GetIdOrAidCtx(ctx, org.Uid, usr)
 	if !ok {
-		c.String(404, "not found user?")
+		c.String(http.StatusNotFound, "not found user?")
 		return
 	}
 
-	c.JSON(200, hbtp.Map{
+	c.JSON(http.StatusOK, hbtp.Map{
 		"org":  org,
 		"user": usr,
 		"perm": hbtp.Map{
@@ -197,16 +198,16 @@ func (OrgController) info(c *gin.Context, m *hbtp.Map) {
 func (OrgController) users(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if !perm.CanRead() {
-		c.String(405, "no permission")
+		c.String(http.StatusMethodNotAllowed, "no permission")
 		return
 	}
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	var usrs []*model.TUserOrgInfo
@@ -232,7 +233,7 @@ func (OrgController) users(c *gin.Context, m *hbtp.Map) {
 			usrsOtr = append(usrsOtr, v)
 		}
 	}
-	c.JSON(200, hbtp.Map{
+	c.JSON(http.StatusOK, hbtp.Map{
 		"adms": usrsAdm,
 		"usrs": usrsOtr,
 	})
@@ -243,16 +244,16 @@ func (OrgController) save(c *gin.Context, m *hbtp.Map) {
 	desc := m.GetString("desc")
 	pub := m.GetBool("public")
 	if name == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	if !perm.IsOrgAdmin() {
-		c.String(405, "no permission")
+		c.String(http.StatusMethodNotAllowed, "no permission")
 		return
 	}
 	ne := &model.TOrg{
@@ -269,7 +270,7 @@ func (OrgController) save(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.JSON(200, &bean.IdsRes{
+	c.JSON(http.StatusOK, &bean.IdsRes{
 		Id:  ne.Id,
 		Aid: ne.Aid,
 	})
@@ -278,11 +279,11 @@ func (OrgController) rm(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	if !perm.IsOrgAdmin() {
-		c.String(405, "no permission")
+		c.String(http.StatusMethodNotAllowed, "no permission")
 		return
 	}
 	ne := &model.TOrg{
@@ -296,7 +297,7 @@ func (OrgController) rm(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.String(200, "ok")
+	c.String(http.StatusOK, "ok")
 }
 func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
@@ -308,14 +309,14 @@ func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 	isadd := m.GetBool("add")
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	usr := &model.TUser{}
 	ctx := c.Request.Context()
 	ok := service.GetIdOrAidCtx(ctx, uid, usr)
 	if !ok {
-		c.String(404, "not found user")
+		c.String(http.StatusNotFound, "not found user")
 		return
 	}
 	var err error
@@ -333,12 +334,12 @@ func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 	if !perm.IsAdmin() {
 		if adm {
 			if !perm.IsOrgOwner() {
-				c.String(405, "no permission")
+				c.String(http.StatusMethodNotAllowed, "no permission")
 				return
 			}
 		} else {
 			if !perm.IsOrgAdmin() {
-				c.String(405, "no permission")
+				c.String(http.StatusMethodNotAllowed, "no permission")
 				return
 			}
 		}
@@ -378,7 +379,7 @@ func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.String(200, fmt.Sprintf("%d", ne.Aid))
+	c.String(http.StatusOK, fmt.Sprintf("%d", ne.Aid))
 }
 
 func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
@@ -386,14 +387,14 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 	uid := m.GetString("uid")
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	usr := &model.TUser{}
 	ctx := c.Request.Context()
 	ok := service.GetIdOrAidCtx(ctx, uid, usr)
 	if !ok {
-		c.String(404, "not found user")
+		c.String(http.StatusNotFound, "not found user")
 		return
 	}
 	ne := &model.TUserOrg{}
@@ -402,7 +403,7 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 		logrus.Warnf("org removeMember: query user org (uid=%s, org=%s): %v", usr.Id, perm.Org().Id, err)
 	}
 	if !ok {
-		c.String(404, "not found user org")
+		c.String(http.StatusNotFound, "not found user org")
 		return
 	}
 	if usr.Id == perm.LgUser().Id {
@@ -410,7 +411,7 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.IsOrgAdmin() {
-		c.String(405, "no permission")
+		c.String(http.StatusMethodNotAllowed, "no permission")
 		return
 	}
 	_, err = comm.Db.Context(ctx).Where("aid=?", ne.Aid).Delete(ne)
@@ -418,7 +419,7 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.String(200, fmt.Sprintf("%d", ne.Aid))
+	c.String(http.StatusOK, fmt.Sprintf("%d", ne.Aid))
 }
 
 func (OrgController) pipeAdd(c *gin.Context, m *hbtp.Map) {
@@ -426,11 +427,11 @@ func (OrgController) pipeAdd(c *gin.Context, m *hbtp.Map) {
 	pipeId := m.GetString("pipeId")
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	if !perm.IsOrgAdmin() {
-		c.String(405, "no permission")
+		c.String(http.StatusMethodNotAllowed, "no permission")
 		return
 	}
 	ne := &model.TOrgPipe{}
@@ -451,7 +452,7 @@ func (OrgController) pipeAdd(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.String(200, fmt.Sprintf("%d", ne.Aid))
+	c.String(http.StatusOK, fmt.Sprintf("%d", ne.Aid))
 }
 
 func (OrgController) pipeRm(c *gin.Context, m *hbtp.Map) {
@@ -459,11 +460,11 @@ func (OrgController) pipeRm(c *gin.Context, m *hbtp.Map) {
 	pipeId := m.GetString("pipeId")
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	if !perm.IsOrgAdmin() {
-		c.String(405, "no permission")
+		c.String(http.StatusMethodNotAllowed, "no permission")
 		return
 	}
 	ne := &model.TOrgPipe{}
@@ -472,7 +473,7 @@ func (OrgController) pipeRm(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.String(200, fmt.Sprintf("%d", ne.Aid))
+	c.String(http.StatusOK, fmt.Sprintf("%d", ne.Aid))
 }
 
 func (OrgController) vars(c *gin.Context, m *hbtp.Map) {
@@ -480,16 +481,16 @@ func (OrgController) vars(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 	if orgId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), orgId)
 	if perm.Org() == nil {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	if !perm.CanRead() {
-		c.String(405, "no permission")
+		c.String(http.StatusMethodNotAllowed, "no permission")
 		return
 	}
 	var ls []*model.TOrgVar
@@ -511,20 +512,20 @@ func (OrgController) vars(c *gin.Context, m *hbtp.Map) {
 			}
 		}
 	}
-	c.JSON(200, page)
+	c.JSON(http.StatusOK, page)
 }
 func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 	if pv.Value == "" || pv.Name == "" || pv.OrgId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), pv.OrgId)
 	if perm.Org() == nil {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	if !perm.CanWrite() {
-		c.String(405, "no permission")
+		c.String(http.StatusMethodNotAllowed, "no permission")
 		return
 	}
 	orgVar := &model.TOrgVar{}
@@ -544,7 +545,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 	}
 	if pv.Aid > 0 {
 		if ok && tpv.Aid != pv.Aid {
-			c.String(409, "duplicate variable name")
+			c.String(http.StatusConflict, "duplicate variable name")
 			return
 		}
 		_, err = comm.Db.Context(c.Request.Context()).Cols("name,value,remarks,public").Where("aid = ?", pv.Aid).Update(orgVar)
@@ -552,11 +553,11 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 			util.RespInternalErr(c, "db operation", err)
 			return
 		}
-		c.String(200, "ok")
+		c.String(http.StatusOK, "ok")
 		return
 	}
 	if ok {
-		c.String(409, "duplicate variable name")
+		c.String(http.StatusConflict, "duplicate variable name")
 		return
 	}
 	_, err = comm.Db.Context(c.Request.Context()).InsertOne(orgVar)
@@ -564,12 +565,12 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.String(200, "ok")
+	c.String(http.StatusOK, "ok")
 }
 func (OrgController) varDel(c *gin.Context, m *hbtp.Map) {
 	aId, err := m.GetInt("aid")
 	if err != nil || aId <= 0 {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	orgVar := &model.TOrgVar{}
@@ -579,16 +580,16 @@ func (OrgController) varDel(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !ok {
-		c.String(404, "not found pipe_var")
+		c.String(http.StatusNotFound, "not found pipe_var")
 		return
 	}
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), orgVar.OrgId)
 	if perm.Org() == nil {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	if !perm.CanWrite() {
-		c.String(405, "no permission")
+		c.String(http.StatusMethodNotAllowed, "no permission")
 		return
 	}
 	_, err = comm.Db.Context(c.Request.Context()).Where("aid = ?", aId).Delete(orgVar)
@@ -596,5 +597,5 @@ func (OrgController) varDel(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.String(200, "ok")
+	c.String(http.StatusOK, "ok")
 }

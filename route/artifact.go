@@ -45,17 +45,17 @@ func (ArtifactController) orgList(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 	if orgId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, orgId)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	if !perm.CanRead() {
-		c.String(405, "No Auth")
+		c.String(http.StatusMethodNotAllowed, "No Auth")
 		return
 	}
 	ls := make([]*model.TArtifactory, 0)
@@ -126,21 +126,21 @@ func (ArtifactController) info(c *gin.Context, m *hbtp.Map) {
 	arty := &model.TArtifactory{}
 	ok := service.GetIdOrAidCtx(c.Request.Context(), id, arty)
 	if !ok || arty.Deleted == 1 {
-		c.String(404, "not found art")
+		c.String(http.StatusNotFound, "not found art")
 		return
 	}
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), arty.OrgId)
 	if !perm.CanRead() {
-		c.String(405, "no permission")
+		c.String(http.StatusMethodNotAllowed, "no permission")
 		return
 	}
 	usr := &model.TUser{}
 	ok = service.GetIdOrAidCtx(c.Request.Context(), arty.Uid, usr)
 	if !ok {
-		c.String(404, "not found user?")
+		c.String(http.StatusNotFound, "not found user?")
 		return
 	}
-	c.JSON(200, hbtp.Map{
+	c.JSON(http.StatusOK, hbtp.Map{
 		"arty": arty,
 		"user": usr,
 		"perm": hbtp.Map{
@@ -159,17 +159,17 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 	desc := strings.TrimSpace(m.GetString("desc"))
 	disabled := m.GetBool("disabled")
 	if name == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, orgId)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	if !perm.CanWrite() {
-		c.String(405, "No Permission")
+		c.String(http.StatusMethodNotAllowed, "No Permission")
 		return
 	}
 	ctx := c.Request.Context()
@@ -186,7 +186,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 	ne.Updated = time.Now()
 	if isup {
 		if ne.OrgId != perm.Org().Id {
-			c.String(405, "No Permission")
+			c.String(http.StatusMethodNotAllowed, "No Permission")
 			return
 		}
 		_, err = comm.Db.Context(ctx).Cols("name", "desc", "disabled", "updated").Where("id=?", ne.Id).Update(ne)
@@ -225,24 +225,24 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.String(200, ne.Id)
+	c.String(http.StatusOK, ne.Id)
 }
 func (ArtifactController) rm(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	art := &model.TArtifactory{}
 	ok := service.GetIdOrAidCtx(c.Request.Context(), id, art)
 	if !ok {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, art.OrgId)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	if !perm.CanWrite() {
-		c.String(405, "No Permission")
+		c.String(http.StatusMethodNotAllowed, "No Permission")
 		return
 	}
 	art.Deleted = 1
@@ -253,12 +253,12 @@ func (ArtifactController) rm(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.String(200, art.Id)
+	c.String(http.StatusOK, art.Id)
 }
 func (ArtifactController) packageList(c *gin.Context, m *hbtp.Map) {
 	repoId := m.GetString("repoId")
 	if repoId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	q := m.GetString("q")
@@ -287,12 +287,12 @@ func (ArtifactController) packageList(c *gin.Context, m *hbtp.Map) {
 	for _, v := range ls {
 		v.Verln = verCountMap[v.Id]
 	}
-	c.JSON(200, page)
+	c.JSON(http.StatusOK, page)
 }
 func (ArtifactController) versionList(c *gin.Context, m *hbtp.Map) {
 	packId := m.GetString("packId")
 	if packId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	q := m.GetString("q")
@@ -317,7 +317,7 @@ func (ArtifactController) versionList(c *gin.Context, m *hbtp.Map) {
 		e := &model.TArtifactVersion{}
 		v.Verln, _ = comm.Db.Where("package_id=?", v.Id).Count(e)
 	}*/
-	c.JSON(200, page)
+	c.JSON(http.StatusOK, page)
 }
 func (ArtifactController) versionInfos(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
@@ -325,19 +325,19 @@ func (ArtifactController) versionInfos(c *gin.Context, m *hbtp.Map) {
 	ctx := c.Request.Context()
 	ok := service.GetIdOrAidCtx(ctx, id, artv)
 	if !ok {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		return
 	}
 	arty := &model.TArtifactory{}
 	ok = service.GetIdOrAidCtx(ctx, artv.RepoId, arty)
 	if !ok || arty.Deleted == 1 {
-		c.String(404, "Not Found repo")
+		c.String(http.StatusNotFound, "Not Found repo")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, arty.OrgId)
 	if !perm.CanRead() {
-		c.String(405, "No Permission")
+		c.String(http.StatusMethodNotAllowed, "No Permission")
 		return
 	}
 	err := artv.ReadFiles()
@@ -346,7 +346,7 @@ func (ArtifactController) versionInfos(c *gin.Context, m *hbtp.Map) {
 		// return
 		logrus.Debugf("files err:%v", err)
 	}
-	c.JSON(200, hbtp.Map{
+	c.JSON(http.StatusOK, hbtp.Map{
 		"info": artv,
 		"perm": hbtp.Map{
 			"read":  perm.CanRead(),
@@ -361,19 +361,19 @@ func (ArtifactController) versionUrl(c *gin.Context, m *hbtp.Map) {
 	ctx := c.Request.Context()
 	ok := service.GetIdOrAidCtx(ctx, id, artv)
 	if !ok {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		return
 	}
 	arty := &model.TArtifactory{}
 	ok = service.GetIdOrAidCtx(ctx, artv.RepoId, arty)
 	if !ok || arty.Deleted == 1 {
-		c.String(404, "Not Found repo")
+		c.String(http.StatusNotFound, "Not Found repo")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, arty.OrgId)
 	if !perm.CanDownload() {
-		c.String(405, "No Permission")
+		c.String(http.StatusMethodNotAllowed, "No Permission")
 		return
 	}
 
@@ -382,7 +382,7 @@ func (ArtifactController) versionUrl(c *gin.Context, m *hbtp.Map) {
 	sign := utils.Md5String(artv.Id + tms + random + comm.Cfg.Server.DownToken)
 	ul := fmt.Sprintf("%s/api/art/pub/down/%s/%s?times=%s&random=%s&sign=%s",
 		comm.Cfg.Server.Host, artv.Id, pth, url.QueryEscape(tms), random, sign)
-	c.JSON(200, hbtp.Map{
+	c.JSON(http.StatusOK, hbtp.Map{
 		"id":     artv.Id,
 		"times":  tms,
 		"random": random,
@@ -396,19 +396,19 @@ func (ArtifactController) versionSave(c *gin.Context, m *hbtp.Map) {
 	ctx := c.Request.Context()
 	ok := service.GetIdOrAidCtx(ctx, id, artv)
 	if !ok {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		return
 	}
 	arty := &model.TArtifactory{}
 	ok = service.GetIdOrAidCtx(ctx, artv.RepoId, arty)
 	if !ok || arty.Deleted == 1 {
-		c.String(404, "Not Found repo")
+		c.String(http.StatusNotFound, "Not Found repo")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, arty.OrgId)
 	if !perm.CanWrite() {
-		c.String(405, "No Permission")
+		c.String(http.StatusMethodNotAllowed, "No Permission")
 		return
 	}
 	artv.Version = strings.TrimSpace(m.GetString("version"))
@@ -424,7 +424,7 @@ func (ArtifactController) versionSave(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.String(200, artv.Id)
+	c.String(http.StatusOK, artv.Id)
 }
 func (ArtifactController) versionRm(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
@@ -432,19 +432,19 @@ func (ArtifactController) versionRm(c *gin.Context, m *hbtp.Map) {
 	ctx := c.Request.Context()
 	ok := service.GetIdOrAidCtx(ctx, id, artv)
 	if !ok {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		return
 	}
 	arty := &model.TArtifactory{}
 	ok = service.GetIdOrAidCtx(ctx, artv.RepoId, arty)
 	if !ok || arty.Deleted == 1 {
-		c.String(404, "Not Found repo")
+		c.String(http.StatusNotFound, "Not Found repo")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, arty.OrgId)
 	if !perm.CanWrite() {
-		c.String(405, "No Permission")
+		c.String(http.StatusMethodNotAllowed, "No Permission")
 		return
 	}
 	_, err := comm.Db.Context(c.Request.Context()).Where("id=?", artv.Id).Delete(artv)
@@ -454,5 +454,5 @@ func (ArtifactController) versionRm(c *gin.Context, m *hbtp.Map) {
 	}
 	fls := filepath.Join(comm.WorkPath, common.PathArtifacts, artv.Id)
 	_ = os.RemoveAll(fls)
-	c.String(200, artv.Id)
+	c.String(http.StatusOK, artv.Id)
 }

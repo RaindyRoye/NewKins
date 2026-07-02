@@ -165,7 +165,7 @@ func (UserController) upinfo(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	service.ClearUserCache(usr.Id)
-	c.String(200, usr.Id)
+	c.String(http.StatusOK, usr.Id)
 }
 func (UserController) upass(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
@@ -300,5 +300,5 @@ func (UserController) perm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	service.ClearUserCache(usr.Id)
-	c.String(200, usr.Id)
+	c.String(http.StatusOK, usr.Id)
 }

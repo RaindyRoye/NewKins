@@ -45,7 +45,7 @@ func (InstallController) GetPath() string {
 }
 func (cs *InstallController) auth(c *gin.Context) {
 	if comm.Installed {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		c.Abort()
 		return
 	}
@@ -56,7 +56,7 @@ func (cs *InstallController) Routes(g gin.IRoutes) {
 	g.POST("/", util.GinReqParseJson(cs.install))
 }
 func (InstallController) check(c *gin.Context) {
-	c.String(200, "hello gokins!")
+	c.String(http.StatusOK, "hello gokins!")
 }
 func checkUrl(host string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -77,7 +77,7 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 		m.Server.Host = strings.TrimRight(m.Server.Host, "/")
 	}
 	if !common.RegUrl.MatchString(m.Server.Host) {
-		c.String(400, "invalid host format: %s", m.Server.Host)
+		c.String(http.StatusBadRequest, "invalid host format: %s", m.Server.Host)
 		return
 	}
 	if !checkUrl(m.Server.Host) {
@@ -85,20 +85,20 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 		return
 	}
 	if m.Server.HbtpHost != "" && !common.RegHost1.MatchString(m.Server.HbtpHost) {
-		c.String(400, "invalid hbtp host format: %s", m.Server.HbtpHost)
+		c.String(http.StatusBadRequest, "invalid hbtp host format: %s", m.Server.HbtpHost)
 		return
 	}
 	if m.Datasource.Driver == comm.DatasourceDriverMySQL || m.Datasource.Driver == comm.DatasourceDriverPostgres {
 		if !common.RegHost2.MatchString(m.Datasource.Host) {
-			c.String(400, "invalid db host format: %s", m.Datasource.Host)
+			c.String(http.StatusBadRequest, "invalid db host format: %s", m.Datasource.Host)
 			return
 		}
 		if m.Datasource.Name == "" {
-			c.String(400, "database name is required")
+			c.String(http.StatusBadRequest, "database name is required")
 			return
 		}
 		if strings.Contains(m.Datasource.Name, ":") || strings.Contains(m.Datasource.Pass, ":") {
-			c.String(400, "database name and port must not contain ':'")
+			c.String(http.StatusBadRequest, "database name and port must not contain ':'")
 			return
 		}
 	} else {
@@ -120,7 +120,7 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 		return
 	}
 	if dataul == "" {
-		c.String(400, "datasource configuration is invalid")
+		c.String(http.StatusBadRequest, "datasource configuration is invalid")
 		return
 	}
 
@@ -144,7 +144,7 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 		return
 	}
 	comm.MarkInstalled()
-	c.String(200, "ok")
+	c.String(http.StatusOK, "ok")
 }
 
 func initConfig() error {

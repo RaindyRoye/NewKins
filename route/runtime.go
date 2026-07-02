@@ -15,6 +15,7 @@ import (
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
+	"net/http"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,7 +35,7 @@ func (c *RuntimeController) Routes(g gin.IRoutes) {
 func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 	pvId := m.GetString("pvId")
 	if pvId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
@@ -84,7 +85,7 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 			}
 		}
 	}
-	c.JSON(200, hbtp.Map{
+	c.JSON(http.StatusOK, hbtp.Map{
 		"ids":    ids,
 		"stages": stages,
 		"steps":  steps,
@@ -93,7 +94,7 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 func (RuntimeController) cmds(c *gin.Context, m *hbtp.Map) {
 	stepId := m.GetString("stepId")
 	if stepId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	var ls []*model.TCmdLine
@@ -102,7 +103,7 @@ func (RuntimeController) cmds(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.JSON(200, hbtp.Map{
+	c.JSON(http.StatusOK, hbtp.Map{
 		"stepId": stepId,
 		"cmds":   ls,
 	})
@@ -112,7 +113,7 @@ func (RuntimeController) cmds(c *gin.Context, m *hbtp.Map) {
 		ids = append(ids, v.Id)
 		cmds[v.Id] = v
 	}
-	c.JSON(200, hbtp.Map{
+	c.JSON(http.StatusOK, hbtp.Map{
 		//"ids":    ids,
 		"cmds": ls,
 	})*/
@@ -120,20 +121,20 @@ func (RuntimeController) cmds(c *gin.Context, m *hbtp.Map) {
 func (RuntimeController) build(c *gin.Context, m *hbtp.Map) {
 	bdid := m.GetString("buildId")
 	if bdid == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	v, ok := engine.Mgr.BuildEgn().Get(bdid)
 	if !ok {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		return
 	}
 	show, ok := v.Show()
 	if !ok {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		return
 	}
-	c.JSON(200, hbtp.Map{
+	c.JSON(http.StatusOK, hbtp.Map{
 		"workpgss": v.WorkProgress(),
 		"show":     show,
 	})
@@ -141,7 +142,7 @@ func (RuntimeController) build(c *gin.Context, m *hbtp.Map) {
 func (RuntimeController) cancel(c *gin.Context, m *hbtp.Map) {
 	bdid := m.GetString("buildId")
 	if bdid == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	build := &model.TBuild{}
@@ -151,21 +152,21 @@ func (RuntimeController) cancel(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !ok {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		return
 	}
 	perm := service.NewPipePermCtx(c.Request.Context(), service.GetMidLgUser(c), build.PipelineId)
 	if !perm.CanExec() {
-		c.String(405, "No Permission")
+		c.String(http.StatusMethodNotAllowed, "No Permission")
 		return
 	}
 	v, ok := engine.Mgr.BuildEgn().Get(build.Id)
 	if !ok {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		return
 	}
 	v.Cancel()
-	c.String(200, "ok")
+	c.String(http.StatusOK, "ok")
 }
 func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 	buildId := m.GetString("buildId")
@@ -173,20 +174,20 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 	offset, _ := m.GetInt("offset")
 	limit, _ := m.GetInt("limit")
 	if stepId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	/*tstp := &model.TStep{}
 	ok, _ := comm.Db.Where("id=?", stepId).Get(tstp)
 	if !ok {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		return
 	}*/
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, buildId, common.PathJobs, stepId)
 	logpth := filepath.Join(dir, "build.log")
 	fl, err := os.Open(logpth)
 	if err != nil {
-		c.String(404, "Not Found File")
+		c.String(http.StatusNotFound, "Not Found File")
 		return
 	}
 	defer func() { _ = fl.Close() }()
@@ -236,7 +237,7 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 			break
 		}
 	}
-	c.JSON(200, hbtp.Map{
+	c.JSON(http.StatusOK, hbtp.Map{
 		"stepId":  stepId,
 		"lastoff": lastoff,
 		"logs":    ls,

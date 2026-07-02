@@ -16,6 +16,7 @@ import (
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
+	"net/http"
 )
 
 type ArtPublicController struct{}
@@ -34,23 +35,23 @@ func (cs *ArtPublicController) down(c *gin.Context) {
 	random := c.Query("random")
 	sign := c.Query("sign")
 	if tms == "" || random == "" || sign == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 
 	tm, err := time.Parse(time.RFC3339Nano, tms)
 	if err != nil {
-		c.String(400, "param err:times")
+		c.String(http.StatusBadRequest, "param err:times")
 		return
 	}
 	if time.Since(tm).Hours() > 20 {
-		c.String(408, "request timeout")
+		c.String(http.StatusRequestTimeout, "request timeout")
 		return
 	}
 
 	signs := utils.Md5String(id + tms + random + comm.Cfg.Server.DownToken)
 	if sign != signs {
-		c.String(403, "No Permission")
+		c.String(http.StatusForbidden, "No Permission")
 		return
 	}
 
@@ -58,13 +59,13 @@ func (cs *ArtPublicController) down(c *gin.Context) {
 	ctx := c.Request.Context()
 	ok := service.GetIdOrAidCtx(ctx, id, artv)
 	if !ok {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		return
 	}
 	arty := &model.TArtifactory{}
 	ok = service.GetIdOrAidCtx(ctx, artv.RepoId, arty)
 	if !ok || arty.Deleted == 1 {
-		c.String(404, "Not Found repo")
+		c.String(http.StatusNotFound, "Not Found repo")
 		return
 	}
 	fls := filepath.Join(comm.WorkPath, common.PathArtifacts, artv.Id, pth)
@@ -78,30 +79,30 @@ func (cs *ArtPublicController) downs(c *gin.Context) {
 	random := c.Query("random")
 	sign := c.Query("sign")
 	if tms == "" || random == "" || sign == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 
 	tm, err := time.Parse(time.RFC3339Nano, tms)
 	if err != nil {
-		c.String(400, "param err:times")
+		c.String(http.StatusBadRequest, "param err:times")
 		return
 	}
 	if time.Since(tm).Hours() > 20 {
-		c.String(408, "request timeout")
+		c.String(http.StatusRequestTimeout, "request timeout")
 		return
 	}
 
 	signs := utils.Md5String(id + name + tms + random + comm.Cfg.Server.DownToken)
 	if sign != signs {
-		c.String(403, "No Permission")
+		c.String(http.StatusForbidden, "No Permission")
 		return
 	}
 
 	job := &model.TStep{}
 	ok := service.GetIdOrAidCtx(c.Request.Context(), id, job)
 	if !ok {
-		c.String(404, "Not Found")
+		c.String(http.StatusNotFound, "Not Found")
 		return
 	}
 	bdpth := filepath.Join(comm.WorkPath, common.PathBuild, job.BuildId)
@@ -111,7 +112,7 @@ func (cs *ArtPublicController) downs(c *gin.Context) {
 func (ArtPublicController) downFile(c *gin.Context, fls string) {
 	stat, err := os.Stat(fls)
 	if err != nil {
-		c.String(404, "Not Found File")
+		c.String(http.StatusNotFound, "Not Found File")
 		return
 	}
 	var nms string
@@ -138,7 +139,7 @@ func (ArtPublicController) downFile(c *gin.Context, fls string) {
 
 	fl, err := os.Open(fls)
 	if err != nil {
-		c.String(404, "Not Found File")
+		c.String(http.StatusNotFound, "Not Found File")
 		return
 	}
 	defer func() { _ = fl.Close() }()
@@ -150,7 +151,7 @@ func (ArtPublicController) downFile(c *gin.Context, fls string) {
 	c.Header("Cache-Control", "max-age=360000000")
 	c.Header("Content-Length", fmt.Sprintf("%d", contsz))
 	c.Header("Content-Disposition", fmt.Sprintf(`attachment;filename="%s"`, url.QueryEscape(nms)))
-	c.Status(200)
+	c.Status(http.StatusOK)
 	bts := make([]byte, 10240)
 	for !hbtp.EndContext(c) {
 		n, err := rdr.Read(bts)

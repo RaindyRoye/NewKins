@@ -33,10 +33,10 @@ func (c *ApiController) Routes(g gin.IRoutes) {
 	g.POST("/builds", util.GinReqParseJson(c.test))
 }
 func (ApiController) hello(c *gin.Context) {
-	c.String(200, "hello world")
+	c.String(http.StatusOK, "hello world")
 }
 func (ApiController) version(c *gin.Context) {
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"version":    comm.Version,
 		"build_time": comm.BuildTime,
 		"git_commit": comm.GitCommit,

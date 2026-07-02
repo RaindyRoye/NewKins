@@ -2,6 +2,7 @@ package route
 
 import (
 	"strings"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gokins/gokins/comm"
@@ -25,7 +26,7 @@ func (YmlController) templates(c *gin.Context) {
 		util.RespInternalErr(c, "query yml templates", err)
 		return
 	}
-	c.JSON(200, ls)
+	c.JSON(http.StatusOK, ls)
 }
 
 func (YmlController) plugins(c *gin.Context) {
@@ -48,5 +49,5 @@ func (YmlController) plugins(c *gin.Context) {
 			YmlContent: strings.ReplaceAll(conts, "%PLUGIN_NAME%", v),
 		})
 	}
-	c.JSON(200, ls)
+	c.JSON(http.StatusOK, ls)
 }

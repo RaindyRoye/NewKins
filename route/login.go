@@ -48,17 +48,17 @@ func (LoginController) info(c *gin.Context) {
 		}
 	}
 	rt["login"] = ok
-	c.JSON(200, rt)
+	c.JSON(http.StatusOK, rt)
 }
 func (LoginController) login(c *gin.Context, m *bean.LoginReq) {
 	m.Name = strings.TrimSpace(m.Name)
 	if m.Name == "" || m.Pass == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	usr, ok := service.FindUserNameCtx(c.Request.Context(), m.Name)
 	if !ok {
-		c.String(404, "not found user")
+		c.String(http.StatusNotFound, "not found user")
 		return
 	}
 	if !service.IsAdmin(usr) && usr.Active != 1 {
@@ -89,7 +89,7 @@ func (LoginController) login(c *gin.Context, m *bean.LoginReq) {
 		Avatar:        usr.Avatar,
 		LastLoginTime: usr.LoginTime.Format(common.TimeFmt),
 	}
-	c.JSON(200, rt)
+	c.JSON(http.StatusOK, rt)
 
 	usr.LoginTime = time.Now()
 	if _, err := comm.Db.Context(c.Request.Context()).Cols("login_time").Where("id=?", usr.Id).Update(usr); err != nil {
