@@ -12,27 +12,16 @@ import (
 	"hash"
 	"io"
 	"net/http"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gokins/gokins/hook"
-	"github.com/sirupsen/logrus"
+	"github.com/gokins/gokins/util"
 )
 
 func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			logrus.Warnf("WebhookService Parse err:%+v", r)
-			logrus.Warnf("%s", string(debug.Stack()))
-			if e, ok := r.(error); ok {
-				err = fmt.Errorf("github: panic in Parse: %w", e)
-			} else {
-				err = fmt.Errorf("github: panic in Parse: %v", r)
-			}
-		}
-	}()
+	defer util.RecoverResult(&err, "github.Parse")
 	data, err := io.ReadAll(
 		io.LimitReader(req.Body, hook.MaxWebhookBodySize),
 	)

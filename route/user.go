@@ -1,6 +1,7 @@
 package route
 
 import (
+	"net/http"
 	"strings"
 	"time"
 
@@ -48,7 +49,7 @@ func (UserController) page(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "user page query", err)
 		return
 	}
-	c.JSON(200, page)
+	c.JSON(http.StatusOK, page)
 }
 func (UserController) new(c *gin.Context, m *hbtp.Map) {
 	name := strings.TrimSpace(m.GetString("name"))
@@ -58,7 +59,7 @@ func (UserController) new(c *gin.Context, m *hbtp.Map) {
 	// pmOrg:=m.GetBool("pmOrg")
 	// pmPipe:=m.GetBool("pmPipe")
 	if name == "" || nick == "" || pass == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
@@ -66,13 +67,13 @@ func (UserController) new(c *gin.Context, m *hbtp.Map) {
 	if !service.IsAdmin(lgusr) {
 		uf, ok := service.GetUserInfoCtx(ctx, lgusr.Id)
 		if !ok || uf.PermUser != 1 {
-			c.String(405, "no permission")
+			c.String(http.StatusMethodNotAllowed, "no permission")
 			return
 		}
 	}
 	_, ok := service.FindUserNameCtx(ctx, name)
 	if ok {
-		c.String(511, "reged")
+		c.String(http.StatusConflict, "reged")
 		return
 	}
 	ne := &model.TUser{
@@ -98,24 +99,24 @@ func (UserController) new(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "create user", err)
 		return
 	}
-	c.String(200, ne.Id)
+	c.String(http.StatusOK, ne.Id)
 }
 
 func (UserController) info(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
 	usr := &model.TUser{}
 	ok := service.GetIdOrAidCtx(ctx, id, usr)
 	if !ok {
-		c.String(404, "not found user")
+		c.String(http.StatusNotFound, "not found user")
 		return
 	}
 	uinfo, _ := service.GetUserInfoCtx(ctx, usr.Id)
-	c.JSON(200, hbtp.Map{
+	c.JSON(http.StatusOK, hbtp.Map{
 		"user": usr,
 		"info": uinfo,
 	})
@@ -127,19 +128,19 @@ func (UserController) upinfo(c *gin.Context, m *hbtp.Map) {
 	email := m.GetString("email")
 	remark := m.GetString("remark")
 	if id == "" || nick == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
 	usr := &model.TUser{}
 	ok := service.GetIdOrAidCtx(ctx, id, usr)
 	if !ok {
-		c.String(404, "not found user")
+		c.String(http.StatusNotFound, "not found user")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	if !service.IsAdmin(lgusr) && usr.Id != lgusr.Id {
-		c.String(405, "is not you")
+		c.String(http.StatusMethodNotAllowed, "is not you")
 		return
 	}
 	uinfo, isup := service.GetUserInfoCtx(ctx, usr.Id)
@@ -171,7 +172,7 @@ func (UserController) upass(c *gin.Context, m *hbtp.Map) {
 	olds := m.GetString("olds")
 	pass := m.GetString("pass")
 	if id == "" || pass == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
@@ -182,26 +183,26 @@ func (UserController) upass(c *gin.Context, m *hbtp.Map) {
 	} else {
 		ok := service.GetIdOrAidCtx(ctx, id, usr)
 		if !ok {
-			c.String(404, "not found user")
+			c.String(http.StatusNotFound, "not found user")
 			return
 		}
 	}
 
 	if comm.NotUpPass && !service.IsAdmin(lgusr) {
-		c.String(513, "can't update")
+		c.String(http.StatusForbidden, "can't update")
 		return
 	}
 	if usr.Id == lgusr.Id {
 		if olds == "" {
-			c.String(511, "param err1")
+			c.String(http.StatusBadRequest, "param err1")
 			return
 		}
 		if usr.Pass != utils.Md5String(olds) {
-			c.String(512, "old pass err")
+			c.String(http.StatusUnauthorized, "old pass err")
 			return
 		}
 	} else if !service.IsAdmin(lgusr) {
-		c.String(405, "is not admin")
+		c.String(http.StatusMethodNotAllowed, "is not admin")
 		return
 	}
 
@@ -212,25 +213,25 @@ func (UserController) upass(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	service.ClearUserCache(usr.Id)
-	c.String(200, usr.Id)
+	c.String(http.StatusOK, usr.Id)
 }
 func (UserController) active(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	act := m.GetString("act")
 	if id == "" || act == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
 	lgusr := service.GetMidLgUser(c)
 	if !service.IsAdmin(lgusr) {
-		c.String(405, "is not admin")
+		c.String(http.StatusMethodNotAllowed, "is not admin")
 		return
 	}
 	usr := &model.TUser{}
 	ok := service.GetIdOrAidCtx(ctx, id, usr)
 	if !ok {
-		c.String(404, "not found user")
+		c.String(http.StatusNotFound, "not found user")
 		return
 	}
 	if act == "1" {
@@ -244,7 +245,7 @@ func (UserController) active(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	service.ClearUserCache(usr.Id)
-	c.String(200, usr.Id)
+	c.String(http.StatusOK, usr.Id)
 }
 func (UserController) perm(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
@@ -252,7 +253,7 @@ func (UserController) perm(c *gin.Context, m *hbtp.Map) {
 	permOrg := m.GetBool("permOrg")
 	permPipe := m.GetBool("permPipe")
 	if id == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
@@ -260,14 +261,14 @@ func (UserController) perm(c *gin.Context, m *hbtp.Map) {
 	if !service.IsAdmin(lgusr) {
 		uf, ok := service.GetUserInfoCtx(ctx, lgusr.Id)
 		if !ok || uf.PermUser != 1 {
-			c.String(405, "no permission")
+			c.String(http.StatusMethodNotAllowed, "no permission")
 			return
 		}
 	}
 	usr := &model.TUser{}
 	ok := service.GetIdOrAidCtx(ctx, id, usr)
 	if !ok {
-		c.String(404, "not found user")
+		c.String(http.StatusNotFound, "not found user")
 		return
 	}
 	uinfo, isup := service.GetUserInfoCtx(ctx, usr.Id)

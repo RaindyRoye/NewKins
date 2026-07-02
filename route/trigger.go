@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -37,18 +38,18 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 	if pipelineId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(c.Request.Context(), lgusr, pipelineId)
 	if perm.Pipeline() == nil {
-		c.String(404, "流水线不存在")
+		c.String(http.StatusNotFound, "流水线不存在")
 		return
 	}
 	if !perm.IsAdmin() {
 		if !perm.CanRead() {
-			c.String(405, "No Auth")
+			c.String(http.StatusMethodNotAllowed, "No Auth")
 			return
 		}
 	}
@@ -93,23 +94,23 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 	ms := map[string]any{}
 	ms["page"] = page
 	ms["host"] = comm.Cfg.Server.Host
-	c.JSON(200, ms)
+	c.JSON(http.StatusOK, ms)
 }
 
 func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
 	ctx := c.Request.Context()
 	if err := tp.Check(); err != nil {
-		util.RespErr(c, 400, "validation error", err)
+		util.RespErr(c, http.StatusBadRequest, "validation error", err)
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(ctx, lgusr, tp.PipelineId)
 	if perm.Pipeline() == nil {
-		c.String(404, "流水线不存在")
+		c.String(http.StatusNotFound, "流水线不存在")
 		return
 	}
 	if !perm.IsAdmin() && !perm.CanWrite() {
-		c.String(405, "No Auth")
+		c.String(http.StatusMethodNotAllowed, "No Auth")
 		return
 	}
 	tt := &model.TTrigger{}
@@ -144,7 +145,7 @@ func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
 			return
 		}
 	}
-	c.JSON(200, "ok")
+	c.JSON(http.StatusOK, "ok")
 }
 
 func (TriggerController) delete(c *gin.Context, m *hbtp.Map) {
@@ -157,17 +158,17 @@ func (TriggerController) delete(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !ok {
-		c.String(404, "触发器不存在")
+		c.String(http.StatusNotFound, "触发器不存在")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(ctx, lgusr, tt.PipelineId)
 	if perm.Pipeline() == nil {
-		c.String(404, "流水线不存在")
+		c.String(http.StatusNotFound, "流水线不存在")
 		return
 	}
 	if !perm.IsAdmin() && !perm.CanWrite() {
-		c.String(405, "No Auth")
+		c.String(http.StatusMethodNotAllowed, "No Auth")
 		return
 	}
 	_, err = comm.Db.Context(ctx).Where("id = ?", tt.Id).Delete(tt)
@@ -185,7 +186,7 @@ func (TriggerController) delete(c *gin.Context, m *hbtp.Map) {
 	if tt.Types == "timer" {
 		engine.Mgr.TimerEng().Delete(tt.Id)
 	}
-	c.JSON(200, "ok")
+	c.JSON(http.StatusOK, "ok")
 }
 
 func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
@@ -199,17 +200,17 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !ok {
-		c.String(404, "触发器不存在")
+		c.String(http.StatusNotFound, "触发器不存在")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(ctx, lgusr, tt.PipelineId)
 	if perm.Pipeline() == nil {
-		c.String(404, "流水线不存在")
+		c.String(http.StatusNotFound, "流水线不存在")
 		return
 	}
 	if !perm.IsAdmin() && !perm.CanRead() {
-		c.String(405, "No Auth")
+		c.String(http.StatusMethodNotAllowed, "No Auth")
 		return
 	}
 	var ls []*model.TTriggerRun
@@ -240,7 +241,7 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 			}
 		}
 	}
-	c.JSON(200, page)
+	c.JSON(http.StatusOK, page)
 }
 
 // batchRunPipelineVersions fetches pipeline version info for multiple IDs in a single query,

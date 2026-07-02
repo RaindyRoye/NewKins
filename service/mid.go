@@ -1,6 +1,8 @@
 package service
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gokins/gokins/model"
 )
@@ -10,7 +12,7 @@ const LgUserKey = "lguser"
 func MidUserCheck(c *gin.Context) {
 	usr, ok := CurrUserCache(c)
 	if !ok || (!IsAdmin(usr) && usr.Active != 1) {
-		c.String(403, "Not Auth")
+		c.String(http.StatusForbidden, "Not Auth")
 		c.Abort()
 	}
 	c.Set(LgUserKey, usr)

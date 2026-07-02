@@ -91,6 +91,31 @@ func RespErr(c *gin.Context, statusCode int, msg string, err error) {
 	c.String(statusCode, msg)
 }
 
+// RecoverResult is intended for use in deferred recover() blocks inside
+// functions that return a named error. It converts the recovered value to an
+// error, logs the stack trace at the given context label, and assigns the
+// result back into the caller's named error return.
+//
+// Typical usage inside a hook parser:
+//
+//	func Parse(...) (wb hook.WebHook, err error) {
+//	    defer util.RecoverResult(&err, "github.Parse")
+//	    ...
+//	}
+func RecoverResult(errp *error, label string) {
+	r := recover()
+	if r == nil {
+		return
+	}
+	logrus.Warnf("%s panic: %+v", label, r)
+	logrus.Warnf("%s stack:\n%s", label, string(debug.Stack()))
+	if e, ok := r.(error); ok {
+		*errp = fmt.Errorf("%s: panic: %w", label, e)
+	} else {
+		*errp = fmt.Errorf("%s: panic: %v", label, r)
+	}
+}
+
 func MidAccessAllowFun(c *gin.Context) {
 	method := strings.ToUpper(c.Request.Method)
 	if method == "OPTIONS" || method == "POST" {

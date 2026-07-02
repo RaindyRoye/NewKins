@@ -48,17 +48,17 @@ func (PipelineController) orgPipelines(c *gin.Context, m *hbtp.Map) {
 	q := m.GetString("q")
 	pg, _ := m.GetInt("page")
 	if orgId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, orgId)
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
-		c.String(404, "not found org")
+		c.String(http.StatusNotFound, "not found org")
 		return
 	}
 	if !perm.CanRead() {
-		c.String(405, "No Auth")
+		c.String(http.StatusMethodNotAllowed, "No Auth")
 		return
 	}
 	ls := make([]*model.TPipeline, 0)
@@ -137,24 +137,24 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 	username := m.GetString("username")
 	displayName := m.GetString("displayName")
 	if pipelineId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
 	usr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(ctx, usr, pipelineId)
 	if !perm.CanWrite() {
-		c.String(405, "No Auth")
+		c.String(http.StatusMethodNotAllowed, "No Auth")
 		return
 	}
 	y := &bean.Pipeline{}
 	if err := yaml.Unmarshal([]byte(content), y); err != nil {
-		util.RespErr(c, 400, "yaml parse error", err)
+		util.RespErr(c, http.StatusBadRequest, "yaml parse error", err)
 		return
 	}
 	err := y.Check()
 	if err != nil {
-		util.RespErr(c, 400, "yaml validation error", err)
+		util.RespErr(c, http.StatusBadRequest, "yaml validation error", err)
 		return
 	}
 	pipeline := &model.TPipeline{
@@ -182,18 +182,18 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 func (PipelineController) delete(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
 	usr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(ctx, usr, id)
 	if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
-		c.String(404, "未找到流水线信息")
+		c.String(http.StatusNotFound, "未找到流水线信息")
 		return
 	}
 	if !perm.CanWrite() {
-		c.String(405, "No Auth")
+		c.String(http.StatusMethodNotAllowed, "No Auth")
 		return
 	}
 	tp := &model.TPipeline{
@@ -217,35 +217,35 @@ func (PipelineController) delete(c *gin.Context, m *hbtp.Map) {
 }
 func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 	if !npipe.Check() {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	y := &bean.Pipeline{}
 	err := yaml.Unmarshal([]byte(npipe.Content), y)
 	if err != nil {
-		util.RespErr(c, 400, "yaml parse error", err)
+		util.RespErr(c, http.StatusBadRequest, "yaml parse error", err)
 		return
 	}
 	err = y.Check()
 	if err != nil {
-		util.RespErr(c, 400, "yaml validation error", err)
+		util.RespErr(c, http.StatusBadRequest, "yaml validation error", err)
 		return
 	}
 	ctx := c.Request.Context()
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(ctx, lgusr, npipe.OrgId)
 	if npipe.OrgId != "" && perm.Org() == nil {
-		c.String(404, "组织不存在")
+		c.String(http.StatusNotFound, "组织不存在")
 		return
 	}
 	if !perm.IsAdmin() {
 		uf, ok := service.GetUserInfoCtx(ctx, lgusr.Id)
 		if !ok || uf.PermPipe != 1 {
-			c.String(405, "no permission")
+			c.String(http.StatusMethodNotAllowed, "no permission")
 			return
 		}
 		if perm.Org() != nil && !perm.CanWrite() {
-			c.String(405, "No Auth")
+			c.String(http.StatusMethodNotAllowed, "No Auth")
 			return
 		}
 	}
@@ -312,18 +312,18 @@ func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
 func (PipelineController) info(c *gin.Context, m *hbtp.Map) {
 	id := m.GetString("id")
 	if id == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(ctx, lgusr, id)
 	if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
-		c.String(404, "未找到流水线信息")
+		c.String(http.StatusNotFound, "未找到流水线信息")
 		return
 	}
 	if !perm.CanRead() {
-		c.String(405, "No Auth")
+		c.String(http.StatusMethodNotAllowed, "No Auth")
 		return
 	}
 	pipe := &model.TPipelineInfo{}
@@ -333,7 +333,7 @@ func (PipelineController) info(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !ok {
-		c.String(404, "未找到流水线信息")
+		c.String(http.StatusNotFound, "未找到流水线信息")
 		return
 	}
 	tpc := &model.TPipelineConf{}
@@ -352,7 +352,7 @@ func (PipelineController) info(c *gin.Context, m *hbtp.Map) {
 		pipe.Username = s
 		pipe.AccessToken = s
 	}
-	c.JSON(200, hbtp.Map{
+	c.JSON(http.StatusOK, hbtp.Map{
 		"pipe": pipe,
 		"perm": hbtp.Map{
 			"read":  perm.CanRead(),
@@ -366,17 +366,17 @@ func (PipelineController) run(c *gin.Context, m *hbtp.Map) {
 	pipelineId := m.GetString("pipelineId")
 	sha := m.GetString("sha")
 	if pipelineId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(c.Request.Context(), lgusr, pipelineId)
 	if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
-		c.String(404, "未找到流水线信息")
+		c.String(http.StatusNotFound, "未找到流水线信息")
 		return
 	}
 	if !perm.CanExec() {
-		c.String(405, "No Auth")
+		c.String(http.StatusMethodNotAllowed, "No Auth")
 		return
 	}
 	tvp, rb, err := service.Run(c.Request.Context(), lgusr.Id, pipelineId, sha, "run")
@@ -385,30 +385,30 @@ func (PipelineController) run(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	engine.Mgr.BuildEgn().Put(rb)
-	c.JSON(200, tvp)
+	c.JSON(http.StatusOK, tvp)
 }
 
 func (PipelineController) copy(c *gin.Context, m *hbtp.Map) {
 	pipelineId := m.GetString("pipelineId")
 	if pipelineId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	ctx := c.Request.Context()
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(ctx, lgusr, pipelineId)
 	if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
-		c.String(404, "未找到流水线信息")
+		c.String(http.StatusNotFound, "未找到流水线信息")
 		return
 	}
 	if !perm.CanRead() {
-		c.String(405, "No Auth")
+		c.String(http.StatusMethodNotAllowed, "No Auth")
 		return
 	}
 	if !perm.IsAdmin() {
 		uf, ok := service.GetUserInfoCtx(ctx, lgusr.Id)
 		if !ok || uf.PermPipe != 1 {
-			c.String(405, "no permission")
+			c.String(http.StatusMethodNotAllowed, "no permission")
 			return
 		}
 	}
@@ -443,12 +443,12 @@ func (PipelineController) copy(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	c.JSON(200, pipe)
+	c.JSON(http.StatusOK, pipe)
 }
 func (PipelineController) rebuild(c *gin.Context, m *hbtp.Map) {
 	pipelineVersionId := m.GetString("pipelineVersionId")
 	if pipelineVersionId == "" {
-		c.String(400, "param err")
+		c.String(http.StatusBadRequest, "param err")
 		return
 	}
 	tvp := &model.TPipelineVersion{}
@@ -458,17 +458,17 @@ func (PipelineController) rebuild(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !ok {
-		c.String(404, "构建记录不存在")
+		c.String(http.StatusNotFound, "构建记录不存在")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(c.Request.Context(), lgusr, tvp.PipelineId)
 	if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
-		c.String(404, "未找到流水线信息")
+		c.String(http.StatusNotFound, "未找到流水线信息")
 		return
 	}
 	if !perm.CanExec() {
-		c.String(405, "No Permission")
+		c.String(http.StatusMethodNotAllowed, "No Permission")
 		return
 	}
 	tvp, rb, err := service.ReBuild(c.Request.Context(), lgusr.Id, tvp)
@@ -477,7 +477,7 @@ func (PipelineController) rebuild(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	engine.Mgr.BuildEgn().Put(rb)
-	c.JSON(200, tvp)
+	c.JSON(http.StatusOK, tvp)
 }
 
 func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
@@ -490,11 +490,11 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 	if pipelineId != "" {
 		perm := service.NewPipePermCtx(c.Request.Context(), usr, pipelineId)
 		if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
-			c.String(404, "未找到流水线信息")
+			c.String(http.StatusNotFound, "未找到流水线信息")
 			return
 		}
 		if !perm.CanRead() {
-			c.String(405, "No Auth")
+			c.String(http.StatusMethodNotAllowed, "No Auth")
 			return
 		}
 		where := comm.Db.Context(c.Request.Context()).Where("pipeline_id = ? and deleted != 1", pipelineId).Desc("id")

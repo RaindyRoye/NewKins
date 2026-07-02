@@ -11,27 +11,17 @@ import (
 	"hash"
 	"io"
 	"net/http"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gokins/gokins/hook"
+	"github.com/gokins/gokins/util"
 	"github.com/sirupsen/logrus"
 )
 
 func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			logrus.Warnf("WebhookService Parse err:%+v", r)
-			logrus.Warnf("%s", string(debug.Stack()))
-			if e, ok := r.(error); ok {
-				err = fmt.Errorf("gitea: panic in Parse: %w", e)
-			} else {
-				err = fmt.Errorf("gitea: panic in Parse: %v", r)
-			}
-		}
-	}()
+	defer util.RecoverResult(&err, "gitea.Parse")
 	logrus.Debugf("Gitea Parse ~")
 	data, err := io.ReadAll(
 		io.LimitReader(req.Body, hook.MaxWebhookBodySize),
@@ -233,17 +223,7 @@ func convertPullRequestHook(gp *giteaPRHook) *hook.PullRequestHook {
 
 //nolint:unparam // gc will be used when TODO (gitea API PR lookup) is implemented
 func convertPullRequestURL(gc *giteaCommentHook) (result *giteaPullRequestURL, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			logrus.Warnf("convertPullRequestURL err:%+v", r)
-			logrus.Warnf("%s", string(debug.Stack()))
-			if e, ok := r.(error); ok {
-				err = fmt.Errorf("gitea: panic in convertPullRequestURL: %w", e)
-			} else {
-				err = fmt.Errorf("gitea: panic in convertPullRequestURL: %v", r)
-			}
-		}
-	}()
+	defer util.RecoverResult(&err, "gitea.convertPullRequestURL")
 	// TODO 请求gitea api 获取pr 详情
 	// client := cl.Repositories.(*giteaapi.RepositoryService)
 	// tk := &pipeline.TUserToken{}
