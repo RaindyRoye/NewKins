@@ -2,8 +2,59 @@ package engine
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 )
+
+// TestSentinelErrors verifies that sentinel errors can be detected with errors.Is
+func TestSentinelErrors(t *testing.T) {
+	tests := []struct {
+		name     string
+		sentinel error
+		wrapped  error
+	}{
+		{"ErrBuildNotFound", ErrBuildNotFound, fmt.Errorf("update: %w: build \"123\"", ErrBuildNotFound)},
+		{"ErrJobNotFound", ErrJobNotFound, fmt.Errorf("update: %w: job \"456\" in build \"123\"", ErrJobNotFound)},
+		{"ErrCmdNotFound", ErrCmdNotFound, fmt.Errorf("updateCmd: %w: cmd \"789\" in job \"456\"", ErrCmdNotFound)},
+		{"ErrInvalidInput", ErrInvalidInput, fmt.Errorf("readDir: %w: buildID and path must not be empty", ErrInvalidInput)},
+		{"ErrArtifactoryNotFound", ErrArtifactoryNotFound, fmt.Errorf("findArtVersionId: %w: artifactory \"repo1\"", ErrArtifactoryNotFound)},
+		{"ErrArtifactNotFound", ErrArtifactNotFound, fmt.Errorf("findArtVersionId: %w: package \"pkg1\"", ErrArtifactNotFound)},
+		{"ErrPluginNotFound", ErrPluginNotFound, fmt.Errorf("%w: myplugin", ErrPluginNotFound)},
+		{"ErrTriggerNotFound", ErrTriggerNotFound, fmt.Errorf("%w: trigger-123", ErrTriggerNotFound)},
+		{"ErrNoJobAvailable", ErrNoJobAvailable, fmt.Errorf("%w for runner \"r1\" with plugins [p1] after 5s", ErrNoJobAvailable)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !errors.Is(tt.wrapped, tt.sentinel) {
+				t.Errorf("errors.Is(%v, %v) = false, want true", tt.wrapped, tt.sentinel)
+			}
+		})
+	}
+}
+
+// TestSentinelErrorUniqueness verifies that sentinel errors are distinct
+func TestSentinelErrorUniqueness(t *testing.T) {
+	sentinels := []error{
+		ErrBuildNotFound,
+		ErrJobNotFound,
+		ErrCmdNotFound,
+		ErrInvalidInput,
+		ErrArtifactoryNotFound,
+		ErrArtifactNotFound,
+		ErrPluginNotFound,
+		ErrTriggerNotFound,
+		ErrNoJobAvailable,
+	}
+
+	for i, s1 := range sentinels {
+		for j, s2 := range sentinels {
+			if i != j && errors.Is(s1, s2) {
+				t.Errorf("sentinel %v should not match %v", s1, s2)
+			}
+		}
+	}
+}
 
 func TestBaseRunner_ServerInfo(t *testing.T) {
 	r := &baseRunner{}

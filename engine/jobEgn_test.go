@@ -49,8 +49,8 @@ func TestJobEnginePutNoExecuter(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error when no executer registered for plugin")
 	}
-	if err.Error() != "not found plugin:myplugin" {
-		t.Errorf("error = %q, want %q", err.Error(), "not found plugin:myplugin")
+	if err.Error() != "plugin not found: myplugin" {
+		t.Errorf("error = %q, want %q", err.Error(), "plugin not found: myplugin")
 	}
 }
 
