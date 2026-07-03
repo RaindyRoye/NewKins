@@ -48,7 +48,7 @@ func (c *BuildTask) check() bool {
 	for _, v := range c.build.Stages {
 		if v.BuildId != c.build.Id {
 			c.build.Event = common.BuildEventCheckParam
-			c.build.Error = fmt.Sprintf("Stage Build id err:%s/%s", v.BuildId, c.build.Id)
+			c.build.Error = fmt.Errorf("stage build id mismatch: %s/%s", v.BuildId, c.build.Id).Error()
 			return false
 		}
 		if v.Name == "" {
@@ -58,12 +58,12 @@ func (c *BuildTask) check() bool {
 		}
 		if len(v.Steps) == 0 {
 			c.build.Event = common.BuildEventCheckParam
-			c.build.Error = "build Stages is empty"
+			c.build.Error = "stage has no steps"
 			return false
 		}
 		if _, ok := stages[v.Name]; ok {
 			c.build.Event = common.BuildEventCheckParam
-			c.build.Error = fmt.Sprintf("build Stages.%s is repeat", v.Name)
+			c.build.Error = fmt.Errorf("duplicate stage name: %s", v.Name).Error()
 			return false
 		}
 		vs := &taskStage{
@@ -74,12 +74,12 @@ func (c *BuildTask) check() bool {
 		for _, e := range v.Steps {
 			if e.BuildId != c.build.Id {
 				c.build.Event = common.BuildEventCheckParam
-				c.build.Error = fmt.Sprintf("Job Build id err:%s/%s", v.BuildId, c.build.Id)
+				c.build.Error = fmt.Errorf("job build id mismatch: %s/%s", v.BuildId, c.build.Id).Error()
 				return false
 			}
 			if e.StageId != v.Id {
 				c.build.Event = common.BuildEventCheckParam
-				c.build.Error = fmt.Sprintf("Job Stage id err:%s/%s", v.BuildId, c.build.Id)
+				c.build.Error = fmt.Errorf("job stage id mismatch: %s/%s", v.BuildId, c.build.Id).Error()
 				return false
 			}
 			e.Step = strings.TrimSpace(e.Step)
@@ -95,7 +95,7 @@ func (c *BuildTask) check() bool {
 			}
 			if _, ok := vs.jobs[e.Name]; ok {
 				c.build.Event = common.BuildEventCheckParam
-				c.build.Error = fmt.Sprintf("build Job.%s is repeat", e.Name)
+				c.build.Error = fmt.Errorf("duplicate job name: %s", e.Name).Error()
 				return false
 			}
 			job := &jobSync{
@@ -106,7 +106,7 @@ func (c *BuildTask) check() bool {
 			err := c.genRunjob(v, job)
 			if err != nil {
 				c.build.Event = common.BuildEventCheckParam
-				c.build.Error = fmt.Sprintf("build Job.%s Commands err:%v", e.Name, err)
+				c.build.Error = fmt.Errorf("job %q commands: %w", e.Name, err).Error()
 				return false
 			}
 			vs.RLock()
@@ -140,9 +140,9 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 			logrus.Warnf("BuildTask genRunjob recover:%v", r)
 			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
 			if err, ok := r.(error); ok {
-				rterr = fmt.Errorf("recover: %w", err)
+				rterr = fmt.Errorf("genRunjob panic: %w", err)
 			} else {
-				rterr = fmt.Errorf("recover: %v", r)
+				rterr = fmt.Errorf("genRunjob panic: %v", r)
 			}
 		}
 	}()

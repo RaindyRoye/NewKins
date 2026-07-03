@@ -115,9 +115,9 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 			logrus.Warnf("TimerEngine resetOne recover:%v", r)
 			logrus.Warnf("TimerEngine stack:%s", string(debug.Stack()))
 			if err, ok := r.(error); ok {
-				rterr = fmt.Errorf("panic in resetOne: %w", err)
+				rterr = fmt.Errorf("resetOne panic: %w", err)
 			} else {
-				rterr = fmt.Errorf("panic in resetOne: %v", r)
+				rterr = fmt.Errorf("resetOne panic: %v", r)
 			}
 		}
 	}()

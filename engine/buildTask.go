@@ -282,7 +282,7 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 					if v.step.ErrIgnore {
 						waitln--
 					} else {
-						job.status(common.BuildStatusError, fmt.Sprintf("wait on %s is err", v.step.Name))
+						job.status(common.BuildStatusError, fmt.Errorf("dependency %q failed", v.step.Name).Error())
 						return
 					}
 				}
@@ -301,7 +301,7 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 	go c.updateStep(job)
 	err := Mgr.jobEgn.Put(job)
 	if err != nil {
-		job.status(common.BuildStatusError, fmt.Sprintf("command run err:%v", err))
+		job.status(common.BuildStatusError, fmt.Errorf("put job to engine: %w", err).Error())
 		return
 	}
 	logrus.Debugf("BuildTask put step:%s", job.step.Name)
