@@ -250,6 +250,9 @@ func batchRunPipelineVersions(ctx context.Context, versionIds []string) (map[str
 	if len(versionIds) == 0 {
 		return map[string]*model.RunPipelineVersion{}, nil
 	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	var versions []*model.RunPipelineVersion
 	err := comm.Db.Context(ctx).Table("t_pipeline_version").
 		In("t_pipeline_version.id", versionIds).

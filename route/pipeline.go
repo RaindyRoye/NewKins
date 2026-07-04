@@ -783,6 +783,9 @@ func fillPipelineListBuildInfo(ctx context.Context, ls []*model.TPipeline) error
 	if len(ls) == 0 {
 		return nil
 	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	// Collect unique pipeline IDs and user IDs
 	pipelineIds := make([]string, len(ls))
