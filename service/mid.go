@@ -10,7 +10,7 @@ import (
 const LgUserKey = "lguser"
 
 func MidUserCheck(c *gin.Context) {
-	usr, ok := CurrUserCache(c)
+	usr, ok := CurrUserCacheCtx(c.Request.Context(), c)
 	if !ok || (!IsAdmin(usr) && usr.Active != 1) {
 		c.String(http.StatusForbidden, "Not Auth")
 		c.Abort()

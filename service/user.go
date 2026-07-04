@@ -99,8 +99,25 @@ func GetUserCacheCtx(ctx context.Context, uid string) (*model.TUser, bool) {
 	}
 	return e, ok
 }
+// CurrUserCache retrieves the current user from the request context.
+// Prefer CurrUserCacheCtx when you need to pass a custom context.
 func CurrUserCache(c *gin.Context) (*model.TUser, bool) {
 	if c == nil {
+		return nil, false
+	}
+	if c.Request == nil {
+		return nil, false
+	}
+	return CurrUserCacheCtx(c.Request.Context(), c)
+}
+
+// CurrUserCacheCtx retrieves the current user using the provided context.
+// This enables request-scoped cancellation and timeout for database queries.
+func CurrUserCacheCtx(ctx context.Context, c *gin.Context) (*model.TUser, bool) {
+	if c == nil {
+		return nil, false
+	}
+	if c.Request == nil {
 		return nil, false
 	}
 	tk := util.GetToken(c, comm.Cfg.Server.LoginKey)
@@ -115,27 +132,52 @@ func CurrUserCache(c *gin.Context) (*model.TUser, bool) {
 	if !ok || uids == "" {
 		return nil, false
 	}
-	return GetUserCache(uids)
+	return GetUserCacheCtx(ctx, uids)
 }
+// IsAdmin checks if a user is the super-admin.
 func IsAdmin(usr *model.TUser) bool {
 	return usr.Id == "admin"
 }
+
+// IsOrgAdmin checks if a user is an admin of the specified organization.
+// Uses the global context; prefer IsOrgAdminCtx when a request context is available.
 func IsOrgAdmin(uid, orgId string) bool {
-	usero, ok := GetUserOrg(uid, orgId)
+	return IsOrgAdminCtx(comm.Ctx, uid, orgId)
+}
+
+// IsOrgAdminCtx is the context-aware version of IsOrgAdmin.
+func IsOrgAdminCtx(ctx context.Context, uid, orgId string) bool {
+	usero, ok := GetUserOrgCtx(ctx, uid, orgId)
 	if !ok {
 		return false
 	}
 	return usero.PermAdm != 0
 }
+
+// GetUsePermRwr retrieves the read-write permission level for a user in an organization.
+// Uses the global context; prefer GetUsePermRwrCtx when a request context is available.
 func GetUsePermRwr(uid, orgId string) int {
-	usero, ok := GetUserOrg(uid, orgId)
+	return GetUsePermRwrCtx(comm.Ctx, uid, orgId)
+}
+
+// GetUsePermRwrCtx is the context-aware version of GetUsePermRwr.
+func GetUsePermRwrCtx(ctx context.Context, uid, orgId string) int {
+	usero, ok := GetUserOrgCtx(ctx, uid, orgId)
 	if !ok {
 		return 0
 	}
 	return usero.PermRw
 }
+
+// HasOrgExec checks if a user has execution permission in the specified organization.
+// Uses the global context; prefer HasOrgExecCtx when a request context is available.
 func HasOrgExec(uid, orgId string) bool {
-	usero, ok := GetUserOrg(uid, orgId)
+	return HasOrgExecCtx(comm.Ctx, uid, orgId)
+}
+
+// HasOrgExecCtx is the context-aware version of HasOrgExec.
+func HasOrgExecCtx(ctx context.Context, uid, orgId string) bool {
+	usero, ok := GetUserOrgCtx(ctx, uid, orgId)
 	if !ok {
 		return false
 	}

@@ -46,7 +46,7 @@ func CheckUPermission(usr *model.TUser, perms string) bool {
 	return false
 }
 func CheckCurrPermission(c *gin.Context, perms string) bool {
-	usr, ok := CurrUserCache(c)
+	usr, ok := CurrUserCacheCtx(c.Request.Context(), c)
 	if !ok {
 		return false
 	}

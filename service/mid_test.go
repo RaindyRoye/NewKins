@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -49,6 +50,41 @@ func TestGetMidLgUser_WrongType(t *testing.T) {
 	got := GetMidLgUser(c)
 	if got != nil {
 		t.Errorf("expected nil when value is wrong type, got %v", got)
+	}
+}
+
+func TestCurrUserCache_NilContext(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	c, _ := gin.CreateTestContext(nil)
+	
+	// Should handle nil gin.Context gracefully
+	usr, ok := CurrUserCache(nil)
+	if ok || usr != nil {
+		t.Errorf("CurrUserCache(nil) = (%v, %v), want (nil, false)", usr, ok)
+	}
+	
+	// Should handle nil request gracefully
+	usr, ok = CurrUserCache(c)
+	if ok || usr != nil {
+		t.Errorf("CurrUserCache with nil request = (%v, %v), want (nil, false)", usr, ok)
+	}
+}
+
+func TestCurrUserCacheCtx_NilContext(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	c, _ := gin.CreateTestContext(nil)
+	ctx := context.Background()
+	
+	// Should handle nil gin.Context gracefully
+	usr, ok := CurrUserCacheCtx(ctx, nil)
+	if ok || usr != nil {
+		t.Errorf("CurrUserCacheCtx(ctx, nil) = (%v, %v), want (nil, false)", usr, ok)
+	}
+	
+	// Should handle nil request gracefully
+	usr, ok = CurrUserCacheCtx(ctx, c)
+	if ok || usr != nil {
+		t.Errorf("CurrUserCacheCtx with nil request = (%v, %v), want (nil, false)", usr, ok)
 	}
 }
 
