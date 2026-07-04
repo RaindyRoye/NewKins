@@ -46,21 +46,22 @@ func GinReqParseJson(fn any) gin.HandlerFunc {
 			if argt.Kind() == reflect.Pointer {
 				argtr = argt.Elem()
 			}
-			inls[i] = reflect.Zero(argt)
+			// Always allocate the target value so handlers never receive nil,
+			// even when the request has no JSON body or wrong content-type.
+			argv := reflect.New(argtr)
 			if strings.Contains(c.ContentType(), "application/json") {
 				if argtr.Kind() == reflect.Struct || argtr.Kind() == reflect.Map {
-					argv := reflect.New(argtr)
 					if err := c.BindJSON(argv.Interface()); err != nil {
 						logrus.Warnf("params bind error at arg %d: %v", i, err)
 						c.String(http.StatusBadRequest, fmt.Sprintf("invalid request body for parameter %d", i))
 						return
 					}
-					if argt.Kind() == reflect.Pointer {
-						inls[i] = argv
-					} else {
-						inls[i] = argv.Elem()
-					}
 				}
+			}
+			if argt.Kind() == reflect.Pointer {
+				inls[i] = argv
+			} else {
+				inls[i] = argv.Elem()
 			}
 		}
 		defer func() {
