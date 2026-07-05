@@ -3,7 +3,6 @@ package engine
 import (
 	"fmt"
 	"os"
-	"runtime/debug"
 	"strings"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
+	"github.com/gokins/gokins/util"
 	"github.com/gokins/runner/runners"
 	"github.com/sirupsen/logrus"
 )
@@ -135,17 +135,7 @@ func (c *BuildTask) check() bool {
 }
 
 func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) {
-	defer func() {
-		if r := recover(); r != nil {
-			logrus.Warnf("BuildTask genRunjob recover:%v", r)
-			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
-			if err, ok := r.(error); ok {
-				rterr = fmt.Errorf("recover: %w", err)
-			} else {
-				rterr = fmt.Errorf("recover: %v", r)
-			}
-		}
-	}()
+	defer util.RecoverError(&rterr, "BuildTask genRunjob")
 	runjb := &runners.RunJob{
 		Id:           job.step.Id,
 		PipelineId:   job.task.build.PipelineId,
@@ -245,17 +235,7 @@ func (c *BuildTask) appendcmds(runjb *runners.RunJob, conts string) {
 	runjb.Commands = append(runjb.Commands, m)
 }
 func (c *BuildTask) gencmds(runjb *runners.RunJob, cmds []any) (rterr error) {
-	defer func() {
-		if r := recover(); r != nil {
-			logrus.Warnf("BuildTask gencmds recover:%v", r)
-			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
-			if err, ok := r.(error); ok {
-				rterr = fmt.Errorf("gencmds panic: %w", err)
-			} else {
-				rterr = fmt.Errorf("gencmds panic: %v", r)
-			}
-		}
-	}()
+	defer util.RecoverError(&rterr, "BuildTask gencmds")
 	for _, v := range cmds {
 		switch val := v.(type) {
 		case string:

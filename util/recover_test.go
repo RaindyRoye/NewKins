@@ -2,74 +2,183 @@ package util
 
 import (
 	"errors"
-	"strings"
 	"testing"
 )
 
-func TestRecoverResult_RecoversPanic(t *testing.T) {
-	var err error
+// --- RecoverLog ---
 
+func TestRecoverLog_CatchesPanic(t *testing.T) {
+	// Should not propagate panic
 	defer func() {
-		if err == nil {
-			t.Error("expected error to be set, got nil")
-		}
-		if !strings.Contains(err.Error(), "test panic") {
-			t.Errorf("expected error to contain 'test panic', got: %v", err)
+		if r := recover(); r != nil {
+			t.Fatalf("RecoverLog did not catch panic: %v", r)
 		}
 	}()
 
 	func() {
-		defer RecoverResult(&err, "test")
+		defer RecoverLog("test")
 		panic("test panic")
 	}()
 }
 
-func TestRecoverResult_RecoversErrorType(t *testing.T) {
-	var err error
-	originalErr := errors.New("original error")
-
+func TestRecoverLog_NoPanic(t *testing.T) {
+	// Should not do anything when no panic
 	defer func() {
-		if err == nil {
-			t.Error("expected error to be set, got nil")
-		}
-		if !strings.Contains(err.Error(), "original error") {
-			t.Errorf("expected error to contain 'original error', got: %v", err)
+		if r := recover(); r != nil {
+			t.Fatalf("unexpected panic: %v", r)
 		}
 	}()
 
 	func() {
-		defer RecoverResult(&err, "test")
-		panic(originalErr)
+		defer RecoverLog("test")
+		// normal execution
 	}()
 }
 
-func TestRecoverResult_NoPanic(t *testing.T) {
-	var err error
-
-	func() {
-		defer RecoverResult(&err, "test")
-		// No panic
+func TestRecoverLog_NilPanic(t *testing.T) {
+	// recover() returns nil when no panic; RecoverLog should handle gracefully
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("unexpected: %v", r)
+		}
 	}()
 
-	if err != nil {
-		t.Errorf("expected no error, got: %v", err)
+	func() {
+		defer RecoverLog("test")
+		// no panic at all
+	}()
+}
+
+// --- RecoverLogf ---
+
+func TestRecoverLogf_CatchesPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("RecoverLogf did not catch panic: %v", r)
+		}
+	}()
+
+	func() {
+		defer RecoverLogf("critical")
+		panic("critical failure")
+	}()
+}
+
+func TestRecoverLogf_NoPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("unexpected: %v", r)
+		}
+	}()
+
+	func() {
+		defer RecoverLogf("critical")
+	}()
+}
+
+// --- RecoverError ---
+
+func TestRecoverError_CatchesErrorPanic(t *testing.T) {
+	fn := func() (rterr error) {
+		defer RecoverError(&rterr, "testFunc")
+		panic(errors.New("something failed"))
+	}
+	err := fn()
+	if err == nil {
+		t.Fatal("expected error from recovered panic")
+	}
+	if !errors.Is(err, errors.New("something failed")) {
+		// errors.Is won't match a different instance, but we can check the message
+	}
+	expected := "testFunc: something failed"
+	if err.Error() != expected {
+		t.Errorf("error = %q, want %q", err.Error(), expected)
 	}
 }
 
-func TestRecoverResult_WithLabel(t *testing.T) {
-	var err error
+func TestRecoverError_CatchesNonErrorPanic(t *testing.T) {
+	fn := func() (rterr error) {
+		defer RecoverError(&rterr, "testFunc")
+		panic("string panic")
+	}
+	err := fn()
+	if err == nil {
+		t.Fatal("expected error from recovered non-error panic")
+	}
+	expected := "testFunc: string panic"
+	if err.Error() != expected {
+		t.Errorf("error = %q, want %q", err.Error(), expected)
+	}
+}
 
-	defer func() {
-		if err == nil {
-			t.Error("expected error to be set, got nil")
-		}
-		if !strings.HasPrefix(err.Error(), "myContext:") {
-			t.Errorf("expected error to start with 'myContext:', got: %v", err)
-		}
-	}()
+func TestRecoverError_IntPanic(t *testing.T) {
+	fn := func() (rterr error) {
+		defer RecoverError(&rterr, "intPanic")
+		panic(42)
+	}
+	err := fn()
+	if err == nil {
+		t.Fatal("expected error from recovered int panic")
+	}
+	expected := "intPanic: 42"
+	if err.Error() != expected {
+		t.Errorf("error = %q, want %q", err.Error(), expected)
+	}
+}
 
-	func() {
-		defer RecoverResult(&err, "myContext")
-		panic("something went wrong")
-	}()
+func TestRecoverError_NoPanic(t *testing.T) {
+	fn := func() (rterr error) {
+		defer RecoverError(&rterr, "testFunc")
+		return nil
+	}
+	err := fn()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestRecoverError_PreservesExistingReturn(t *testing.T) {
+	fn := func() (rterr error) {
+		defer RecoverError(&rterr, "testFunc")
+		return errors.New("normal error")
+	}
+	err := fn()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "normal error" {
+		t.Errorf("error = %q, want %q", err.Error(), "normal error")
+	}
+}
+
+func TestRecoverError_WrapsForErrorsIs(t *testing.T) {
+	baseErr := errors.New("base")
+	fn := func() (rterr error) {
+		defer RecoverError(&rterr, "wrapper")
+		panic(baseErr)
+	}
+	err := fn()
+	if !errors.Is(err, baseErr) {
+		t.Error("recovered error should wrap the base error for errors.Is")
+	}
+}
+
+// --- Concurrent safety ---
+
+func TestRecoverLog_Concurrent(t *testing.T) {
+	done := make(chan struct{})
+	for i := 0; i < 10; i++ {
+		go func() {
+			defer func() { <-done }()
+			func() {
+				defer RecoverLog("concurrent")
+				panic("concurrent panic")
+			}()
+		}()
+	}
+	// Close done channel to unblock - but we need to wait first
+	// Simple approach: just let goroutines finish
+	for i := 0; i < 10; i++ {
+		done <- struct{}{}
+	}
 }

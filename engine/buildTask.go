@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime/debug"
 	"strconv"
 	"sync"
 	"time"
@@ -98,12 +97,7 @@ func (c *BuildTask) Cancel() {
 	}
 }
 func (c *BuildTask) clears() {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask clears recover:%v", err)
-			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("BuildTask clears")
 
 	if c.isClone {
 		_ = os.RemoveAll(c.repoPaths)
@@ -114,12 +108,7 @@ func (c *BuildTask) clears() {
 	}
 }
 func (c *BuildTask) run() {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask run recover:%v", err)
-			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("BuildTask run")
 
 	defer func() {
 		c.endtm = time.Now()
@@ -178,10 +167,7 @@ func (c *BuildTask) runStage(stage *runtime.Stage) {
 		stage.Finished = time.Now()
 		c.updateStage(stage)
 		logrus.Debugf("stage %s end!!!", stage.Name)
-		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask runStage recover:%v", err)
-			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
-		}
+		util.RecoverLog("BuildTask runStage")
 	}()
 	stage.Started = time.Now()
 	stage.Status = common.BuildStatusRunning
@@ -231,10 +217,7 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 		job.ended = true
 		job.step.Finished = time.Now()
 		go c.updateStep(job)
-		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask runStep recover:%v", err)
-			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
-		}
+		util.RecoverLog("BuildTask runStep")
 	}()
 
 	job.RLock()
@@ -341,12 +324,7 @@ func (c *BuildTask) getRepo() error {
 var regBfb = regexp.MustCompile(`:\s+(\d+)% \(\d+\/\d+\)`)
 
 func (c *BuildTask) Write(bts []byte) (n int, err error) {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask gitWrite recover:%v", err)
-			logrus.Warnf("BuildTask stack:%s", string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("BuildTask gitWrite")
 	ln := len(bts)
 	line := string(bts)
 	if ln > 0 && regBfb.MatchString(line) {
