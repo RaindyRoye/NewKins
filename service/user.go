@@ -100,6 +100,12 @@ func GetUserCacheCtx(ctx context.Context, uid string) (*model.TUser, bool) {
 	return e, ok
 }
 func CurrUserCache(c *gin.Context) (*model.TUser, bool) {
+	return CurrUserCacheCtx(c.Request.Context(), c)
+}
+
+// CurrUserCacheCtx retrieves the current user from cache or database using the provided context.
+// This enables request-scoped cancellation and timeout for database queries.
+func CurrUserCacheCtx(ctx context.Context, c *gin.Context) (*model.TUser, bool) {
 	if c == nil {
 		return nil, false
 	}
@@ -115,7 +121,7 @@ func CurrUserCache(c *gin.Context) (*model.TUser, bool) {
 	if !ok || uids == "" {
 		return nil, false
 	}
-	return GetUserCache(uids)
+	return GetUserCacheCtx(ctx, uids)
 }
 func IsAdmin(usr *model.TUser) bool {
 	return usr.Id == "admin"

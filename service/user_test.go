@@ -588,3 +588,13 @@ func TestPipePerm_Accessors(t *testing.T) {
 		t.Errorf("Pipeline() returned wrong pipeline")
 	}
 }
+
+// --- CurrUserCacheCtx Tests ---
+
+func TestCurrUserCacheCtx_NilContext(t *testing.T) {
+	// CurrUserCacheCtx with nil gin.Context should return false
+	_, ok := CurrUserCacheCtx(nil, nil)
+	if ok {
+		t.Errorf("CurrUserCacheCtx with nil context should return false")
+	}
+}
