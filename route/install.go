@@ -81,7 +81,7 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 		return
 	}
 	if !checkUrl(m.Server.Host) {
-		c.String(511, "can't connect:%s", m.Server.Host)
+		c.String(http.StatusBadGateway, "can't connect:%s", m.Server.Host)
 		return
 	}
 	if m.Server.HbtpHost != "" && !common.RegHost1.MatchString(m.Server.HbtpHost) {

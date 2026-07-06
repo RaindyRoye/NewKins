@@ -328,7 +328,7 @@ func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if usr.Id == perm.LgUser().Id {
-		c.String(511, "can't edit yourself")
+		c.String(http.StatusConflict, "can't edit yourself")
 		return
 	}
 	if !perm.IsAdmin() {
@@ -407,7 +407,7 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if usr.Id == perm.LgUser().Id {
-		c.String(511, "can't remove yourself")
+		c.String(http.StatusConflict, "can't remove yourself")
 		return
 	}
 	if !perm.IsOrgAdmin() {
@@ -441,7 +441,7 @@ func (OrgController) pipeAdd(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if ok {
-		c.String(511, "pipeline exist")
+		c.String(http.StatusConflict, "pipeline exist")
 		return
 	}
 	ne.OrgId = perm.Org().Id
