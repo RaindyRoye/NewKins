@@ -32,6 +32,11 @@ func StartTimerEngine() *TimerEngine {
 		tasks: make(map[string]*timerExec),
 	}
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logrus.Errorf("TimerEngine goroutine panic: %v\n%s", r, string(debug.Stack()))
+			}
+		}()
 		c.refresh()
 		for !hbtp.EndContext(comm.Ctx) {
 			c.run()
