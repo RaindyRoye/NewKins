@@ -2,7 +2,6 @@ package engine
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"runtime/debug"
 	"sync"
@@ -199,7 +198,7 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 }
 func (c *TimerEngine) Refresh(tmrid string) error {
 	if tmrid == "" {
-		return errors.New("timer id is empty")
+		return fmt.Errorf("timer id is empty: %w", ErrEmptyParams)
 	}
 	tmr := &model.TTrigger{}
 	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", tmrid).Get(tmr)
@@ -208,7 +207,7 @@ func (c *TimerEngine) Refresh(tmrid string) error {
 	}
 	if !ok || tmr.Enabled != 1 {
 		c.Delete(tmrid)
-		return fmt.Errorf("trigger %s not found or disabled", tmrid)
+		return fmt.Errorf("trigger %s not found or disabled: %w", tmrid, ErrBuildNotFound)
 	}
 	return c.resetOne(tmr)
 }
