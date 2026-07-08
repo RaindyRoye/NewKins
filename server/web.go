@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/pprof"
 	"path/filepath"
@@ -112,7 +113,7 @@ func regApi() {
 	}
 	// Health check endpoints
 	comm.WebEgn.GET("/healthz", func(c *gin.Context) {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"status":     "ok",
 			"version":    comm.Version,
 			"build_time": comm.BuildTime,
@@ -120,11 +121,34 @@ func regApi() {
 		})
 	})
 	comm.WebEgn.GET("/readyz", func(c *gin.Context) {
-		if comm.Db != nil && comm.BCache != nil {
-			c.JSON(200, gin.H{"status": "ready", "db": "connected", "cache": "connected"})
-		} else {
-			c.JSON(503, gin.H{"status": "not_ready", "db": comm.Db != nil, "cache": comm.BCache != nil})
+		status := gin.H{
+			"status": "ready",
+			"db":     "connected",
+			"cache":  "connected",
 		}
+		httpStatus := http.StatusOK
+
+		if comm.Db == nil {
+			status["db"] = "disconnected"
+			status["status"] = "not_ready"
+			httpStatus = http.StatusServiceUnavailable
+		} else {
+			// Verify actual database connectivity with a ping.
+			db := comm.Db.DB()
+			if db != nil {
+				if err := db.Ping(); err != nil {
+					status["db"] = fmt.Sprintf("error: %v", err)
+					status["status"] = "not_ready"
+					httpStatus = http.StatusServiceUnavailable
+				}
+			}
+		}
+		if comm.BCache == nil {
+			status["cache"] = "disconnected"
+			status["status"] = "not_ready"
+			httpStatus = http.StatusServiceUnavailable
+		}
+		c.JSON(httpStatus, status)
 	})
 
 	util.GinRegController(comm.WebEgn, &route.ApiController{})

@@ -2,7 +2,6 @@ package engine
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -39,7 +38,7 @@ func (c *baseRunner) PullJob(name string, plugs []string) (*runners.RunJob, erro
 		}
 		time.Sleep(time.Millisecond * 100)
 	}
-	return nil, fmt.Errorf("no job found for runner %q with plugins %v after 5s", name, plugs)
+	return nil, fmt.Errorf("no job found for runner %q with plugins %v after 5s: %w", name, plugs, ErrJobNotFound)
 }
 func (c *baseRunner) CheckCancel(buildID string) bool {
 	v, ok := Mgr.buildEgn.Get(buildID)
@@ -51,11 +50,11 @@ func (c *baseRunner) CheckCancel(buildID string) bool {
 func (c *baseRunner) Update(m *runners.UpdateJobInfo) error {
 	tsk, ok := Mgr.buildEgn.Get(m.BuildId)
 	if !ok {
-		return fmt.Errorf("update: build %q not found", m.BuildId)
+		return fmt.Errorf("update: %w: %q", ErrBuildNotFound, m.BuildId)
 	}
 	job, ok := tsk.GetJob(m.JobId)
 	if !ok {
-		return fmt.Errorf("update: job %q not found in build %q", m.JobId, m.BuildId)
+		return fmt.Errorf("update: %w: %q in build %q", ErrJobNotFound, m.JobId, m.BuildId)
 	}
 	tsk.UpJob(job, m.Status, m.Error, m.ExitCode)
 	return nil
@@ -64,17 +63,17 @@ func (c *baseRunner) Update(m *runners.UpdateJobInfo) error {
 func (c *baseRunner) UpdateCmd(buildID, jobId, cmdId string, fs, code int) error {
 	tsk, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return fmt.Errorf("updateCmd: build %q not found", buildID)
+		return fmt.Errorf("updateCmd: %w: %q", ErrBuildNotFound, buildID)
 	}
 	job, ok := tsk.GetJob(jobId)
 	if !ok {
-		return fmt.Errorf("updateCmd: job %q not found in build %q", jobId, buildID)
+		return fmt.Errorf("updateCmd: %w: %q in build %q", ErrJobNotFound, jobId, buildID)
 	}
 	job.RLock()
 	cmd, ok := job.cmdmp[cmdId]
 	job.RUnlock()
 	if !ok {
-		return fmt.Errorf("updateCmd: cmd %q not found in job %q", cmdId, jobId)
+		return fmt.Errorf("updateCmd: %w: %q in job %q", ErrCmdNotFound, cmdId, jobId)
 	}
 	tsk.UpJobCmd(cmd, fs, code)
 	return nil
@@ -82,11 +81,11 @@ func (c *baseRunner) UpdateCmd(buildID, jobId, cmdId string, fs, code int) error
 func (c *baseRunner) PushOutLine(buildID, jobId, cmdId, bs string, iserr bool) error {
 	tsk, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return fmt.Errorf("pushOutLine: build %q not found", buildID)
+		return fmt.Errorf("pushOutLine: %w: %q", ErrBuildNotFound, buildID)
 	}
 	job, ok := tsk.GetJob(jobId)
 	if !ok {
-		return fmt.Errorf("pushOutLine: job %q not found in build %q", jobId, buildID)
+		return fmt.Errorf("pushOutLine: %w: %q in build %q", ErrJobNotFound, jobId, buildID)
 	}
 
 	bts, err := json.Marshal(&bean.LogOutJson{
@@ -143,11 +142,11 @@ func (c *baseRunner) FindJobId(buildID, stgNm, stpNm string) (string, bool) {
 
 func (c *baseRunner) ReadDir(fs int, buildID string, pth string) ([]*runners.DirEntry, error) {
 	if buildID == "" || pth == "" {
-		return nil, fmt.Errorf("readDir: buildID=%q and path=%q must not be empty", buildID, pth)
+		return nil, fmt.Errorf("readDir: %w: buildID=%q, path=%q", ErrEmptyParams, buildID, pth)
 	}
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return nil, fmt.Errorf("readDir: build %q not found", buildID)
+		return nil, fmt.Errorf("readDir: %w: %q", ErrBuildNotFound, buildID)
 	}
 	pths := ""
 	switch fs {
@@ -181,11 +180,11 @@ func (c *baseRunner) ReadDir(fs int, buildID string, pth string) ([]*runners.Dir
 }
 func (c *baseRunner) ReadFile(fs int, buildID string, pth string, start int64) (int64, io.ReadCloser, error) {
 	if buildID == "" || pth == "" {
-		return 0, nil, fmt.Errorf("readFile: buildID=%q and path=%q must not be empty", buildID, pth)
+		return 0, nil, fmt.Errorf("readFile: %w: buildID=%q, path=%q", ErrEmptyParams, buildID, pth)
 	}
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return 0, nil, fmt.Errorf("readFile: build %q not found", buildID)
+		return 0, nil, fmt.Errorf("readFile: %w: %q", ErrBuildNotFound, buildID)
 	}
 	pths := ""
 	switch fs {
@@ -197,7 +196,7 @@ func (c *baseRunner) ReadFile(fs int, buildID string, pth string, start int64) (
 		pths = filepath.Join(build.buildPath, common.PathJobs, pth)
 	}
 	if pths == "" {
-		return 0, nil, errors.New("readFile: invalid filesystem type, no path resolved")
+		return 0, nil, fmt.Errorf("readFile: %w", ErrInvalidFSType)
 	}
 	stat, err := os.Stat(pths)
 	if err != nil {
@@ -244,15 +243,15 @@ func (c *baseRunner) GetEnv(buildID, jobId, key string) (string, bool) {
 }
 func (c *baseRunner) GenEnv(buildID, jobId string, env utils.EnvVal) error {
 	if jobId == "" || env == nil {
-		return fmt.Errorf("genEnv: jobId=%q must not be empty and env must not be nil", jobId)
+		return fmt.Errorf("genEnv: %w: jobId=%q, env=%v", ErrEmptyParams, jobId, env)
 	}
 	tsk, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return fmt.Errorf("genEnv: build %q not found", buildID)
+		return fmt.Errorf("genEnv: %w: %q", ErrBuildNotFound, buildID)
 	}
 	job, ok := tsk.GetJob(jobId)
 	if !ok {
-		return fmt.Errorf("genEnv: job %q not found in build %q", jobId, buildID)
+		return fmt.Errorf("genEnv: %w: %q in build %q", ErrJobNotFound, jobId, buildID)
 	}
 	bts, err := json.Marshal(env)
 	if err != nil {
@@ -268,15 +267,15 @@ func (c *baseRunner) GenEnv(buildID, jobId string, env utils.EnvVal) error {
 
 func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*runners.FileStat, error) {
 	if jobId == "" || pth == "" {
-		return nil, fmt.Errorf("statFile: jobId=%q and path=%q must not be empty", jobId, pth)
+		return nil, fmt.Errorf("statFile: %w: jobId=%q, path=%q", ErrEmptyParams, jobId, pth)
 	}
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return nil, fmt.Errorf("statFile: build %q not found", buildID)
+		return nil, fmt.Errorf("statFile: %w: %q", ErrBuildNotFound, buildID)
 	}
 	job, ok := build.GetJob(jobId)
 	if !ok {
-		return nil, fmt.Errorf("statFile: job %q not found in build %q", jobId, buildID)
+		return nil, fmt.Errorf("statFile: %w: %q in build %q", ErrJobNotFound, jobId, buildID)
 	}
 	pths := ""
 	switch fs {
@@ -288,7 +287,7 @@ func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*
 		pths = filepath.Join(build.repoPaths, dir, pth)
 	}
 	if pths == "" {
-		return nil, errors.New("statFile: invalid filesystem type, no path resolved")
+		return nil, fmt.Errorf("statFile: %w", ErrInvalidFSType)
 	}
 	stat, err := os.Stat(pths)
 	if err != nil {
@@ -302,15 +301,15 @@ func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*
 }
 func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, start int64) (io.WriteCloser, error) {
 	if jobId == "" || pth == "" {
-		return nil, fmt.Errorf("uploadFile: jobId=%q and path=%q must not be empty", jobId, pth)
+		return nil, fmt.Errorf("uploadFile: %w: jobId=%q, path=%q", ErrEmptyParams, jobId, pth)
 	}
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return nil, fmt.Errorf("uploadFile: build %q not found", buildID)
+		return nil, fmt.Errorf("uploadFile: %w: %q", ErrBuildNotFound, buildID)
 	}
 	job, ok := build.GetJob(jobId)
 	if !ok {
-		return nil, fmt.Errorf("uploadFile: job %q not found in build %q", jobId, buildID)
+		return nil, fmt.Errorf("uploadFile: %w: %q in build %q", ErrJobNotFound, jobId, buildID)
 	}
 	pths := ""
 	switch fs {
@@ -322,7 +321,7 @@ func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, 
 		pths = filepath.Join(build.repoPaths, dir, pth)
 	}
 	if pths == "" {
-		return nil, errors.New("uploadFile: invalid filesystem type, no path resolved")
+		return nil, fmt.Errorf("uploadFile: %w", ErrInvalidFSType)
 	}
 	dirs := filepath.Dir(pths)
 	if err := os.MkdirAll(dirs, 0750); err != nil {
@@ -348,11 +347,11 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 		vers = tnms[1]
 	}
 	if buildID == "" || idnt == "" || name == "" {
-		return "", fmt.Errorf("findArtVersionId: buildID=%q, identifier=%q, name=%q must not be empty", buildID, idnt, name)
+		return "", fmt.Errorf("findArtVersionId: %w: buildID=%q, identifier=%q, name=%q", ErrEmptyParams, buildID, idnt, name)
 	}
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return "", fmt.Errorf("findArtVersionId: build %q not found", buildID)
+		return "", fmt.Errorf("findArtVersionId: %w: %q", ErrBuildNotFound, buildID)
 	}
 
 	arty := &model.TArtifactory{}
@@ -362,22 +361,22 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 	if err != nil {
 		return "", fmt.Errorf("findArtVersionId: query artifactory %q: %w", idnt, err)
 	} else if !ok {
-		return "", fmt.Errorf("findArtVersionId: artifactory %q not found", idnt)
+		return "", fmt.Errorf("findArtVersionId: %w: %q", ErrArtifactoryNotFound, idnt)
 	}
 
 	pv := &model.TPipelineVersion{}
 	ok = service.GetIdOrAid(build.build.PipelineVersionId, pv)
 	if !ok {
-		return "", fmt.Errorf("findArtVersionId: pipeline version %q not found", build.build.PipelineVersionId)
+		return "", fmt.Errorf("findArtVersionId: %w: pipeline version %q", ErrBuildNotFound, build.build.PipelineVersionId)
 	}
 	usr := &model.TUser{}
 	ok = service.GetIdOrAid(pv.Uid, usr)
 	if !ok {
-		return "", fmt.Errorf("findArtVersionId: user %q not found", pv.Uid)
+		return "", fmt.Errorf("findArtVersionId: %w: user %q", ErrBuildNotFound, pv.Uid)
 	}
 	perm := service.NewOrgPerm(usr, arty.OrgId)
 	if !perm.CanExec() {
-		return "", fmt.Errorf("user put '%s' no permission", idnt)
+		return "", fmt.Errorf("user put '%s': %w", idnt, ErrPermissionDenied)
 	}
 
 	artp := &model.TArtifactPackage{}
@@ -385,7 +384,7 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 	if err != nil {
 		return "", fmt.Errorf("findArtVersionId: query artifact package %q: %w", name, err)
 	} else if !ok {
-		return "", fmt.Errorf("not found artifact '%s'", names)
+		return "", fmt.Errorf("findArtVersionId: %w: %q", ErrArtifactNotFound, names)
 	}
 	artv := &model.TArtifactVersion{}
 	ses := comm.Db.Context(comm.Ctx).Where("package_id=?", artp.Id)
@@ -396,18 +395,18 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 	if err != nil {
 		return "", fmt.Errorf("findArtVersionId: query artifact version %q: %w", names, err)
 	} else if !ok {
-		return "", fmt.Errorf("not found artifacts '%s'", names)
+		return "", fmt.Errorf("findArtVersionId: %w: %q", ErrArtifactNotFound, names)
 	}
 	return artv.Id, nil
 }
 func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string, error) {
 	name = strings.Split(strings.TrimSpace(name), "@")[0]
 	if buildID == "" || idnt == "" || name == "" {
-		return "", fmt.Errorf("newArtVersionId: buildID=%q, identifier=%q, name=%q must not be empty", buildID, idnt, name)
+		return "", fmt.Errorf("newArtVersionId: %w: buildID=%q, identifier=%q, name=%q", ErrEmptyParams, buildID, idnt, name)
 	}
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
-		return "", fmt.Errorf("newArtVersionId: build %q not found", buildID)
+		return "", fmt.Errorf("newArtVersionId: %w: %q", ErrBuildNotFound, buildID)
 	}
 
 	arty := &model.TArtifactory{}
@@ -417,7 +416,7 @@ func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string,
 	if err != nil {
 		return "", fmt.Errorf("newArtVersionId: query artifactory %q: %w", idnt, err)
 	} else if !ok {
-		return "", fmt.Errorf("newArtVersionId: artifactory %q not found", idnt)
+		return "", fmt.Errorf("newArtVersionId: %w: %q", ErrArtifactoryNotFound, idnt)
 	}
 	if arty.Disabled == 1 {
 		return "", fmt.Errorf("newArtVersionId: artifactory %q is disabled", idnt)

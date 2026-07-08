@@ -2,7 +2,9 @@ package engine
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -155,8 +157,12 @@ func TestTimerEngineRefreshEmptyID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty timer ID")
 	}
-	if err.Error() != "timer id is empty" {
-		t.Fatalf("expected 'timer id is empty', got %q", err.Error())
+	if !strings.Contains(err.Error(), "timer id is empty") {
+		t.Fatalf("expected error containing 'timer id is empty', got %q", err.Error())
+	}
+	// Verify it wraps ErrEmptyParams
+	if !errors.Is(err, ErrEmptyParams) {
+		t.Fatalf("expected error to wrap ErrEmptyParams, got %v", err)
 	}
 }
 
