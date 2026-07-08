@@ -57,7 +57,9 @@ func Start() error {
 		_ = os.RemoveAll(filepath.Join(comm.WorkPath, common.PathTmp))
 		// Block until context is canceled instead of busy-waiting.
 		<-comm.Ctx.Done()
-		Mgr.buildEgn.Stop()
+		if Mgr.buildEgn != nil {
+			Mgr.buildEgn.Stop()
+		}
 		if Mgr.shellRun != nil {
 			Mgr.shellRun.Stop()
 		}
@@ -77,5 +79,8 @@ func (c *Manager) TimerEng() *TimerEngine {
 }
 
 func (c *Manager) Plugins() []string {
+	if c.jobEgn == nil {
+		return nil
+	}
 	return c.jobEgn.Plugins()
 }
