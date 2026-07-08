@@ -498,7 +498,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 			return
 		}
 		where := comm.Db.Context(c.Request.Context()).Where("pipeline_id = ? and deleted != 1", pipelineId).Desc("id")
-		page, err = comm.FindPage(where, &ls, pg)
+		page, err = comm.FindPageCtx(c.Request.Context(), where, &ls, pg)
 		if err != nil {
 			util.RespInternalErr(c, "db operation", err)
 			return
@@ -506,7 +506,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 	} else {
 		if service.IsAdmin(usr) {
 			where := comm.Db.Context(c.Request.Context()).Where(" deleted != 1").Desc("id")
-			page, err = comm.FindPage(where, &ls, pg)
+			page, err = comm.FindPageCtx(c.Request.Context(), where, &ls, pg)
 			if err != nil {
 				util.RespInternalErr(c, "db operation", err)
 				return
@@ -523,7 +523,7 @@ func (PipelineController) pipelineVersions(c *gin.Context, m *hbtp.Map) {
 				return
 			}
 			where := comm.Db.Context(c.Request.Context()).In("pipeline_id", tpipeIds).Where("deleted != 1").Desc("id")
-			page, err = comm.FindPage(where, &ls, pg, 20)
+			page, err = comm.FindPageCtx(c.Request.Context(), where, &ls, pg, 20)
 			if err != nil {
 				util.RespInternalErr(c, "db operation", err)
 				return
@@ -676,7 +676,7 @@ func (PipelineController) vars(c *gin.Context, m *hbtp.Map) {
 	if q != "" {
 		session.And("(name like ? or value like ?)", "%"+q+"%", "%"+q+"%")
 	}
-	page, err = comm.FindPage(session, &ls, pg)
+	page, err = comm.FindPageCtx(c.Request.Context(), session, &ls, pg)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return

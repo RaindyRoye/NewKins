@@ -44,7 +44,7 @@ func (UserController) page(c *gin.Context, m *hbtp.Map) {
 		ses.And("name like ? or nick like ?", "%"+q+"%", "%"+q+"%")
 	}
 
-	page, err := comm.FindPage(ses, &ls, pg, 20)
+	page, err := comm.FindPageCtx(ctx, ses, &ls, pg, 20)
 	if err != nil {
 		util.RespInternalErr(c, "user page query", err)
 		return

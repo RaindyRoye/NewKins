@@ -365,16 +365,16 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 	}
 
 	pv := &model.TPipelineVersion{}
-	ok = service.GetIdOrAid(build.build.PipelineVersionId, pv)
+	ok = service.GetIdOrAidCtx(build.taskCtx(), build.build.PipelineVersionId, pv)
 	if !ok {
 		return "", fmt.Errorf("findArtVersionId: %w: pipeline version %q", ErrBuildNotFound, build.build.PipelineVersionId)
 	}
 	usr := &model.TUser{}
-	ok = service.GetIdOrAid(pv.Uid, usr)
+	ok = service.GetIdOrAidCtx(build.taskCtx(), pv.Uid, usr)
 	if !ok {
 		return "", fmt.Errorf("findArtVersionId: %w: user %q", ErrBuildNotFound, pv.Uid)
 	}
-	perm := service.NewOrgPerm(usr, arty.OrgId)
+	perm := service.NewOrgPermCtx(build.taskCtx(), usr, arty.OrgId)
 	if !perm.CanExec() {
 		return "", fmt.Errorf("user put '%s': %w", idnt, ErrPermissionDenied)
 	}
