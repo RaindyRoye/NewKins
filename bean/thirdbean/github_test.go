@@ -206,12 +206,12 @@ func TestResultGithubRepo_EmptyJSON(t *testing.T) {
 func TestResultGithubRepo_MarshalRoundTrip(t *testing.T) {
 	desc := "test description"
 	original := ResultGithubRepo{
-		Id:       200,
-		NodeId:   "node123",
-		Name:     "test-repo",
-		FullName: "org/test-repo",
-		Description: &desc,
-		DefaultBranch: "main",
+		Id:              200,
+		NodeId:          "node123",
+		Name:            "test-repo",
+		FullName:        "org/test-repo",
+		Description:     &desc,
+		DefaultBranch:   "main",
 		StargazersCount: 50,
 	}
 

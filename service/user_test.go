@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 
 	"github.com/gokins/gokins/model"
@@ -593,7 +594,7 @@ func TestPipePerm_Accessors(t *testing.T) {
 
 func TestCurrUserCacheCtx_NilContext(t *testing.T) {
 	// CurrUserCacheCtx with nil gin.Context should return false
-	_, ok := CurrUserCacheCtx(nil, nil)
+	_, ok := CurrUserCacheCtx(context.Background(), nil)
 	if ok {
 		t.Errorf("CurrUserCacheCtx with nil context should return false")
 	}
