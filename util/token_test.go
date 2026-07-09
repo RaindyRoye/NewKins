@@ -226,7 +226,7 @@ func TestGetToken_FromCookie(t *testing.T) {
 	token, _ := CreateToken(claims, key, time.Hour)
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	req.AddCookie(&http.Cookie{
+	req.AddCookie(&http.Cookie{ //nolint:gosec // G124: test code
 		Name:  "gokinstk",
 		Value: token,
 	})

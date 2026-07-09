@@ -1,6 +1,7 @@
 package migrates
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -34,7 +35,8 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 		errs = fmt.Errorf("open mysql database: %w", err)
 		return
 	}
-	err = db.Ping()
+	ctx := context.Background()
+	err = db.PingContext(ctx)
 	if err != nil {
 		_ = db.Close()
 		uls := fmt.Sprintf("%s:%s@tcp(%s)/?parseTime=true&multiStatements=true",
@@ -48,14 +50,14 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 			return
 		}
 		defer func() { _ = db.Close() }()
-		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE `%s` DEFAULT CHARACTER SET utf8mb4;", dbs))
+		_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s` DEFAULT CHARACTER SET utf8mb4;", dbs))
 		if err != nil {
 			logrus.Errorf("InitMysqlMigrate: create dbs err: %v", err)
 			errs = fmt.Errorf("create database %q: %w", dbs, err)
 			return
 		}
-		_, _ = db.Exec(fmt.Sprintf("USE `%s`;", dbs))
-		err = db.Ping()
+		_, _ = db.ExecContext(ctx, fmt.Sprintf("USE `%s`;", dbs))
+		err = db.PingContext(ctx)
 	}
 	defer func() { _ = db.Close() }()
 	wait = false
@@ -171,7 +173,7 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 		errs = fmt.Errorf("open postgres database: %w", err)
 		return
 	}
-	err = db.Ping()
+	err = db.PingContext(context.Background())
 	if err != nil {
 		_ = db.Close()
 		errs = fmt.Errorf("ping postgres database: %w", err)

@@ -68,7 +68,7 @@ func TestPostgresConnectionStringFormat(t *testing.T) {
 		t.Errorf("expected prefix postgres://, got %q", masked)
 	}
 
-	expected := "postgres://testuser:***@localhost:5432/testdb?sslmode=disable"
+	expected := "postgres://testuser:***@localhost:5432/testdb?sslmode=disable" //nolint:gosec // G101: test credentials
 	if masked != expected {
 		t.Errorf("masked connection string = %q, want %q", masked, expected)
 	}

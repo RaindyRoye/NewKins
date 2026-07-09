@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,7 +12,7 @@ import (
 func TestMidAccessAllowFun_OPTIONS(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("OPTIONS", "/api/test", nil)
+	c.Request = httptest.NewRequestWithContext(context.Background(), "OPTIONS", "/api/test", nil)
 	c.Request.Header.Set("Origin", "https://example.com")
 
 	MidAccessAllowFun(c)
@@ -39,7 +40,7 @@ func TestMidAccessAllowFun_POST(t *testing.T) {
 	r.POST("/test", func(c *gin.Context) {
 		c.String(200, "ok")
 	})
-	c.Request = httptest.NewRequest("POST", "/test", nil)
+	c.Request = httptest.NewRequestWithContext(context.Background(), "POST", "/test", nil)
 	c.Request.Header.Set("Origin", "https://example.com")
 
 	MidAccessAllowFun(c)
@@ -56,7 +57,7 @@ func TestMidAccessAllowFun_POST(t *testing.T) {
 func TestMidAccessAllowFun_GET(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("GET", "/test", nil)
+	c.Request = httptest.NewRequestWithContext(context.Background(), "GET", "/test", nil)
 
 	MidAccessAllowFun(c)
 
@@ -68,7 +69,7 @@ func TestMidAccessAllowFun_GET(t *testing.T) {
 func TestMidAccessAllowFun_PUT(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("PUT", "/test", nil)
+	c.Request = httptest.NewRequestWithContext(context.Background(), "PUT", "/test", nil)
 
 	MidAccessAllowFun(c)
 
@@ -80,7 +81,7 @@ func TestMidAccessAllowFun_PUT(t *testing.T) {
 func TestMidAccessAllowFun_DELETE(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("DELETE", "/test", nil)
+	c.Request = httptest.NewRequestWithContext(context.Background(), "DELETE", "/test", nil)
 
 	MidAccessAllowFun(c)
 

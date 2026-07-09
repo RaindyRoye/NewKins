@@ -90,7 +90,7 @@ func (c *Pipeline) ConvertCmd() {
 			case string:
 				step.Commands = v
 			case []any:
-				var ls []string
+				ls := make([]string, 0, len(v))
 				for _, v1 := range v {
 					ls = append(ls, fmt.Sprintf("%v", v1))
 				}

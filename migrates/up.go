@@ -1,6 +1,7 @@
 package migrates
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -26,7 +27,7 @@ func UpMysqlMigrate(ul string) error {
 		return fmt.Errorf("open mysql database: %w", err)
 	}
 	defer func() { _ = db.Close() }()
-	err = db.Ping()
+	err = db.PingContext(context.Background())
 	if err != nil {
 		logrus.Errorf("mysql ping failed: %v", err)
 		return fmt.Errorf("ping mysql database: %w", err)
@@ -80,7 +81,7 @@ func UpPostgresMigrate(ul string) error {
 		return fmt.Errorf("open postgres database: %w", err)
 	}
 	defer func() { _ = db.Close() }()
-	err = db.Ping()
+	err = db.PingContext(context.Background())
 	if err != nil {
 		logrus.Errorf("postgres ping failed: %v", err)
 		return fmt.Errorf("ping postgres database: %w", err)
@@ -133,7 +134,7 @@ func UpSqliteMigrate(ul string) error {
 		return fmt.Errorf("open sqlite database: %w", err)
 	}
 	defer func() { _ = db.Close() }()
-	err = db.Ping()
+	err = db.PingContext(context.Background())
 	if err != nil {
 		logrus.Errorf("sqlite ping failed: %v", err)
 		return fmt.Errorf("ping sqlite database: %w", err)

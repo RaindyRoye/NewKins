@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +17,7 @@ const (
 )
 
 func newGitlabRequest(event string, body []byte, secret string) *http.Request {
-	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/webhook", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(hook.GitlabEvent, event)
 	if secret != "" {

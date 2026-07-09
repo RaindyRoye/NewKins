@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"net/http/httptest"
 	"testing"
 
@@ -79,7 +80,7 @@ func TestGinRegController_MultipleGroups(t *testing.T) {
 // performRequest creates a GET test request and returns the response
 func performRequest(e *gin.Engine, path string) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", path, nil)
+	req := httptest.NewRequestWithContext(context.Background(), "GET", path, nil)
 	e.ServeHTTP(w, req)
 	return w
 }
