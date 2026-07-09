@@ -159,7 +159,7 @@ func TestReplaceMaps_BasicReplacement(t *testing.T) {
 		"DB_HOST": {Name: "DB_HOST", Value: "db.example.com", Secret: false},
 		"DB_PASS": {Name: "DB_PASS", Value: "password", Secret: true},
 	}
-	envs := map[string]string{
+	envs := map[string]string{ //nolint:gosec // G101: test environment variables
 		"DATABASE_URL": "postgres://${{DB_HOST}}:5432/mydb",
 		"PASSWORD":     "${{DB_PASS}}",
 	}
@@ -251,7 +251,7 @@ func TestReplaceStage_StepEnvAndInput(t *testing.T) {
 				Env: map[string]string{
 					"APP_ENV": "${{ENV}}",
 				},
-				Input: map[string]string{
+				Input: map[string]string{ //nolint:gosec // G101: test input
 					"token": "${{API_KEY}}",
 				},
 			},

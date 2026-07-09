@@ -175,7 +175,7 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 	case []any:
 		err = c.gencmds(runjb, cmd)
 	case []string:
-		var ls []any
+		ls := make([]any, 0, len(cmd))
 		for _, v := range cmd {
 			ls = append(ls, v)
 		}

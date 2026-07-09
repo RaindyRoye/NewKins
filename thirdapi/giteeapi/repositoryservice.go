@@ -210,7 +210,7 @@ func (s *RepositoryService) GetWebHooks(ctx context.Context, accessToken, owner,
 }
 
 func convertHookList(ls []*thirdbean.ResultGetGiteeHook) []*thirdapi.RepositoryHook {
-	repos := make([]*thirdapi.RepositoryHook, 0)
+	repos := make([]*thirdapi.RepositoryHook, 0, len(ls))
 	for _, v := range ls {
 		repos = append(repos, convertHook(v))
 	}
@@ -226,7 +226,7 @@ func convertHook(from *thirdbean.ResultGetGiteeHook) *thirdapi.RepositoryHook {
 }
 
 func convertBranchList(ls []*thirdbean.ResultGiteeRepoBranch) []*thirdapi.RepositoryBranch {
-	repos := make([]*thirdapi.RepositoryBranch, 0)
+	repos := make([]*thirdapi.RepositoryBranch, 0, len(ls))
 	for _, v := range ls {
 		repos = append(repos, convertBranch(v))
 	}
@@ -240,7 +240,7 @@ func convertBranch(from *thirdbean.ResultGiteeRepoBranch) *thirdapi.RepositoryBr
 }
 
 func convertRepositoryList(ls []*thirdbean.ResultGiteeRepo) []*thirdapi.Repository {
-	repos := make([]*thirdapi.Repository, 0)
+	repos := make([]*thirdapi.Repository, 0, len(ls))
 	for _, v := range ls {
 		repos = append(repos, convertRepository(v))
 	}

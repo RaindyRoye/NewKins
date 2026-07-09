@@ -2,6 +2,7 @@ package gitee
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 const testSecret = "testsecret"
 
 func newGiteeRequest(event string, body []byte, secret string) *http.Request {
-	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/webhook", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(hook.GiteeEvent, event)
 	if secret != "" {

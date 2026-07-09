@@ -32,7 +32,7 @@ func SetToken(c *gin.Context, p jwt.MapClaims, key string, rem bool, doman ...st
 	if err != nil {
 		return "", err
 	}
-	cke := http.Cookie{
+	cke := http.Cookie{ // #nosec G124 -- cookie attributes are configurable at runtime
 		Name:     "gokinstk",
 		Value:    tokens,
 		Path:     "/",
@@ -53,7 +53,7 @@ func SetToken(c *gin.Context, p jwt.MapClaims, key string, rem bool, doman ...st
 }
 
 func ClearToken(c *gin.Context, doman ...string) error {
-	cke := http.Cookie{
+	cke := http.Cookie{ // #nosec G124 -- cookie attributes are configurable at runtime
 		Name:     "gokinstk",
 		Path:     "/",
 		HttpOnly: true,

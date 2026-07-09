@@ -1,6 +1,7 @@
 package route
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -22,7 +23,7 @@ func setupApiTestRouter(t *testing.T) *gin.Engine {
 func TestHello_Returns200(t *testing.T) {
 	r := setupApiTestRouter(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -37,7 +38,7 @@ func TestHello_Returns200(t *testing.T) {
 func TestHello_POST_Returns200(t *testing.T) {
 	r := setupApiTestRouter(t)
 
-	req := httptest.NewRequest(http.MethodPost, "/api/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 

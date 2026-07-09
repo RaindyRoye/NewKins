@@ -2,6 +2,7 @@ package gitea
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -22,7 +23,7 @@ func computeSignature(secret, body []byte) string {
 }
 
 func newGiteaRequest(event string, body []byte, secret string) *http.Request {
-	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/webhook", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(hook.GiteaEvent, event)
 	if secret != "" {

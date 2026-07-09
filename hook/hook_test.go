@@ -1,6 +1,7 @@
 package hook
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -335,7 +336,7 @@ func (m *mockWebhookService) Parse(req *http.Request, fn SecretFunc) (WebHook, e
 // TestMockWebhookServiceParse tests the mock implementation for completeness.
 func TestMockWebhookServiceParse(t *testing.T) {
 	svc := &mockWebhookService{}
-	req := httptest.NewRequest(http.MethodPost, "/webhook", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/webhook", nil)
 
 	fn := func(webhook WebHook) (string, error) {
 		return "secret", nil

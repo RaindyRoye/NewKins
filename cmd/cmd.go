@@ -205,7 +205,7 @@ func runDaemon() error {
 		return fmt.Errorf("resolve executable path: %w", err)
 	}
 	fmt.Println("starting background process...")
-	cmd := exec.Command(fullpth, args...)
+	cmd := exec.Command(fullpth, args...) //nolint:gosec // G204: CLI tool needs to execute user commands
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start daemon process: %w", err)
 	}

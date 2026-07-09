@@ -103,7 +103,7 @@ func (c *baseRunner) PushOutLine(buildID, jobId, cmdId, bs string, iserr bool) e
 	if err = os.MkdirAll(dir, 0750); err != nil {
 		return fmt.Errorf("create log dir %s: %w", dir, err)
 	}
-	logfl, err := os.OpenFile(logpth, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
+	logfl, err := os.OpenFile(logpth, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600) // #nosec G304 -- runner needs to access build logs
 	if err != nil {
 		return fmt.Errorf("open log file %s: %w", logpth, err)
 	}
@@ -202,7 +202,7 @@ func (c *baseRunner) ReadFile(fs int, buildID string, pth string, start int64) (
 	if err != nil {
 		return 0, nil, fmt.Errorf("stat file %s: %w", pths, err)
 	}
-	fl, err := os.Open(pths)
+	fl, err := os.Open(pths) //nolint:gosec // G304: runner needs to access build artifacts
 	if err != nil {
 		return 0, nil, fmt.Errorf("open file %s: %w", pths, err)
 	}
@@ -227,7 +227,7 @@ func (c *baseRunner) GetEnv(buildID, jobId, key string) (string, bool) {
 		return "", false
 	}
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, job.step.BuildId, common.PathJobs, job.step.Id)
-	bts, err := os.ReadFile(filepath.Join(dir, "build.env"))
+	bts, err := os.ReadFile(filepath.Join(dir, "build.env")) //nolint:gosec // G304: runner needs to read build environment
 	if err != nil {
 		return "", false
 	}

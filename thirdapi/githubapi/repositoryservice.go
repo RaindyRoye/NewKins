@@ -232,7 +232,7 @@ func (s *RepositoryService) GetWebHooks(ctx context.Context, accessToken, owner,
 }
 
 func convertRepositoryList(ls []*thirdbean.ResultGithubRepo) []*thirdapi.Repository {
-	repos := make([]*thirdapi.Repository, 0)
+	repos := make([]*thirdapi.Repository, 0, len(ls))
 	for _, v := range ls {
 		repos = append(repos, convertRepository(v))
 	}
@@ -252,7 +252,7 @@ func convertRepository(from *thirdbean.ResultGithubRepo) *thirdapi.Repository {
 	}
 }
 func convertBranchList(ls []*thirdbean.ResultGithubRepoBranch) []*thirdapi.RepositoryBranch {
-	repos := make([]*thirdapi.RepositoryBranch, 0)
+	repos := make([]*thirdapi.RepositoryBranch, 0, len(ls))
 	for _, v := range ls {
 		repos = append(repos, convertBranch(v))
 	}
@@ -265,7 +265,7 @@ func convertBranch(from *thirdbean.ResultGithubRepoBranch) *thirdapi.RepositoryB
 	}
 }
 func convertHookList(ls []*thirdbean.ResultGetGithubHook) []*thirdapi.RepositoryHook {
-	repos := make([]*thirdapi.RepositoryHook, 0)
+	repos := make([]*thirdapi.RepositoryHook, 0, len(ls))
 	for _, v := range ls {
 		repos = append(repos, convertHook(v))
 	}

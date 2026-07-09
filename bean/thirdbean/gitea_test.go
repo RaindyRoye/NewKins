@@ -191,10 +191,10 @@ func TestResultGiteaRepo_EmptyJSON(t *testing.T) {
 
 func TestResultGiteaRepo_MarshalRoundTrip(t *testing.T) {
 	original := ResultGiteaRepo{
-		Id:       99,
-		Name:     "roundtrip",
-		FullName: "org/roundtrip",
-		Private:  true,
+		Id:            99,
+		Name:          "roundtrip",
+		FullName:      "org/roundtrip",
+		Private:       true,
 		DefaultBranch: "main",
 	}
 
