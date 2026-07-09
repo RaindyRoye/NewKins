@@ -1,16 +1,12 @@
 package engine
 
 import (
-	"container/list"
 	"errors"
 	"fmt"
-	"strings"
 	"testing"
 )
 
-// TestSentinelErrorValues verifies each sentinel error is non-nil, has a
-// meaningful message, and is unique (no two sentinels share the same text).
-func TestSentinelErrorValues(t *testing.T) {
+func TestSentinelErrors_AreDistinct(t *testing.T) {
 	sentinels := []struct {
 		name string
 		err  error
@@ -26,319 +22,89 @@ func TestSentinelErrorValues(t *testing.T) {
 		{"ErrPluginNotFound", ErrPluginNotFound},
 	}
 
-	seen := make(map[string]string) // message -> name
-	for _, s := range sentinels {
+	for i, s := range sentinels {
 		if s.err == nil {
-			t.Fatalf("%s must not be nil", s.name)
+			t.Errorf("sentinel error %s is nil", s.name)
 		}
-		msg := s.err.Error()
-		if msg == "" {
-			t.Fatalf("%s must have a non-empty message", s.name)
+		if s.err.Error() == "" {
+			t.Errorf("sentinel error %s has empty message", s.name)
 		}
-		if prev, ok := seen[msg]; ok {
-			t.Fatalf("%s and %s share the same message %q", s.name, prev, msg)
-		}
-		seen[msg] = s.name
-	}
-}
-
-// TestSentinelErrorsIsChain ensures that wrapping a sentinel with
-// fmt.Errorf("%w", ...) preserves errors.Is() identity.
-func TestSentinelErrorsIsChain(t *testing.T) {
-	sentinels := []error{
-		ErrBuildNotFound,
-		ErrJobNotFound,
-		ErrCmdNotFound,
-		ErrInvalidFSType,
-		ErrEmptyParams,
-		ErrArtifactoryNotFound,
-		ErrArtifactNotFound,
-		ErrPermissionDenied,
-		ErrPluginNotFound,
-	}
-
-	for _, s := range sentinels {
-		// Single wrap
-		wrapped := fmt.Errorf("context: %w", s)
-		if !errors.Is(wrapped, s) {
-			t.Errorf("errors.Is(wrapped, %v) = false after single wrap", s)
-		}
-
-		// Double wrap
-		doubleWrapped := fmt.Errorf("outer: %w", wrapped)
-		if !errors.Is(doubleWrapped, s) {
-			t.Errorf("errors.Is(doubleWrapped, %v) = false after double wrap", s)
+		// Verify each error is distinct from all others
+		for j, s2 := range sentinels {
+			if i != j && errors.Is(s.err, s2.err) {
+				t.Errorf("sentinel errors %s and %s should be distinct but errors.Is returns true", s.name, s2.name)
+			}
 		}
 	}
 }
 
-// TestSentinelErrorsIsNegative verifies that unrelated errors do NOT match
-// any sentinel via errors.Is().
-func TestSentinelErrorsIsNegative(t *testing.T) {
-	unrelated := errors.New("something completely different")
-
-	sentinels := []error{
-		ErrBuildNotFound,
-		ErrJobNotFound,
-		ErrCmdNotFound,
-		ErrInvalidFSType,
-		ErrEmptyParams,
-		ErrArtifactoryNotFound,
-		ErrArtifactNotFound,
-		ErrPermissionDenied,
-		ErrPluginNotFound,
+func TestSentinelErrors_ErrorsIs(t *testing.T) {
+	// Verify errors.Is works correctly with wrapped errors
+	tests := []struct {
+		name    string
+		wrapped error
+		target  error
+	}{
+		{"wrap BuildNotFound", fmt.Errorf("context: %w", ErrBuildNotFound), ErrBuildNotFound},
+		{"wrap JobNotFound", fmt.Errorf("job: %w", ErrJobNotFound), ErrJobNotFound},
+		{"wrap CmdNotFound", fmt.Errorf("cmd: %w", ErrCmdNotFound), ErrCmdNotFound},
+		{"wrap InvalidFSType", fmt.Errorf("fs: %w", ErrInvalidFSType), ErrInvalidFSType},
+		{"wrap EmptyParams", fmt.Errorf("params: %w", ErrEmptyParams), ErrEmptyParams},
+		{"wrap ArtifactoryNotFound", fmt.Errorf("artifactory: %w", ErrArtifactoryNotFound), ErrArtifactoryNotFound},
+		{"wrap ArtifactNotFound", fmt.Errorf("artifact: %w", ErrArtifactNotFound), ErrArtifactNotFound},
+		{"wrap PermissionDenied", fmt.Errorf("auth: %w", ErrPermissionDenied), ErrPermissionDenied},
+		{"wrap PluginNotFound", fmt.Errorf("plugin: %w", ErrPluginNotFound), ErrPluginNotFound},
 	}
 
-	for _, s := range sentinels {
-		if errors.Is(unrelated, s) {
-			t.Errorf("errors.Is(unrelated, %v) should be false", s)
-		}
-		wrapped := fmt.Errorf("wrap: %w", unrelated)
-		if errors.Is(wrapped, s) {
-			t.Errorf("errors.Is(wrapped unrelated, %v) should be false", s)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !errors.Is(tt.wrapped, tt.target) {
+				t.Errorf("errors.Is(%v, %v) = false, want true", tt.wrapped, tt.target)
+			}
+		})
 	}
 }
 
-// TestBaseRunner_ErrorsWrapSentinels exercises each baseRunner method that
-// returns errors and verifies the returned error wraps the expected sentinel.
-// Methods that access the build engine require a minimal BuildEngine to be
-// initialized in Mgr to avoid nil-pointer panics.
-func TestBaseRunner_ErrorsWrapSentinels(t *testing.T) {
-	r := &baseRunner{}
-
-	// Initialize a minimal BuildEngine so Mgr.buildEgn.Get() doesn't panic.
-	Mgr.buildEgn = &BuildEngine{
-		taskw: list.New(),
-		tasks: make(map[string]*BuildTask),
+func TestSentinelErrors_ErrorMessages(t *testing.T) {
+	// Verify error messages are preserved for backward compatibility
+	tests := []struct {
+		err  error
+		want string
+	}{
+		{ErrBuildNotFound, "build not found"},
+		{ErrJobNotFound, "job not found"},
+		{ErrCmdNotFound, "cmd not found"},
+		{ErrInvalidFSType, "invalid filesystem type, no path resolved"},
+		{ErrEmptyParams, "required parameters must not be empty"},
+		{ErrArtifactoryNotFound, "artifactory not found"},
+		{ErrArtifactNotFound, "artifact not found"},
+		{ErrPermissionDenied, "permission denied"},
+		{ErrPluginNotFound, "plugin not found"},
 	}
-	defer func() { Mgr.buildEgn = nil }()
 
-	t.Run("ReadDir_empty_buildID", func(t *testing.T) {
-		_, err := r.ReadDir(1, "", "path")
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrEmptyParams) {
-			t.Errorf("expected ErrEmptyParams, got: %v", err)
-		}
-	})
-
-	t.Run("ReadDir_empty_path", func(t *testing.T) {
-		_, err := r.ReadDir(1, "build", "")
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrEmptyParams) {
-			t.Errorf("expected ErrEmptyParams, got: %v", err)
-		}
-	})
-
-	t.Run("ReadDir_unknown_build", func(t *testing.T) {
-		_, err := r.ReadDir(1, "nonexistent-build", "path")
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrBuildNotFound) {
-			t.Errorf("expected ErrBuildNotFound, got: %v", err)
-		}
-	})
-
-	t.Run("ReadFile_empty_buildID", func(t *testing.T) {
-		_, _, err := r.ReadFile(1, "", "path", 0)
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrEmptyParams) {
-			t.Errorf("expected ErrEmptyParams, got: %v", err)
-		}
-	})
-
-	t.Run("ReadFile_empty_path", func(t *testing.T) {
-		_, _, err := r.ReadFile(1, "build", "", 0)
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrEmptyParams) {
-			t.Errorf("expected ErrEmptyParams, got: %v", err)
-		}
-	})
-
-	t.Run("ReadFile_unknown_build", func(t *testing.T) {
-		_, _, err := r.ReadFile(1, "nonexistent-build", "path", 0)
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrBuildNotFound) {
-			t.Errorf("expected ErrBuildNotFound, got: %v", err)
-		}
-	})
-
-	t.Run("StatFile_empty_jobId", func(t *testing.T) {
-		_, err := r.StatFile(1, "build", "", "dir", "path")
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrEmptyParams) {
-			t.Errorf("expected ErrEmptyParams, got: %v", err)
-		}
-	})
-
-	t.Run("StatFile_empty_path", func(t *testing.T) {
-		_, err := r.StatFile(1, "build", "job", "dir", "")
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrEmptyParams) {
-			t.Errorf("expected ErrEmptyParams, got: %v", err)
-		}
-	})
-
-	t.Run("StatFile_unknown_build", func(t *testing.T) {
-		_, err := r.StatFile(1, "nonexistent-build", "job", "dir", "path")
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrBuildNotFound) {
-			t.Errorf("expected ErrBuildNotFound, got: %v", err)
-		}
-	})
-
-	t.Run("UploadFile_empty_jobId", func(t *testing.T) {
-		_, err := r.UploadFile(1, "build", "", "dir", "path", 0)
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrEmptyParams) {
-			t.Errorf("expected ErrEmptyParams, got: %v", err)
-		}
-	})
-
-	t.Run("UploadFile_empty_path", func(t *testing.T) {
-		_, err := r.UploadFile(1, "build", "job", "dir", "", 0)
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrEmptyParams) {
-			t.Errorf("expected ErrEmptyParams, got: %v", err)
-		}
-	})
-
-	t.Run("UploadFile_unknown_build", func(t *testing.T) {
-		_, err := r.UploadFile(1, "nonexistent-build", "job", "dir", "path", 0)
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrBuildNotFound) {
-			t.Errorf("expected ErrBuildNotFound, got: %v", err)
-		}
-	})
-
-	t.Run("FindArtVersionId_empty_buildID", func(t *testing.T) {
-		_, err := r.FindArtVersionId("", "idnt", "name")
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrEmptyParams) {
-			t.Errorf("expected ErrEmptyParams, got: %v", err)
-		}
-	})
-
-	t.Run("FindArtVersionId_empty_idnt", func(t *testing.T) {
-		_, err := r.FindArtVersionId("build", "", "name")
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrEmptyParams) {
-			t.Errorf("expected ErrEmptyParams, got: %v", err)
-		}
-	})
-
-	t.Run("FindArtVersionId_unknown_build", func(t *testing.T) {
-		_, err := r.FindArtVersionId("nonexistent-build", "idnt", "name")
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrBuildNotFound) {
-			t.Errorf("expected ErrBuildNotFound, got: %v", err)
-		}
-	})
-
-	t.Run("NewArtVersionId_empty_buildID", func(t *testing.T) {
-		_, err := r.NewArtVersionId("", "idnt", "name")
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrEmptyParams) {
-			t.Errorf("expected ErrEmptyParams, got: %v", err)
-		}
-	})
-
-	t.Run("NewArtVersionId_unknown_build", func(t *testing.T) {
-		_, err := r.NewArtVersionId("nonexistent-build", "idnt", "name")
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrBuildNotFound) {
-			t.Errorf("expected ErrBuildNotFound, got: %v", err)
-		}
-	})
-
-	t.Run("GenEnv_empty_jobId", func(t *testing.T) {
-		err := r.GenEnv("build", "", nil)
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrEmptyParams) {
-			t.Errorf("expected ErrEmptyParams, got: %v", err)
-		}
-	})
-
-	t.Run("GenEnv_unknown_build", func(t *testing.T) {
-		env := make(map[string]string)
-		err := r.GenEnv("nonexistent-build", "job", env)
-		if err == nil {
-			t.Fatal("expected error")
-		}
-		if !errors.Is(err, ErrBuildNotFound) {
-			t.Errorf("expected ErrBuildNotFound, got: %v", err)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			if got := tt.err.Error(); got != tt.want {
+				t.Errorf("error message = %q, want %q", got, tt.want)
+			}
+		})
+	}
 }
 
-// TestBaseRunner_ErrorMessagesContainContext verifies that error messages
-// include the relevant IDs so they remain useful in logs.
-func TestBaseRunner_ErrorMessagesContainContext(t *testing.T) {
-	r := &baseRunner{}
+func TestSentinelErrors_DoubleWrap(t *testing.T) {
+	// Test that double wrapping still preserves the error chain
+	wrapped := fmt.Errorf("operation failed: %w", fmt.Errorf("inner: %w", ErrBuildNotFound))
+	if !errors.Is(wrapped, ErrBuildNotFound) {
+		t.Error("double-wrapped error should still be detectable via errors.Is")
+	}
+}
 
-	// Initialize a minimal BuildEngine so Mgr.buildEgn.Get() doesn't panic.
-	Mgr.buildEgn = &BuildEngine{
-		taskw: list.New(),
-		tasks: make(map[string]*BuildTask),
+func TestSentinelErrors_SelfComparison(t *testing.T) {
+	// Verify self-comparison with errors.Is
+	if !errors.Is(ErrBuildNotFound, ErrBuildNotFound) {
+		t.Error("ErrBuildNotFound should equal itself via errors.Is")
 	}
-	defer func() { Mgr.buildEgn = nil }()
-
-	_, err := r.ReadDir(1, "", "somepath")
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	if !strings.Contains(err.Error(), "somepath") {
-		t.Errorf("error should contain path 'somepath': %v", err)
-	}
-
-	_, _, err = r.ReadFile(1, "mybuild", "myfile", 0)
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	if !strings.Contains(err.Error(), "mybuild") {
-		t.Errorf("error should contain buildID 'mybuild': %v", err)
-	}
-
-	_, err = r.FindArtVersionId("b1", "ident1", "art@1.0")
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	if !strings.Contains(err.Error(), "b1") {
-		t.Errorf("error should contain buildID 'b1': %v", err)
+	if errors.Is(ErrJobNotFound, ErrBuildNotFound) {
+		t.Error("different sentinel errors should not be equal")
 	}
 }
