@@ -39,7 +39,7 @@ func (HookController) hooks(c *gin.Context) {
 		return
 	}
 	if !ok {
-		c.String(http.StatusNotFound, "触发器不存在或者未激活")
+		c.String(http.StatusNotFound, "trigger not found or inactive")
 		return
 	}
 	rb, err := service.TriggerHook(tt, c.Request)
@@ -67,7 +67,7 @@ func (HookController) web(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !ok {
-		c.String(http.StatusNotFound, "触发器不存在或者未激活")
+		c.String(http.StatusNotFound, "trigger not found or inactive")
 		return
 	}
 	rb, err := service.TriggerWeb(c.Request.Context(), tt, secret)

@@ -55,7 +55,7 @@ func (ArtifactController) orgList(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.CanRead() {
-		c.String(http.StatusMethodNotAllowed, "No Auth")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	ls := make([]*model.TArtifactory, 0)
@@ -131,7 +131,7 @@ func (ArtifactController) info(c *gin.Context, m *hbtp.Map) {
 	}
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), arty.OrgId)
 	if !perm.CanRead() {
-		c.String(http.StatusMethodNotAllowed, "no permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	usr := &model.TUser{}
@@ -169,7 +169,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.CanWrite() {
-		c.String(http.StatusMethodNotAllowed, "No Permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	ctx := c.Request.Context()
@@ -186,7 +186,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 	ne.Updated = time.Now()
 	if isup {
 		if ne.OrgId != perm.Org().Id {
-			c.String(http.StatusMethodNotAllowed, "No Permission")
+			c.String(http.StatusForbidden, "forbidden")
 			return
 		}
 		_, err = comm.Db.Context(ctx).Cols("name", "desc", "disabled", "updated").Where("id=?", ne.Id).Update(ne)
@@ -242,7 +242,7 @@ func (ArtifactController) rm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.CanWrite() {
-		c.String(http.StatusMethodNotAllowed, "No Permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	art.Deleted = 1
@@ -337,7 +337,7 @@ func (ArtifactController) versionInfos(c *gin.Context, m *hbtp.Map) {
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, arty.OrgId)
 	if !perm.CanRead() {
-		c.String(http.StatusMethodNotAllowed, "No Permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	err := artv.ReadFiles()
@@ -373,7 +373,7 @@ func (ArtifactController) versionUrl(c *gin.Context, m *hbtp.Map) {
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, arty.OrgId)
 	if !perm.CanDownload() {
-		c.String(http.StatusMethodNotAllowed, "No Permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 
@@ -408,7 +408,7 @@ func (ArtifactController) versionSave(c *gin.Context, m *hbtp.Map) {
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, arty.OrgId)
 	if !perm.CanWrite() {
-		c.String(http.StatusMethodNotAllowed, "No Permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	artv.Version = strings.TrimSpace(m.GetString("version"))
@@ -444,7 +444,7 @@ func (ArtifactController) versionRm(c *gin.Context, m *hbtp.Map) {
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewOrgPermCtx(c.Request.Context(), lgusr, arty.OrgId)
 	if !perm.CanWrite() {
-		c.String(http.StatusMethodNotAllowed, "No Permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	_, err := comm.Db.Context(c.Request.Context()).Where("id=?", artv.Id).Delete(artv)

@@ -132,7 +132,7 @@ func (OrgController) new(c *gin.Context, m *hbtp.Map) {
 	if !service.IsAdmin(lgusr) {
 		uf, ok := service.GetUserInfoCtx(ctx, lgusr.Id)
 		if !ok || uf.PermOrg != 1 {
-			c.String(http.StatusMethodNotAllowed, "no permission")
+			c.String(http.StatusForbidden, "forbidden")
 			return
 		}
 	}
@@ -173,7 +173,7 @@ func (OrgController) info(c *gin.Context, m *hbtp.Map) {
 	}
 	perm := service.NewOrgPermCtx(ctx, service.GetMidLgUser(c), org.Id)
 	if !perm.CanRead() {
-		c.String(http.StatusMethodNotAllowed, "no permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	usr := &model.TUser{}
@@ -203,7 +203,7 @@ func (OrgController) users(c *gin.Context, m *hbtp.Map) {
 	}
 	perm := service.NewOrgPermCtx(c.Request.Context(), service.GetMidLgUser(c), id)
 	if !perm.CanRead() {
-		c.String(http.StatusMethodNotAllowed, "no permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	if perm.Org() == nil || perm.Org().Deleted == 1 {
@@ -253,7 +253,7 @@ func (OrgController) save(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.IsOrgAdmin() {
-		c.String(http.StatusMethodNotAllowed, "no permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	ne := &model.TOrg{
@@ -283,7 +283,7 @@ func (OrgController) rm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.IsOrgAdmin() {
-		c.String(http.StatusMethodNotAllowed, "no permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	ne := &model.TOrg{
@@ -334,12 +334,12 @@ func (OrgController) userEdit(c *gin.Context, m *hbtp.Map) {
 	if !perm.IsAdmin() {
 		if adm {
 			if !perm.IsOrgOwner() {
-				c.String(http.StatusMethodNotAllowed, "no permission")
+				c.String(http.StatusForbidden, "forbidden")
 				return
 			}
 		} else {
 			if !perm.IsOrgAdmin() {
-				c.String(http.StatusMethodNotAllowed, "no permission")
+				c.String(http.StatusForbidden, "forbidden")
 				return
 			}
 		}
@@ -411,7 +411,7 @@ func (OrgController) userRm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.IsOrgAdmin() {
-		c.String(http.StatusMethodNotAllowed, "no permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	_, err = comm.Db.Context(ctx).Where("aid=?", ne.Aid).Delete(ne)
@@ -431,7 +431,7 @@ func (OrgController) pipeAdd(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.IsOrgAdmin() {
-		c.String(http.StatusMethodNotAllowed, "no permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	ne := &model.TOrgPipe{}
@@ -464,7 +464,7 @@ func (OrgController) pipeRm(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.IsOrgAdmin() {
-		c.String(http.StatusMethodNotAllowed, "no permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	ne := &model.TOrgPipe{}
@@ -490,7 +490,7 @@ func (OrgController) vars(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.CanRead() {
-		c.String(http.StatusMethodNotAllowed, "no permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	var ls []*model.TOrgVar
@@ -525,7 +525,7 @@ func (OrgController) varSave(c *gin.Context, pv *bean.OrgVar) {
 		return
 	}
 	if !perm.CanWrite() {
-		c.String(http.StatusMethodNotAllowed, "no permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	orgVar := &model.TOrgVar{}
@@ -589,7 +589,7 @@ func (OrgController) varDel(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.CanWrite() {
-		c.String(http.StatusMethodNotAllowed, "no permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	_, err = comm.Db.Context(c.Request.Context()).Where("aid = ?", aId).Delete(orgVar)

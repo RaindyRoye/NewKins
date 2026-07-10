@@ -157,7 +157,7 @@ func (RuntimeController) cancel(c *gin.Context, m *hbtp.Map) {
 	}
 	perm := service.NewPipePermCtx(c.Request.Context(), service.GetMidLgUser(c), build.PipelineId)
 	if !perm.CanExec() {
-		c.String(http.StatusMethodNotAllowed, "No Permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	v, ok := engine.Mgr.BuildEgn().Get(build.Id)

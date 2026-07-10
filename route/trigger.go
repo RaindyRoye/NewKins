@@ -44,12 +44,12 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(c.Request.Context(), lgusr, pipelineId)
 	if perm.Pipeline() == nil {
-		c.String(http.StatusNotFound, "流水线不存在")
+		c.String(http.StatusNotFound, "pipeline not found")
 		return
 	}
 	if !perm.IsAdmin() {
 		if !perm.CanRead() {
-			c.String(http.StatusMethodNotAllowed, "No Auth")
+			c.String(http.StatusForbidden, "forbidden")
 			return
 		}
 	}
@@ -106,11 +106,11 @@ func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(ctx, lgusr, tp.PipelineId)
 	if perm.Pipeline() == nil {
-		c.String(http.StatusNotFound, "流水线不存在")
+		c.String(http.StatusNotFound, "pipeline not found")
 		return
 	}
 	if !perm.IsAdmin() && !perm.CanWrite() {
-		c.String(http.StatusMethodNotAllowed, "No Auth")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	tt := &model.TTrigger{}
@@ -158,17 +158,17 @@ func (TriggerController) delete(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !ok {
-		c.String(http.StatusNotFound, "触发器不存在")
+		c.String(http.StatusNotFound, "trigger not found")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(ctx, lgusr, tt.PipelineId)
 	if perm.Pipeline() == nil {
-		c.String(http.StatusNotFound, "流水线不存在")
+		c.String(http.StatusNotFound, "pipeline not found")
 		return
 	}
 	if !perm.IsAdmin() && !perm.CanWrite() {
-		c.String(http.StatusMethodNotAllowed, "No Auth")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	_, err = comm.Db.Context(ctx).Where("id = ?", tt.Id).Delete(tt)
@@ -200,17 +200,17 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !ok {
-		c.String(http.StatusNotFound, "触发器不存在")
+		c.String(http.StatusNotFound, "trigger not found")
 		return
 	}
 	lgusr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(ctx, lgusr, tt.PipelineId)
 	if perm.Pipeline() == nil {
-		c.String(http.StatusNotFound, "流水线不存在")
+		c.String(http.StatusNotFound, "pipeline not found")
 		return
 	}
 	if !perm.IsAdmin() && !perm.CanRead() {
-		c.String(http.StatusMethodNotAllowed, "No Auth")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	var ls []*model.TTriggerRun

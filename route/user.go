@@ -67,7 +67,7 @@ func (UserController) new(c *gin.Context, m *hbtp.Map) {
 	if !service.IsAdmin(lgusr) {
 		uf, ok := service.GetUserInfoCtx(ctx, lgusr.Id)
 		if !ok || uf.PermUser != 1 {
-			c.String(http.StatusMethodNotAllowed, "no permission")
+			c.String(http.StatusForbidden, "forbidden")
 			return
 		}
 	}
@@ -140,7 +140,7 @@ func (UserController) upinfo(c *gin.Context, m *hbtp.Map) {
 	}
 	lgusr := service.GetMidLgUser(c)
 	if !service.IsAdmin(lgusr) && usr.Id != lgusr.Id {
-		c.String(http.StatusMethodNotAllowed, "is not you")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	uinfo, isup := service.GetUserInfoCtx(ctx, usr.Id)
@@ -189,7 +189,7 @@ func (UserController) upass(c *gin.Context, m *hbtp.Map) {
 	}
 
 	if comm.NotUpPass && !service.IsAdmin(lgusr) {
-		c.String(http.StatusForbidden, "can't update")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	if usr.Id == lgusr.Id {
@@ -202,7 +202,7 @@ func (UserController) upass(c *gin.Context, m *hbtp.Map) {
 			return
 		}
 	} else if !service.IsAdmin(lgusr) {
-		c.String(http.StatusMethodNotAllowed, "is not admin")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 
@@ -225,7 +225,7 @@ func (UserController) active(c *gin.Context, m *hbtp.Map) {
 	ctx := c.Request.Context()
 	lgusr := service.GetMidLgUser(c)
 	if !service.IsAdmin(lgusr) {
-		c.String(http.StatusMethodNotAllowed, "is not admin")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	usr := &model.TUser{}
@@ -261,7 +261,7 @@ func (UserController) perm(c *gin.Context, m *hbtp.Map) {
 	if !service.IsAdmin(lgusr) {
 		uf, ok := service.GetUserInfoCtx(ctx, lgusr.Id)
 		if !ok || uf.PermUser != 1 {
-			c.String(http.StatusMethodNotAllowed, "no permission")
+			c.String(http.StatusForbidden, "forbidden")
 			return
 		}
 	}

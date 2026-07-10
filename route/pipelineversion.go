@@ -43,7 +43,7 @@ func (PipelineVersionController) delete(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	if !perm.CanWrite() {
-		c.String(http.StatusMethodNotAllowed, "no permission")
+		c.String(http.StatusForbidden, "forbidden")
 		return
 	}
 	tpv.Deleted = 1
