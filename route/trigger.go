@@ -62,7 +62,7 @@ func (TriggerController) triggers(c *gin.Context, m *hbtp.Map) {
 	if q != "" {
 		session.And("name like ?", "%"+q+"%")
 	}
-	page, err := comm.FindPage(session, &ls, pg)
+	page, err := comm.FindPageCtx(c.Request.Context(), session, &ls, pg)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -215,7 +215,7 @@ func (TriggerController) runs(c *gin.Context, m *hbtp.Map) {
 	}
 	var ls []*model.TTriggerRun
 	session := comm.Db.Context(ctx).Where("tid = ?", tt.Id).Desc("created")
-	page, err := comm.FindPage(session, &ls, pg)
+	page, err := comm.FindPageCtx(c.Request.Context(), session, &ls, pg)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return

@@ -14,7 +14,14 @@ import (
 
 type SesFuncHandler = func(ses *xorm.Session)
 
+// findCount counts the total number of rows matching the given condition.
+// It uses the data parameter to determine the table to query by inspecting its type.
 func findCount(cds builder.Cond, data any) (int64, error) {
+	return findCountCtx(Ctx, cds, data)
+}
+
+// findCountCtx is the context-aware version of findCount.
+func findCountCtx(ctx context.Context, cds builder.Cond, data any) (int64, error) {
 	if data == nil {
 		return 0, errors.New("findCount: data must be a non-nil pointer to a slice")
 	}
@@ -30,21 +37,35 @@ func findCount(cds builder.Cond, data any) (int64, error) {
 		}
 		pv := reflect.New(sty)
 
-		ses := Db.NewSession()
-		defer func() { _ = ses.Close() }()
+		ses := Db.Context(ctx)
 		return ses.Where(cds).Count(pv.Interface())
 	}
 	return 0, fmt.Errorf("findCount: expected pointer to slice, got %T", data)
 }
 
+// FindPage executes a paginated query without context support.
+// Deprecated: Use FindPageCtx for new code to enable request cancellation.
 func FindPage(ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
-	count, err := findCount(ses.Conds(), ls)
+	return FindPageCtx(Ctx, ses, ls, page, size...)
+}
+
+// FindPageCtx executes a paginated query with context support.
+// The context enables cancellation of both the count and data queries.
+func FindPageCtx(ctx context.Context, ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
+	count, err := findCountCtx(ctx, ses.Conds(), ls)
 	if err != nil {
 		return nil, err
 	}
-	return findPages(ses, ls, count, page, size...)
+	return findPagesCtx(ctx, ses, ls, count, page, size...)
 }
+
+// findPages executes the data query portion of pagination.
 func findPages(ses *xorm.Session, ls any, count, page int64, size ...int64) (*bean.Page, error) {
+	return findPagesCtx(Ctx, ses, ls, count, page, size...)
+}
+
+// findPagesCtx is the context-aware version of findPages.
+func findPagesCtx(ctx context.Context, ses *xorm.Session, ls any, count, page int64, size ...int64) (*bean.Page, error) {
 	var pageno int64 = 1
 	var sizeno int64 = 10
 	var pagesno int64
