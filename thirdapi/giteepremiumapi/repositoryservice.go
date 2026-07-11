@@ -48,7 +48,7 @@ func (s *RepositoryService) GetRepos(ctx context.Context, accessToken, username,
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitee premium api GetRepos failed (status %d)", resp.StatusCode)
+		return nil, thirdapi.NewAPIError("gitee-premium", "GetRepos", resp.StatusCode, "")
 	}
 	repos, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -96,7 +96,7 @@ func (s *RepositoryService) DeleteHooks(ctx context.Context, accessToken, owner,
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("gitee premium api DeleteHooks failed (status %d): %s", resp.StatusCode, string(all))
+		return thirdapi.NewAPIError("gitee-premium", "DeleteHooks", resp.StatusCode, string(all))
 	}
 	return nil
 }
@@ -136,7 +136,7 @@ func (s *RepositoryService) CreateWebHooks(ctx context.Context, accessToken, own
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("gitee premium api CreateWebHooks failed (status %d): %s", resp.StatusCode, string(all))
+		return nil, thirdapi.NewAPIError("gitee-premium", "CreateWebHooks", resp.StatusCode, string(all))
 	}
 	k := &thirdbean.ResultGetGiteePremiumHook{}
 	err = json.Unmarshal(all, k)
@@ -167,7 +167,7 @@ func (s *RepositoryService) GetRepoBranches(ctx context.Context, accessToken, ow
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitee premium api GetRepoBranches failed (status %d): %s", resp.StatusCode, string(all))
+		return nil, thirdapi.NewAPIError("gitee-premium", "GetRepoBranches", resp.StatusCode, string(all))
 	}
 
 	var branchList []*thirdbean.ResultGiteePremiumRepoBranch
@@ -199,7 +199,7 @@ func (s *RepositoryService) GetWebHooks(ctx context.Context, accessToken, owner,
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitee premium api GetWebHooks failed (status %d): %s", resp.StatusCode, string(all))
+		return nil, thirdapi.NewAPIError("gitee-premium", "GetWebHooks", resp.StatusCode, string(all))
 	}
 	hs := make([]*thirdbean.ResultGetGiteePremiumHook, 0)
 	err = json.Unmarshal(all, &hs)
