@@ -30,6 +30,9 @@ func TestInitMysqlMigrate_EmptyParams(t *testing.T) {
 			if errs == nil {
 				t.Error("expected error for empty params, got nil")
 			}
+			if !errors.Is(errs, ErrDatabaseConfigMissing) {
+				t.Errorf("expected ErrDatabaseConfigMissing, got %v", errs)
+			}
 			if wait != tt.wantW {
 				t.Errorf("wait = %v, want %v", wait, tt.wantW)
 			}
@@ -59,6 +62,9 @@ func TestInitPostgresMigrate_EmptyParams(t *testing.T) {
 			wait, _, errs := InitPostgresMigrate(tt.host, tt.dbs, tt.user, tt.pass)
 			if errs == nil {
 				t.Error("expected error for empty params, got nil")
+			}
+			if !errors.Is(errs, ErrDatabaseConfigMissing) {
+				t.Errorf("expected ErrDatabaseConfigMissing, got %v", errs)
 			}
 			if wait != tt.wantW {
 				t.Errorf("wait = %v, want %v", wait, tt.wantW)
@@ -105,8 +111,8 @@ func TestUpMysqlMigrate_EmptyURL(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for empty URL, got nil")
 	}
-	if !strings.Contains(err.Error(), "database config not found") {
-		t.Errorf("error message = %q, want to contain 'database config not found'", err.Error())
+	if !errors.Is(err, ErrDatabaseConfigMissing) {
+		t.Errorf("expected ErrDatabaseConfigMissing, got %v", err)
 	}
 }
 
@@ -115,8 +121,8 @@ func TestUpPostgresMigrate_EmptyURL(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for empty URL, got nil")
 	}
-	if !strings.Contains(err.Error(), "database config not found") {
-		t.Errorf("error message = %q, want to contain 'database config not found'", err.Error())
+	if !errors.Is(err, ErrDatabaseConfigMissing) {
+		t.Errorf("expected ErrDatabaseConfigMissing, got %v", err)
 	}
 }
 
@@ -125,8 +131,8 @@ func TestUpSqliteMigrate_EmptyURL(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for empty URL, got nil")
 	}
-	if !strings.Contains(err.Error(), "database config not found") {
-		t.Errorf("error message = %q, want to contain 'database config not found'", err.Error())
+	if !errors.Is(err, ErrDatabaseConfigMissing) {
+		t.Errorf("expected ErrDatabaseConfigMissing, got %v", err)
 	}
 }
 
@@ -135,8 +141,9 @@ func TestUpMysqlMigrate_InvalidURL(t *testing.T) {
 	if err == nil {
 		t.Skip("skipping: database connection succeeded unexpectedly")
 	}
-	if !strings.Contains(err.Error(), "mysql") {
-		t.Errorf("error message = %q, want to contain 'mysql'", err.Error())
+	// Should wrap a sentinel error from the migrates package
+	if !errors.Is(err, ErrOpenDatabase) && !errors.Is(err, ErrPingDatabase) {
+		t.Errorf("error should wrap ErrOpenDatabase or ErrPingDatabase, got: %v", err)
 	}
 }
 
@@ -145,8 +152,8 @@ func TestUpPostgresMigrate_InvalidURL(t *testing.T) {
 	if err == nil {
 		t.Skip("skipping: database connection succeeded unexpectedly")
 	}
-	if !strings.Contains(err.Error(), "postgres") {
-		t.Errorf("error message = %q, want to contain 'postgres'", err.Error())
+	if !errors.Is(err, ErrOpenDatabase) && !errors.Is(err, ErrPingDatabase) {
+		t.Errorf("error should wrap ErrOpenDatabase or ErrPingDatabase, got: %v", err)
 	}
 }
 
@@ -155,8 +162,8 @@ func TestUpSqliteMigrate_InvalidPath(t *testing.T) {
 	if err == nil {
 		t.Skip("skipping: database connection succeeded unexpectedly")
 	}
-	if !strings.Contains(err.Error(), "sqlite") {
-		t.Errorf("error message = %q, want to contain 'sqlite'", err.Error())
+	if !errors.Is(err, ErrOpenDatabase) && !errors.Is(err, ErrPingDatabase) {
+		t.Errorf("error should wrap ErrOpenDatabase or ErrPingDatabase, got: %v", err)
 	}
 }
 
@@ -182,11 +189,52 @@ func TestMigrateErrorWrapping(t *testing.T) {
 				t.Error("error message is empty")
 			}
 
-			// Verify errors.Is works with base error
-			baseErr := errors.New("database config not found")
-			if !errors.Is(err, baseErr) && !strings.Contains(err.Error(), baseErr.Error()) {
-				t.Errorf("error should be related to %q, got %q", baseErr.Error(), err.Error())
+			// Verify errors.Is works with sentinel error
+			if !errors.Is(err, ErrDatabaseConfigMissing) {
+				t.Errorf("error should wrap ErrDatabaseConfigMissing, got %q", err.Error())
 			}
 		})
+	}
+}
+
+func TestSentinelErrors(t *testing.T) {
+	// Verify all sentinel errors are distinct
+	sentinels := []error{
+		ErrDatabaseConfigMissing,
+		ErrMigrationFailed,
+		ErrOpenDatabase,
+		ErrPingDatabase,
+		ErrCreateDatabase,
+		ErrInitDriver,
+		ErrInitSource,
+		ErrCreateMigrateInstance,
+		ErrRunMigration,
+	}
+
+	for i, s1 := range sentinels {
+		for j, s2 := range sentinels {
+			if i != j && errors.Is(s1, s2) {
+				t.Errorf("sentinel errors %d and %d should be distinct", i, j)
+			}
+		}
+	}
+}
+
+func TestErrorWrapping(t *testing.T) {
+	// Test that wrapped errors can be detected with errors.Is
+	baseErr := errors.New("underlying database error")
+	wrappedErr := fmt.Errorf("%w: %w", ErrOpenDatabase, baseErr)
+
+	if !errors.Is(wrappedErr, ErrOpenDatabase) {
+		t.Error("wrapped error should be detectable with errors.Is(ErrOpenDatabase)")
+	}
+
+	// Test error message contains both sentinel and underlying error
+	errMsg := wrappedErr.Error()
+	if !strings.Contains(errMsg, "failed to open database") {
+		t.Errorf("error message should contain sentinel error text, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "underlying database error") {
+		t.Errorf("error message should contain underlying error text, got: %s", errMsg)
 	}
 }
