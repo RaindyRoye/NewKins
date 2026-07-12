@@ -2,13 +2,13 @@ package engine
 
 import (
 	"context"
-	"runtime/debug"
 	"time"
 
 	"github.com/gokins/core/common"
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
+	"github.com/gokins/gokins/util"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,11 +24,7 @@ func (c *BuildTask) taskCtx() context.Context {
 }
 
 func (c *BuildTask) updateBuild(build *runtime.Build) {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask updateBuild panic: %v\n%s", err, string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("BuildTask.updateBuild")
 
 	ctx := c.taskCtx()
 
@@ -83,11 +79,7 @@ func (c *BuildTask) updateBuild(build *runtime.Build) {
 	}
 }
 func (c *BuildTask) updateStage(stage *runtime.Stage) {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask updateStage panic: %v\n%s", err, string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("BuildTask.updateStage")
 
 	ctx := c.taskCtx()
 
@@ -120,11 +112,7 @@ func (c *BuildTask) updateStage(stage *runtime.Stage) {
 	}
 }
 func (c *BuildTask) updateStep(job *jobSync) {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask updateStep panic: %v\n%s", err, string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("BuildTask.updateStep")
 
 	ctx := c.taskCtx()
 
@@ -160,11 +148,7 @@ func (c *BuildTask) updateStep(job *jobSync) {
 	}
 }
 func (c *BuildTask) updateStepCmd(cmd *cmdSync) {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("BuildTask updateStepCmd panic: %v\n%s", err, string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("BuildTask.updateStepCmd")
 
 	ctx := c.taskCtx()
 

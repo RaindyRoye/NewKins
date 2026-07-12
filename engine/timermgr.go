@@ -3,7 +3,6 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/service"
+	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
 )
@@ -40,12 +40,7 @@ func StartTimerEngine() *TimerEngine {
 	return c
 }
 func (c *TimerEngine) run() {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("TimerEngine run recover:%v", err)
-			logrus.Warnf("TimerEngine stack:%s", string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("TimerEngine.run")
 
 	c.tasklk.Lock()
 	defer c.tasklk.Unlock()
@@ -54,12 +49,7 @@ func (c *TimerEngine) run() {
 	}
 }
 func (c *TimerEngine) execItem(v *timerExec) {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("TimerEngine execItem recover:%v", err)
-			logrus.Warnf("TimerEngine stack:%s", string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("TimerEngine.execItem")
 	if time.Since(v.tick) > 0 {
 		now := time.Now()
 		logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", v.tt.Name, v.typ, now.Format(common.TimeFmt), v.tick.Format(common.TimeFmt))
@@ -89,12 +79,7 @@ func (c *TimerEngine) execItem(v *timerExec) {
 }
 
 func (c *TimerEngine) refresh() {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("TimerEngine refresh recover:%v", err)
-			logrus.Warnf("TimerEngine stack:%s", string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("TimerEngine.refresh")
 	var ls []*model.TTrigger
 	if err := comm.Db.Context(comm.Ctx).Where("enabled = 1 AND types = 'timer'").Find(&ls); err != nil {
 		logrus.Errorf("TimerEngine refresh find err: %v", err)
@@ -109,17 +94,7 @@ func (c *TimerEngine) refresh() {
 	}
 }
 func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
-	defer func() {
-		if r := recover(); r != nil {
-			logrus.Warnf("TimerEngine resetOne recover:%v", r)
-			logrus.Warnf("TimerEngine stack:%s", string(debug.Stack()))
-			if err, ok := r.(error); ok {
-				rterr = fmt.Errorf("panic in resetOne: %w", err)
-			} else {
-				rterr = fmt.Errorf("panic in resetOne: %v", r)
-			}
-		}
-	}()
+	defer util.RecoverResult(&rterr, "TimerEngine.resetOne")
 	if tmr.Types != "timer" {
 		return fmt.Errorf("expected trigger type 'timer', got '%s'", tmr.Types)
 	}
