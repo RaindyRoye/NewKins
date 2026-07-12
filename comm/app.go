@@ -78,6 +78,10 @@ var (
 	// HbtpHost = ""
 )
 
+// appContextKey is an unexported type used as the key for storing *App in
+// context.Context, preventing collisions with keys from other packages.
+type appContextKey struct{}
+
 // defaultApp is the singleton App instance that mirrors the package-level
 // globals. It enables a gradual migration path to dependency injection.
 var defaultApp = &App{}
@@ -86,6 +90,26 @@ var defaultApp = &App{}
 // that wants to use dependency injection instead of global variables.
 func GetApp() *App {
 	return defaultApp
+}
+
+// AppFromContext retrieves the *App stored in the context. If no App is found,
+// it falls back to the defaultApp singleton. This allows code to work both
+// with explicit context injection and with the legacy global default.
+func AppFromContext(ctx context.Context) *App {
+	if ctx == nil {
+		return defaultApp
+	}
+	if app, ok := ctx.Value(appContextKey{}).(*App); ok {
+		return app
+	}
+	return defaultApp
+}
+
+// WithApp returns a new context with the given *App attached. Use this to
+// propagate application dependencies through request contexts, enabling
+// dependency injection without global state.
+func WithApp(ctx context.Context, app *App) context.Context {
+	return context.WithValue(ctx, appContextKey{}, app)
 }
 
 // SyncGlobals copies the package-level globals into the default App instance.
