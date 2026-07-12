@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"path/filepath"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -34,12 +33,7 @@ const shutdownTimeout = 10 * time.Second
 var apiRateLimiter = util.NewRateLimiter(120, time.Minute)
 
 func runWeb() {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Errorf("Web recover:%v", err)
-			logrus.Errorf("Web stack:%s", string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("Web")
 	comm.WebEgn = gin.Default()
 	comm.WebEgn.Use(util.MidRequestID())
 	comm.WebEgn.Use(util.MidSecurityHeaders())

@@ -2,13 +2,13 @@ package engine
 
 import (
 	"container/list"
-	"runtime/debug"
 	"sync"
 	"time"
 
 	"github.com/gokins/core/common"
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/gokins/comm"
+	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
 )
@@ -30,11 +30,7 @@ func StartBuildEngine() *BuildEngine {
 		tasks: make(map[string]*BuildTask),
 	}
 	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				logrus.Errorf("BuildEngine goroutine panic: %v\n%s", r, string(debug.Stack()))
-			}
-		}()
+		defer util.RecoverLog("BuildEngine.goroutine")
 		c.init()
 		for !hbtp.EndContext(comm.Ctx) {
 			c.run()
@@ -79,12 +75,7 @@ func (c *BuildEngine) init() {
 }
 
 func (c *BuildEngine) run() {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("BuildEngine run recover:%v", err)
-			logrus.Warnf("BuildEngine stack:%s", string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("BuildEngine.run")
 
 	c.tskwlk.RLock()
 	ln1 := c.taskw.Len()

@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
 	bolt "go.etcd.io/bbolt"
@@ -169,11 +170,7 @@ func CacheFlush() error {
 var mainCacheClearTime atomic.Int64 // stores UnixNano timestamp of last cache clear
 
 func mainCacheClear() {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Errorf("mainCacheClear recover err:%v", err)
-		}
-	}()
+	defer util.RecoverLog("mainCacheClear")
 
 	if BCache == nil {
 		return

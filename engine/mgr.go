@@ -3,10 +3,10 @@ package engine
 import (
 	"os"
 	"path/filepath"
-	"runtime/debug"
 
 	"github.com/gokins/core/common"
 	"github.com/gokins/gokins/comm"
+	"github.com/gokins/gokins/util"
 	"github.com/gokins/runner/runners"
 	"github.com/sirupsen/logrus"
 )
@@ -37,11 +37,7 @@ func Start() error {
 		Plugin:    comm.Cfg.Server.Shells,
 	}, Mgr.brun)
 	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				logrus.Errorf("shell runner goroutine panic: %v\n%s", r, string(debug.Stack()))
-			}
-		}()
+		defer util.RecoverLog("shell runner goroutine")
 		err := Mgr.shellRun.Run(comm.Ctx)
 		if err != nil {
 			logrus.Errorf("runner err:%v", err)
@@ -49,11 +45,7 @@ func Start() error {
 	}()
 
 	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				logrus.Errorf("shutdown goroutine panic: %v\n%s", r, string(debug.Stack()))
-			}
-		}()
+		defer util.RecoverLog("shutdown goroutine")
 		_ = os.RemoveAll(filepath.Join(comm.WorkPath, common.PathTmp))
 		// Block until context is canceled instead of busy-waiting.
 		<-comm.Ctx.Done()

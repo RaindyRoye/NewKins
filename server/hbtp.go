@@ -1,21 +1,15 @@
 package server
 
 import (
-	"runtime/debug"
-
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/engine"
+	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
 )
 
 func runHbtp() {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Errorf("Hbtp recover:%v", err)
-			logrus.Errorf("Hbtp stack:%s", string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("Hbtp")
 	if comm.Cfg.Server.HbtpHost == "" {
 		return
 	}

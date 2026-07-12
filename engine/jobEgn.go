@@ -3,16 +3,15 @@ package engine
 import (
 	"container/list"
 	"fmt"
-	"runtime/debug"
 	"sync"
 	"time"
 
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
+	"github.com/gokins/gokins/util"
 	"github.com/gokins/runner/runners"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
-	"github.com/sirupsen/logrus"
 )
 
 type JobEngine struct {
@@ -62,11 +61,7 @@ func StartJobEngine() *JobEngine {
 		jobs:  make(map[string]*jobSync),
 	}
 	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				logrus.Errorf("JobEngine goroutine panic: %v\n%s", r, string(debug.Stack()))
-			}
-		}()
+		defer util.RecoverLog("JobEngine.goroutine")
 		for !hbtp.EndContext(comm.Ctx) {
 			c.run()
 			time.Sleep(time.Second)
@@ -75,12 +70,7 @@ func StartJobEngine() *JobEngine {
 	return c
 }
 func (c *JobEngine) run() {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("JobEngine run recover:%v", err)
-			logrus.Warnf("JobEngine stack:%s", string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("JobEngine.run")
 
 	if !c.tmr.Tick() {
 		return
@@ -107,12 +97,7 @@ func (c *JobEngine) run() {
 	}()
 }
 func (c *JobEngine) rmExec(k string, ex *executer) {
-	defer func() {
-		if err := recover(); err != nil {
-			logrus.Warnf("JobEngine stopsJob recover:%v", err)
-			logrus.Warnf("JobEngine stack:%s", string(debug.Stack()))
-		}
-	}()
+	defer util.RecoverLog("JobEngine.rmExec")
 
 	c.exelk.Lock()
 	defer c.exelk.Unlock()

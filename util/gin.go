@@ -116,6 +116,26 @@ func RecoverResult(errp *error, label string) {
 	}
 }
 
+// RecoverLog is intended for use in deferred recover() blocks inside
+// goroutines or methods that do not return a named error. It logs the
+// recovered value and stack trace at the given context label, but does
+// not attempt to propagate the error to the caller.
+//
+// Typical usage inside a goroutine or long-running loop:
+//
+//	go func() {
+//	    defer util.RecoverLog("BuildEngine.run")
+//	    ...
+//	}()
+func RecoverLog(label string) {
+	r := recover()
+	if r == nil {
+		return
+	}
+	logrus.Warnf("%s panic: %+v", label, r)
+	logrus.Warnf("%s stack:\n%s", label, string(debug.Stack()))
+}
+
 func MidAccessAllowFun(c *gin.Context) {
 	method := strings.ToUpper(c.Request.Method)
 	if method == "OPTIONS" || method == "POST" {
