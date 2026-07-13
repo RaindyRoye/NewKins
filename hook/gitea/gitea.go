@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -45,7 +44,7 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 	sig := req.Header.Get("X-Gitea-Signature")
 	if !validatePrefix(data, []byte(secret), sig) {
 		logrus.Debugf("Gitea validatePrefix failed")
-		return wb, errors.New("secret validation failed")
+		return wb, hook.ErrSecretValidationFailed
 	}
 	return wb, nil
 }
@@ -82,7 +81,7 @@ func parseCommentHook(data []byte) (*hook.PullRequestCommentHook, error) {
 		return nil, fmt.Errorf("unmarshal gitea comment hook: %w", err)
 	}
 	if !gp.IsPull {
-		return nil, errors.New("not pull_request comment")
+		return nil, hook.ErrCommentNotPullRequest
 	}
 	return convertCommentHook(gp)
 }

@@ -21,7 +21,7 @@ import (
 func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, errs error) {
 	wait = false
 	if host == "" || dbs == "" || user == "" {
-		errs = errors.New("database config not found")
+		errs = fmt.Errorf("%w: mysql requires host, database, and user", ErrDatabaseConfigMissing)
 		return
 	}
 	wait = true
@@ -162,7 +162,7 @@ func InitSqliteMigrate() (rtul string, errs error) {
 func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, errs error) {
 	wait = false
 	if host == "" || dbs == "" || user == "" {
-		errs = errors.New("database config not found")
+		errs = fmt.Errorf("%w: postgres requires host, database, and user", ErrDatabaseConfigMissing)
 		return
 	}
 	wait = true

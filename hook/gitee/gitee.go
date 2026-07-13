@@ -2,7 +2,6 @@ package gitee
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -40,7 +39,7 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 	}
 	sig := req.Header.Get("X-Gitee-Token")
 	if secret != sig {
-		return wb, errors.New("secret validation failed")
+		return wb, hook.ErrSecretValidationFailed
 	}
 	return wb, nil
 }

@@ -19,7 +19,7 @@ import (
 
 func UpMysqlMigrate(ul string) error {
 	if ul == "" {
-		return errors.New("database config not found")
+		return fmt.Errorf("%w: mysql connection string is empty", ErrDatabaseConfigMissing)
 	}
 	db, err := sql.Open("mysql", ul)
 	if err != nil {
@@ -73,7 +73,7 @@ func UpMysqlMigrate(ul string) error {
 
 func UpPostgresMigrate(ul string) error {
 	if ul == "" {
-		return errors.New("database config not found")
+		return fmt.Errorf("%w: postgres connection string is empty", ErrDatabaseConfigMissing)
 	}
 	db, err := sql.Open("postgres", ul)
 	if err != nil {
@@ -126,7 +126,7 @@ func UpPostgresMigrate(ul string) error {
 }
 func UpSqliteMigrate(ul string) error {
 	if ul == "" {
-		return errors.New("database config not found")
+		return fmt.Errorf("%w: sqlite connection string is empty", ErrDatabaseConfigMissing)
 	}
 	db, err := sql.Open("sqlite3", ul)
 	if err != nil {
