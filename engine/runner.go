@@ -2,6 +2,7 @@ package engine
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -19,6 +20,50 @@ import (
 	"github.com/gokins/runner/runners"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 )
+
+// ErrPathTraversal is returned when a path attempt to escape the base directory is detected.
+var ErrPathTraversal = errors.New("path traversal detected")
+
+// safeJoinPath joins base and subpath, then validates that the resolved path
+// stays within the base directory to prevent path traversal attacks.
+// Returns the cleaned path or an error if traversal is detected.
+func safeJoinPath(base, subpath string) (string, error) {
+	if base == "" {
+		return "", fmt.Errorf("safeJoinPath: base path is empty")
+	}
+	if subpath == "" {
+		return "", fmt.Errorf("safeJoinPath: subpath is empty")
+	}
+
+	// Clean and join the paths
+	cleaned := filepath.Clean(subpath)
+	
+	// Reject absolute paths
+	if filepath.IsAbs(cleaned) {
+		return "", fmt.Errorf("safeJoinPath: absolute paths not allowed: %w", ErrPathTraversal)
+	}
+
+	// Join the paths
+	joined := filepath.Join(base, cleaned)
+
+	// Get the absolute paths for comparison
+	absBase, err := filepath.Abs(base)
+	if err != nil {
+		return "", fmt.Errorf("safeJoinPath: resolve base path: %w", err)
+	}
+
+	absJoined, err := filepath.Abs(joined)
+	if err != nil {
+		return "", fmt.Errorf("safeJoinPath: resolve joined path: %w", err)
+	}
+
+	// Ensure the joined path is within the base directory
+	if !strings.HasPrefix(absJoined, absBase+string(filepath.Separator)) && absJoined != absBase {
+		return "", fmt.Errorf("safeJoinPath: path escapes base directory: %w", ErrPathTraversal)
+	}
+
+	return joined, nil
+}
 
 type baseRunner struct{}
 
@@ -149,13 +194,20 @@ func (c *baseRunner) ReadDir(fs int, buildID string, pth string) ([]*runners.Dir
 		return nil, fmt.Errorf("readDir: %w: %q", ErrBuildNotFound, buildID)
 	}
 	pths := ""
+	var err error
 	switch fs {
 	case 1:
-		pths = filepath.Join(build.repoPaths, pth)
+		pths, err = safeJoinPath(build.repoPaths, pth)
 	case 2:
-		pths = filepath.Join(comm.WorkPath, common.PathArtifacts, pth)
+		pths, err = safeJoinPath(filepath.Join(comm.WorkPath, common.PathArtifacts), pth)
 	case 3:
-		pths = filepath.Join(build.buildPath, common.PathJobs, pth)
+		pths, err = safeJoinPath(filepath.Join(build.buildPath, common.PathJobs), pth)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("readDir: %w", err)
+	}
+	if pths == "" {
+		return nil, fmt.Errorf("readDir: %w", ErrInvalidFSType)
 	}
 	fls, err := os.ReadDir(pths)
 	if err != nil {
@@ -187,13 +239,17 @@ func (c *baseRunner) ReadFile(fs int, buildID string, pth string, start int64) (
 		return 0, nil, fmt.Errorf("readFile: %w: %q", ErrBuildNotFound, buildID)
 	}
 	pths := ""
+	var err error
 	switch fs {
 	case 1:
-		pths = filepath.Join(build.repoPaths, pth)
+		pths, err = safeJoinPath(build.repoPaths, pth)
 	case 2:
-		pths = filepath.Join(comm.WorkPath, common.PathArtifacts, pth)
+		pths, err = safeJoinPath(filepath.Join(comm.WorkPath, common.PathArtifacts), pth)
 	case 3:
-		pths = filepath.Join(build.buildPath, common.PathJobs, pth)
+		pths, err = safeJoinPath(filepath.Join(build.buildPath, common.PathJobs), pth)
+	}
+	if err != nil {
+		return 0, nil, fmt.Errorf("readFile: %w", err)
 	}
 	if pths == "" {
 		return 0, nil, fmt.Errorf("readFile: %w", ErrInvalidFSType)
@@ -278,13 +334,18 @@ func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*
 		return nil, fmt.Errorf("statFile: %w: %q in build %q", ErrJobNotFound, jobId, buildID)
 	}
 	pths := ""
+	var err error
+	combinedPath := filepath.Join(dir, pth)
 	switch fs {
 	case 1:
-		pths = filepath.Join(comm.WorkPath, common.PathArtifacts, dir, pth)
+		pths, err = safeJoinPath(filepath.Join(comm.WorkPath, common.PathArtifacts), combinedPath)
 	case 2:
-		pths = filepath.Join(job.task.buildPath, common.PathJobs, job.step.Id, common.PathArts, dir, pth)
+		pths, err = safeJoinPath(filepath.Join(job.task.buildPath, common.PathJobs, job.step.Id, common.PathArts), combinedPath)
 	case 3:
-		pths = filepath.Join(build.repoPaths, dir, pth)
+		pths, err = safeJoinPath(build.repoPaths, combinedPath)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("statFile: %w", err)
 	}
 	if pths == "" {
 		return nil, fmt.Errorf("statFile: %w", ErrInvalidFSType)
@@ -312,13 +373,18 @@ func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, 
 		return nil, fmt.Errorf("uploadFile: %w: %q in build %q", ErrJobNotFound, jobId, buildID)
 	}
 	pths := ""
+	var err error
+	combinedPath := filepath.Join(dir, pth)
 	switch fs {
 	case 1:
-		pths = filepath.Join(comm.WorkPath, common.PathArtifacts, dir, pth)
+		pths, err = safeJoinPath(filepath.Join(comm.WorkPath, common.PathArtifacts), combinedPath)
 	case 2:
-		pths = filepath.Join(job.task.buildPath, common.PathJobs, job.step.Id, common.PathArts, dir, pth)
+		pths, err = safeJoinPath(filepath.Join(job.task.buildPath, common.PathJobs, job.step.Id, common.PathArts), combinedPath)
 	case 3:
-		pths = filepath.Join(build.repoPaths, dir, pth)
+		pths, err = safeJoinPath(build.repoPaths, combinedPath)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("uploadFile: %w", err)
 	}
 	if pths == "" {
 		return nil, fmt.Errorf("uploadFile: %w", ErrInvalidFSType)
