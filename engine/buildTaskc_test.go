@@ -197,3 +197,291 @@ func TestBuildTaskCheck_EmptyStages(t *testing.T) {
 		t.Errorf("expected error 'build Stages is empty', got %q", task.build.Error)
 	}
 }
+
+func TestBuildTaskCheck_StageNameEmpty(t *testing.T) {
+	task := &BuildTask{
+		build: &runtime.Build{
+			Id: "test-build",
+			Repo: &runtime.Repository{
+				CloneURL: "https://example.com/repo.git",
+			},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "test-build",
+					Name:    "", // empty
+					Steps: []*runtime.Step{
+						{Id: "step-1", Name: "s1", Step: "shell", BuildId: "test-build", StageId: "stage-1"},
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		jobs:   make(map[string]*jobSync),
+	}
+	result := task.check()
+	if result {
+		t.Fatal("expected check() to return false when stage name is empty")
+	}
+	if task.build.Event != common.BuildEventCheckParam {
+		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
+	}
+}
+
+func TestBuildTaskCheck_StageBuildIdMismatch(t *testing.T) {
+	task := &BuildTask{
+		build: &runtime.Build{
+			Id: "test-build",
+			Repo: &runtime.Repository{
+				CloneURL: "https://example.com/repo.git",
+			},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "wrong-build-id", // mismatch
+					Name:    "build",
+					Steps: []*runtime.Step{
+						{Id: "step-1", Name: "s1", Step: "shell", BuildId: "test-build", StageId: "stage-1"},
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		jobs:   make(map[string]*jobSync),
+	}
+	result := task.check()
+	if result {
+		t.Fatal("expected check() to return false when stage BuildId mismatches")
+	}
+	if task.build.Event != common.BuildEventCheckParam {
+		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
+	}
+}
+
+func TestBuildTaskCheck_StageNoSteps(t *testing.T) {
+	task := &BuildTask{
+		build: &runtime.Build{
+			Id: "test-build",
+			Repo: &runtime.Repository{
+				CloneURL: "https://example.com/repo.git",
+			},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "test-build",
+					Name:    "build",
+					Steps:   []*runtime.Step{}, // empty
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		jobs:   make(map[string]*jobSync),
+	}
+	result := task.check()
+	if result {
+		t.Fatal("expected check() to return false when stage has no steps")
+	}
+	if task.build.Event != common.BuildEventCheckParam {
+		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
+	}
+}
+
+func TestBuildTaskCheck_StepPluginEmpty(t *testing.T) {
+	task := &BuildTask{
+		build: &runtime.Build{
+			Id: "test-build",
+			Repo: &runtime.Repository{
+				CloneURL: "https://example.com/repo.git",
+			},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "test-build",
+					Name:    "build",
+					Steps: []*runtime.Step{
+						{Id: "step-1", Name: "s1", Step: "", BuildId: "test-build", StageId: "stage-1"}, // empty plugin
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		jobs:   make(map[string]*jobSync),
+	}
+	result := task.check()
+	if result {
+		t.Fatal("expected check() to return false when step plugin is empty")
+	}
+	if task.build.Event != common.BuildEventCheckParam {
+		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
+	}
+}
+
+func TestBuildTaskCheck_StepNameEmpty(t *testing.T) {
+	task := &BuildTask{
+		build: &runtime.Build{
+			Id: "test-build",
+			Repo: &runtime.Repository{
+				CloneURL: "https://example.com/repo.git",
+			},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "test-build",
+					Name:    "build",
+					Steps: []*runtime.Step{
+						{Id: "step-1", Name: "", Step: "shell", BuildId: "test-build", StageId: "stage-1"}, // empty name
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		jobs:   make(map[string]*jobSync),
+	}
+	result := task.check()
+	if result {
+		t.Fatal("expected check() to return false when step name is empty")
+	}
+	if task.build.Event != common.BuildEventCheckParam {
+		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
+	}
+}
+
+func TestBuildTaskCheck_DuplicateStageName(t *testing.T) {
+	task := &BuildTask{
+		build: &runtime.Build{
+			Id: "test-build",
+			Repo: &runtime.Repository{
+				CloneURL: "https://example.com/repo.git",
+			},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "test-build",
+					Name:    "build",
+					Steps: []*runtime.Step{
+						{Id: "step-1", Name: "s1", Step: "shell", BuildId: "test-build", StageId: "stage-1"},
+					},
+				},
+				{
+					Id:      "stage-2",
+					BuildId: "test-build",
+					Name:    "build", // duplicate name
+					Steps: []*runtime.Step{
+						{Id: "step-2", Name: "s2", Step: "shell", BuildId: "test-build", StageId: "stage-2"},
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		jobs:   make(map[string]*jobSync),
+	}
+	result := task.check()
+	if result {
+		t.Fatal("expected check() to return false when stage names are duplicated")
+	}
+	if task.build.Event != common.BuildEventCheckParam {
+		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
+	}
+}
+
+func TestBuildTaskCheck_DuplicateStepName(t *testing.T) {
+	task := &BuildTask{
+		build: &runtime.Build{
+			Id: "test-build",
+			Repo: &runtime.Repository{
+				CloneURL: "https://example.com/repo.git",
+			},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "test-build",
+					Name:    "build",
+					Steps: []*runtime.Step{
+						{Id: "step-1", Name: "compile", Step: "shell", BuildId: "test-build", StageId: "stage-1"},
+						{Id: "step-2", Name: "compile", Step: "shell", BuildId: "test-build", StageId: "stage-1"}, // duplicate
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		jobs:   make(map[string]*jobSync),
+	}
+	result := task.check()
+	if result {
+		t.Fatal("expected check() to return false when step names are duplicated within a stage")
+	}
+	if task.build.Event != common.BuildEventCheckParam {
+		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
+	}
+}
+
+func TestBuildTaskCheck_StepBuildIdMismatch(t *testing.T) {
+	task := &BuildTask{
+		build: &runtime.Build{
+			Id: "test-build",
+			Repo: &runtime.Repository{
+				CloneURL: "https://example.com/repo.git",
+			},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "test-build",
+					Name:    "build",
+					Steps: []*runtime.Step{
+						{Id: "step-1", Name: "s1", Step: "shell", BuildId: "wrong-id", StageId: "stage-1"}, // mismatch
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		jobs:   make(map[string]*jobSync),
+	}
+	result := task.check()
+	if result {
+		t.Fatal("expected check() to return false when step BuildId mismatches")
+	}
+	if task.build.Event != common.BuildEventCheckParam {
+		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
+	}
+}
+
+func TestBuildTaskCheck_StepStageIdMismatch(t *testing.T) {
+	task := &BuildTask{
+		build: &runtime.Build{
+			Id: "test-build",
+			Repo: &runtime.Repository{
+				CloneURL: "https://example.com/repo.git",
+			},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "test-build",
+					Name:    "build",
+					Steps: []*runtime.Step{
+						{Id: "step-1", Name: "s1", Step: "shell", BuildId: "test-build", StageId: "wrong-stage"}, // mismatch
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		jobs:   make(map[string]*jobSync),
+	}
+	result := task.check()
+	if result {
+		t.Fatal("expected check() to return false when step StageId mismatches")
+	}
+	if task.build.Event != common.BuildEventCheckParam {
+		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
+	}
+}
+
+func TestBuildTaskGetRepo_NoClone(t *testing.T) {
+	task := &BuildTask{
+		build: &runtime.Build{Id: "test-build"},
+	}
+	// isClone is false, so getRepo should return nil immediately
+	err := task.getRepo()
+	if err != nil {
+		t.Errorf("getRepo() with isClone=false should return nil, got: %v", err)
+	}
+}

@@ -12,6 +12,9 @@ type Config struct {
 		Secret    string   `yaml:"secret"`
 		Shells    []string `yaml:"shells"`
 		DownToken string   `yaml:"DownToken"`
+		// Pprof enables pprof profiling endpoints at /debug/pprof/* regardless of debug mode.
+		// Use this for production performance analysis. Default: false.
+		Pprof bool `yaml:"pprof"`
 	} `yaml:"server"`
 	Datasource struct {
 		Driver string `yaml:"driver"`

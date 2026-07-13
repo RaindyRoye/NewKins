@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -151,4 +152,67 @@ func MidAccessAllowFun(c *gin.Context) {
 	}
 	// 处理请求
 	c.Next()
+}
+
+// MidRequestLog returns a Gin middleware that logs structured request information
+// including method, path, status code, latency, client IP, and request ID.
+// The request ID is extracted from the context (set by MidRequestID middleware).
+// This enables production observability without verbose debug logging.
+func MidRequestLog() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		query := c.Request.URL.RawQuery
+
+		// Process request
+		c.Next()
+
+		// Calculate latency
+		latency := time.Since(start)
+
+		// Extract request ID from context (set by MidRequestID)
+		requestID := ""
+		if v, ok := c.Get(RequestIDKey); ok {
+			if s, ok := v.(string); ok {
+				requestID = s
+			}
+		}
+
+		// Get client IP
+		clientIP := c.ClientIP()
+
+		// Get response status
+		status := c.Writer.Status()
+
+		// Get method
+		method := c.Request.Method
+
+		// Log structured request info
+		// Skip logging for health check endpoints to reduce noise
+		if path == "/healthz" || path == "/readyz" {
+			return
+		}
+
+		fields := logrus.Fields{
+			"status":     status,
+			"latency":    latency.String(),
+			"client_ip":  clientIP,
+			"method":     method,
+			"path":       path,
+			"request_id": requestID,
+		}
+
+		if query != "" {
+			fields["query"] = query
+		}
+
+		// Use different log levels based on status code
+		if status >= 500 {
+			logrus.WithFields(fields).Error("request completed with server error")
+		} else if status >= 400 {
+			logrus.WithFields(fields).Warn("request completed with client error")
+		} else {
+			logrus.WithFields(fields).Info("request completed")
+		}
+	}
 }

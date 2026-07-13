@@ -5,8 +5,11 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gokins/core/runtime"
+	"github.com/gokins/core/utils"
+	"github.com/gokins/runner/runners"
 )
 
 func newTestJobEngine() *JobEngine {
@@ -130,6 +133,154 @@ func TestJobEnginePullCreatesExecuter(t *testing.T) {
 	je.exelk.RUnlock()
 	if !ok {
 		t.Error("expected Pull to create executer for new plugin")
+	}
+}
+
+func TestJobEnginePullReturnsJob(t *testing.T) {
+	je := newTestJobEngine()
+	// Register an executer with a queued job
+	job := &jobSync{
+		step:  &runtime.Step{Id: "step-1", Step: "shell"},
+		runjb: &runners.RunJob{Id: "runjob-1"},
+		cmdmp: make(map[string]*cmdSync),
+	}
+	je.execs["shell"] = &executer{
+		plug:  "shell",
+		jobwt: list.New(),
+	}
+	je.execs["shell"].jobwt.PushBack(job)
+
+	// Pull should return the queued job
+	result := je.Pull("runner1", []string{"shell"})
+	if result == nil {
+		t.Fatal("expected Pull to return a job")
+	}
+	if result.Id != "runjob-1" {
+		t.Errorf("expected job id 'runjob-1', got %q", result.Id)
+	}
+	// Job should be removed from queue
+	if je.execs["shell"].jobwt.Len() != 0 {
+		t.Error("expected job to be removed from queue")
+	}
+	// Job should be tracked in je.jobs
+	je.joblk.RLock()
+	_, ok := je.jobs["step-1"]
+	je.joblk.RUnlock()
+	if !ok {
+		t.Error("expected job to be tracked in je.jobs")
+	}
+}
+
+func TestJobEnginePullEmptyQueue(t *testing.T) {
+	je := newTestJobEngine()
+	je.execs["shell"] = &executer{
+		plug:  "shell",
+		jobwt: list.New(), // empty queue
+	}
+	result := je.Pull("runner1", []string{"shell"})
+	if result != nil {
+		t.Error("expected nil result for Pull with empty queue")
+	}
+}
+
+func TestJobEngineRmExec(t *testing.T) {
+	je := newTestJobEngine()
+	// Add an executer with queued jobs
+	job1 := &jobSync{step: &runtime.Step{Id: "step-1"}, cmdmp: make(map[string]*cmdSync)}
+	job2 := &jobSync{step: &runtime.Step{Id: "step-2"}, cmdmp: make(map[string]*cmdSync)}
+	ex := &executer{
+		plug:  "shell",
+		jobwt: list.New(),
+	}
+	ex.jobwt.PushBack(job1)
+	ex.jobwt.PushBack(job2)
+	je.execs["shell"] = ex
+
+	// Remove the executer
+	je.rmExec("shell", ex)
+
+	// Executer should be removed
+	je.exelk.RLock()
+	_, ok := je.execs["shell"]
+	je.exelk.RUnlock()
+	if ok {
+		t.Error("expected executer to be removed")
+	}
+
+	// All queued jobs should be marked as ended
+	if !job1.ended {
+		t.Error("expected job1 to be marked as ended")
+	}
+	if !job2.ended {
+		t.Error("expected job2 to be marked as ended")
+	}
+}
+
+func TestJobEngineRun_Cleanup(t *testing.T) {
+	je := &JobEngine{
+		tmr:   utils.NewTimer(time.Second * 30),
+		execs: make(map[string]*executer),
+		jobs:  make(map[string]*jobSync),
+	}
+	// Add an old executer (older than 2 minutes)
+	oldTime := time.Now().Add(-3 * time.Minute)
+	je.execs["old-plugin"] = &executer{
+		plug:  "old-plugin",
+		tms:   oldTime,
+		jobwt: list.New(),
+	}
+	// Add a recent executer
+	je.execs["new-plugin"] = &executer{
+		plug:  "new-plugin",
+		tms:   time.Now(),
+		jobwt: list.New(),
+	}
+
+	// Run should clean up old executer
+	je.run()
+
+	// Wait a bit for goroutine to complete
+	time.Sleep(100 * time.Millisecond)
+
+	je.exelk.RLock()
+	_, oldExists := je.execs["old-plugin"]
+	_, newExists := je.execs["new-plugin"]
+	je.exelk.RUnlock()
+
+	if oldExists {
+		t.Error("expected old executer to be removed")
+	}
+	if !newExists {
+		t.Error("expected new executer to remain")
+	}
+}
+
+func TestJobEngineRun_CleanupEndedJobs(t *testing.T) {
+	je := &JobEngine{
+		tmr:   utils.NewTimer(time.Second * 30),
+		execs: make(map[string]*executer),
+		jobs:  make(map[string]*jobSync),
+	}
+	// Add some jobs, some ended and some not
+	je.jobs["step-1"] = &jobSync{step: &runtime.Step{Id: "step-1"}, ended: true}
+	je.jobs["step-2"] = &jobSync{step: &runtime.Step{Id: "step-2"}, ended: false}
+
+	// Run should clean up ended jobs
+	je.run()
+
+	// Wait a bit for goroutine to complete
+	time.Sleep(100 * time.Millisecond)
+
+	je.joblk.RLock()
+	_, endedExists := je.jobs["step-1"]
+	_, activeExists := je.jobs["step-2"]
+	je.joblk.RUnlock()
+
+	if endedExists {
+		t.Error("expected ended job to be removed")
+	}
+	if !activeExists {
+		t.Error("expected active job to remain")
 	}
 }
 

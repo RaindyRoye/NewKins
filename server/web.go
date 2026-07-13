@@ -36,6 +36,7 @@ func runWeb() {
 	defer util.RecoverLog("Web")
 	comm.WebEgn = gin.Default()
 	comm.WebEgn.Use(util.MidRequestID())
+	comm.WebEgn.Use(util.MidRequestLog())
 	comm.WebEgn.Use(util.MidSecurityHeaders())
 	comm.WebEgn.Use(midUiHandle)
 
@@ -86,9 +87,9 @@ func regApi() {
 		}
 		c.Next()
 	})
-	if core.Debug {
+	if core.Debug || comm.Cfg.Server.Pprof {
 		comm.WebEgn.Use(util.MidAccessAllowFun)
-		// pprof profiling endpoints (debug mode only)
+		// pprof profiling endpoints (debug mode or config.pprof enabled)
 		pprofGroup := comm.WebEgn.Group("/debug/pprof")
 		{
 			pprofGroup.GET("/", gin.WrapF(pprof.Index))
@@ -103,7 +104,11 @@ func regApi() {
 			pprofGroup.GET("/mutex", gin.WrapH(pprof.Handler("mutex")))
 			pprofGroup.GET("/threadcreate", gin.WrapH(pprof.Handler("threadcreate")))
 		}
-		logrus.Info("pprof profiling endpoints enabled at /debug/pprof")
+		if core.Debug {
+			logrus.Info("pprof profiling endpoints enabled at /debug/pprof (debug mode)")
+		} else {
+			logrus.Info("pprof profiling endpoints enabled at /debug/pprof (config.pprof)")
+		}
 	}
 	// Health check endpoints
 	comm.WebEgn.GET("/healthz", func(c *gin.Context) {
