@@ -1,8 +1,18 @@
 package hook
 
 import (
+	"errors"
 	"net/http"
 )
+
+// ErrSecretValidationFailed is returned when the webhook secret/token
+// provided in the request does not match the expected secret.
+// Callers can use errors.Is to check for this sentinel error.
+var ErrSecretValidationFailed = errors.New("webhook secret validation failed")
+
+// ErrCommentNotPullRequest is returned when a comment event is received
+// but the comment is not associated with a pull request (e.g., issue comment).
+var ErrCommentNotPullRequest = errors.New("comment is not associated with a pull request")
 
 type (
 	WebHook interface {

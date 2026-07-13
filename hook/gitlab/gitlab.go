@@ -4,7 +4,6 @@ import (
 	"crypto/hmac"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -40,7 +39,7 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 	}
 	sig := req.Header.Get("X-Gitlab-Token")
 	if secret != sig {
-		return wb, errors.New("secret validation failed")
+		return wb, hook.ErrSecretValidationFailed
 	}
 	return wb, nil
 }
