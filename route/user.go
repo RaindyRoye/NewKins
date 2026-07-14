@@ -9,6 +9,7 @@ import (
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
+	"github.com/gokins/gokins/pkg/middleware"
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
@@ -18,7 +19,7 @@ type UserController struct{}
 
 // passRateLimiter limits password change attempts to 5 per minute per IP
 // to mitigate brute-force attacks on the password change endpoint.
-var passRateLimiter = util.NewRateLimiter(5, time.Minute)
+var passRateLimiter = middleware.NewRateLimiter(5, time.Minute)
 
 func (UserController) GetPath() string {
 	return "/api/user"
@@ -29,7 +30,7 @@ func (c *UserController) Routes(g gin.IRoutes) {
 	g.POST("/new", util.GinReqParseJson(c.new))
 	g.POST("/info", util.GinReqParseJson(c.info))
 	g.POST("/upinfo", util.GinReqParseJson(c.upinfo))
-	g.POST("/upass", util.MidRateLimit(passRateLimiter), util.GinReqParseJson(c.upass))
+	g.POST("/upass", middleware.MidRateLimit(passRateLimiter), util.GinReqParseJson(c.upass))
 	g.POST("/active", util.GinReqParseJson(c.active))
 	g.POST("/perm", util.GinReqParseJson(c.perm))
 }
