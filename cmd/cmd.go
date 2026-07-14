@@ -14,6 +14,7 @@ import (
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/server"
+	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -223,6 +224,7 @@ func runProcess() error {
 	csig := make(chan os.Signal, 1)
 	signal.Notify(csig, os.Interrupt, syscall.SIGTERM, syscall.SIGALRM)
 	go func() {
+		defer util.RecoverLog("signal handler")
 		s := <-csig
 		hbtp.Debugf("get signal(%d):%s", s, s.String())
 		comm.Cancel()
