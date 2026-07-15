@@ -121,6 +121,7 @@ func CacheGet(key string) ([]byte, error) {
 	// Delete expired keys in a separate write transaction (View is read-only).
 	if expired {
 		go func() {
+			defer util.RecoverLog("CacheGet.expired-cleanup")
 			if err := BCache.Update(func(tx *bolt.Tx) error {
 				bk := tx.Bucket(mainCacheBucket)
 				if bk == nil {

@@ -105,7 +105,7 @@ func TestInitConfig_WritesFile(t *testing.T) {
 	}
 
 	// Read and verify content contains expected values
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(filepath.Clean(configPath))
 	if err != nil {
 		t.Fatalf("failed to read config file: %v", err)
 	}

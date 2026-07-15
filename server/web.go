@@ -51,6 +51,7 @@ func runWeb() {
 	// Start server in a goroutine so we can handle graceful shutdown
 	errCh := make(chan error, 1)
 	go func() {
+		defer util.RecoverLog("Web.ListenAndServe")
 		logrus.Infof("Web server listening on %s", comm.WebHost)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err

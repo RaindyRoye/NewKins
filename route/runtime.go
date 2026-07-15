@@ -185,6 +185,7 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 	}*/
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, buildId, common.PathJobs, stepId)
 	logpth := filepath.Join(dir, "build.log")
+	//nolint:gosec // logpth is constructed from comm.WorkPath + DB-derived buildId/stepId, not raw user input
 	fl, err := os.Open(logpth)
 	if err != nil {
 		c.String(http.StatusNotFound, "Not Found File")
