@@ -368,10 +368,12 @@ func BatchBuildCounts(ctx context.Context, pipelineIds []string) (map[string]int
 		Cnt        int64  `xorm:"cnt"`
 	}
 	var counts []buildCount
-	err := comm.Db.Context(ctx).SQL(
-		"SELECT pipeline_id, COUNT(*) as cnt FROM t_build WHERE pipeline_id IN (?) GROUP BY pipeline_id",
-		pipelineIds,
-	).Find(&counts)
+	err := comm.Db.Context(ctx).
+		Table("t_build").
+		Select("pipeline_id, COUNT(*) as cnt").
+		In("pipeline_id", pipelineIds).
+		GroupBy("pipeline_id").
+		Find(&counts)
 	if err != nil {
 		return nil, fmt.Errorf("batch build counts: %w", err)
 	}
@@ -390,17 +392,16 @@ func BatchLatestBuilds(ctx context.Context, pipelineIds []string) (map[string]*m
 		return map[string]*model.RunBuild{}, nil
 	}
 	var builds []*model.RunBuild
-	err := comm.Db.Context(ctx).SQL(`
-		SELECT b1.* FROM t_build b1
-		WHERE b1.pipeline_id IN (?)
-		AND b1.created = (
-			SELECT MAX(b2.created) FROM t_build b2
-			WHERE b2.pipeline_id = b1.pipeline_id
-		)
-	`, pipelineIds).Find(&builds)
+	// Use xorm In() builder for proper slice expansion, with correlated subquery
+	err := comm.Db.Context(ctx).
+		Alias("b1").
+		In("b1.pipeline_id", pipelineIds).
+		Where("b1.created = (SELECT MAX(b2.created) FROM t_build b2 WHERE b2.pipeline_id = b1.pipeline_id)").
+		Find(&builds)
 	if err != nil {
 		return nil, fmt.Errorf("batch latest builds: %w", err)
 	}
+
 	result := make(map[string]*model.RunBuild, len(builds))
 	for _, b := range builds {
 		// If there are timestamp ties, pick the first one encountered
@@ -419,17 +420,16 @@ func BatchLatestBuildsForVersions(ctx context.Context, versionIds []string) (map
 		return map[string]*model.RunBuild{}, nil
 	}
 	var builds []*model.RunBuild
-	err := comm.Db.Context(ctx).SQL(`
-		SELECT b1.* FROM t_build b1
-		WHERE b1.pipeline_version_id IN (?)
-		AND b1.created = (
-			SELECT MAX(b2.created) FROM t_build b2
-			WHERE b2.pipeline_version_id = b1.pipeline_version_id
-		)
-	`, versionIds).Find(&builds)
+	// Use xorm In() builder for proper slice expansion, with correlated subquery
+	err := comm.Db.Context(ctx).
+		Alias("b1").
+		In("b1.pipeline_version_id", versionIds).
+		Where("b1.created = (SELECT MAX(b2.created) FROM t_build b2 WHERE b2.pipeline_version_id = b1.pipeline_version_id)").
+		Find(&builds)
 	if err != nil {
 		return nil, fmt.Errorf("batch latest builds for versions: %w", err)
 	}
+
 	result := make(map[string]*model.RunBuild, len(builds))
 	for _, b := range builds {
 		if _, exists := result[b.PipelineVersionId]; !exists {
