@@ -137,7 +137,7 @@ func (ArtPublicController) downFile(c *gin.Context, fls string) {
 		nms = stat.Name()
 	}
 
-	fl, err := os.Open(fls)
+	fl, err := os.Open(filepath.Clean(fls))
 	if err != nil {
 		c.String(http.StatusNotFound, "Not Found File")
 		return

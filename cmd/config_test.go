@@ -377,7 +377,7 @@ func TestConfigInitCmd_GeneratesFile(t *testing.T) {
 
 	// Verify file was created
 	configPath := filepath.Join(tmpDir, "app.yml")
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(filepath.Clean(configPath))
 	if err != nil {
 		t.Fatalf("config file not created: %v", err)
 	}
@@ -439,7 +439,7 @@ func TestConfigInitCmd_MySQLDriver(t *testing.T) {
 	}
 
 	configPath := filepath.Join(tmpDir, "app.yml")
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(filepath.Clean(configPath))
 	if err != nil {
 		t.Fatalf("config file not created: %v", err)
 	}
@@ -478,7 +478,7 @@ func TestConfigInitCmd_PostgresDriver(t *testing.T) {
 	}
 
 	configPath := filepath.Join(tmpDir, "app.yml")
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(filepath.Clean(configPath))
 	if err != nil {
 		t.Fatalf("config file not created: %v", err)
 	}
@@ -527,7 +527,7 @@ func TestConfigInitCmd_RefusesOverwrite(t *testing.T) {
 	}
 
 	// Verify original file was not modified
-	data, _ := os.ReadFile(configPath)
+	data, _ := os.ReadFile(filepath.Clean(configPath))
 	if string(data) != "existing config" {
 		t.Error("existing config should not have been modified")
 	}
@@ -564,7 +564,7 @@ func TestConfigInitCmd_ForceOverwrite(t *testing.T) {
 	}
 
 	// Verify file was overwritten
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(filepath.Clean(configPath))
 	if err != nil {
 		t.Fatalf("config file not found after force overwrite: %v", err)
 	}

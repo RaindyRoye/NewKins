@@ -166,6 +166,7 @@ func TestRunCommand_DebugFlag(t *testing.T) {
 	f := runCmd.Flags().Lookup("debug")
 	if f == nil {
 		t.Fatal("run command should have --debug flag")
+		return //nolint:staticcheck // SA5011: unreachable after t.Fatal, kept for linter satisfaction
 	}
 	if f.DefValue != "false" {
 		t.Errorf("debug flag default = %q, want %q", f.DefValue, "false")
