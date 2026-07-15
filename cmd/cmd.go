@@ -256,7 +256,7 @@ func resolveConfigPath(args []string) (string, error) {
 
 // loadConfigFile reads and parses a config file, returning the parsed Config.
 func loadConfigFile(pth string) (*comm.Config, error) {
-	bts, err := os.ReadFile(pth)
+	bts, err := os.ReadFile(filepath.Clean(pth))
 	if err != nil {
 		return nil, fmt.Errorf("read config file %s: %w", pth, err)
 	}

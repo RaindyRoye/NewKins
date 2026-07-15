@@ -48,7 +48,7 @@ func setupTestDB(t *testing.T) *xorm.Engine {
 }
 
 type testItem struct {
-	Id    int64  `xorm:"pk autoincr"`
+	Id    int64 `xorm:"pk autoincr"`
 	Name  string
 	Value int
 }
