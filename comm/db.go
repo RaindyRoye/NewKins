@@ -44,6 +44,76 @@ func FindPage(ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page,
 	}
 	return findPages(ses, ls, count, page, size...)
 }
+
+// FindPageCtx is the context-aware version of FindPage.
+// It propagates ctx to both the count query and the data query so they
+// can be canceled when the HTTP request times out or the client disconnects.
+// The session may already carry context from the caller (comm.Db.Context(ctx));
+// FindPageCtx additionally ensures the internal count query uses ctx, which
+// the non-Ctx FindPage does not (it opens a separate session via Db.NewSession).
+func FindPageCtx(ctx context.Context, ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
+	count, err := findCountCtx(ctx, ses.Conds(), ls)
+	if err != nil {
+		return nil, err
+	}
+	return findPagesCtx(ctx, ses, ls, count, page, size...)
+}
+
+func findCountCtx(ctx context.Context, cds builder.Cond, data any) (int64, error) {
+	if data == nil {
+		return 0, errors.New("findCount: data must be a non-nil pointer to a slice")
+	}
+	of := reflect.TypeOf(data)
+	if of.Kind() == reflect.Pointer {
+		of = of.Elem()
+	}
+
+	if of.Kind() == reflect.Slice {
+		sty := of.Elem()
+		if sty.Kind() == reflect.Pointer {
+			sty = sty.Elem()
+		}
+		pv := reflect.New(sty)
+
+		ses := Db.NewSession().Context(ctx)
+		defer func() { _ = ses.Close() }()
+		return ses.Where(cds).Count(pv.Interface())
+	}
+	return 0, fmt.Errorf("findCount: expected pointer to slice, got %T", data)
+}
+
+func findPagesCtx(ctx context.Context, ses *xorm.Session, ls any, count, page int64, size ...int64) (*bean.Page, error) {
+	var pageno int64 = 1
+	var sizeno int64 = 10
+	var pagesno int64
+	if page > 0 {
+		pageno = page
+	}
+	if len(size) > 0 && size[0] > 0 {
+		sizeno = size[0]
+	}
+	start := (pageno - 1) * sizeno
+	// Apply context to the session and set limit for this query.
+	// xorm's Session.Context sets ctx on the session's statement in-place.
+	err := ses.Context(ctx).Limit(int(sizeno), int(start)).Find(ls)
+	if err != nil {
+		return nil, fmt.Errorf("findPages: query data: %w", err)
+	}
+	pagest := count / sizeno
+	if count%sizeno > 0 {
+		pagesno = pagest + 1
+	} else {
+		pagesno = pagest
+	}
+	return &bean.Page{
+		Page:  pageno,
+		Pages: pagesno,
+		Size:  sizeno,
+		Total: count,
+		Data:  ls,
+	}, nil
+}
+
 func findPages(ses *xorm.Session, ls any, count, page int64, size ...int64) (*bean.Page, error) {
 	var pageno int64 = 1
 	var sizeno int64 = 10
