@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -340,6 +341,14 @@ func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, 
 	return fl, nil
 }
 func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (string, error) {
+	return c.FindArtVersionIdWithContext(comm.Ctx, buildID, idnt, names)
+}
+
+// FindArtVersionIdWithContext finds an artifact version ID using the provided context.
+// This allows callers to control cancellation and timeouts for database operations.
+// The original FindArtVersionId method delegates to this with the global comm.Ctx for
+// backward compatibility.
+func (c *baseRunner) FindArtVersionIdWithContext(ctx context.Context, buildID, idnt string, names string) (string, error) {
 	tnms := strings.Split(strings.TrimSpace(names), "@")
 	name := tnms[0]
 	vers := ""
@@ -356,7 +365,7 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 
 	arty := &model.TArtifactory{}
 	var err error
-	ok, err = comm.Db.Context(comm.Ctx).Where("deleted!=1 and identifier=? and org_id in (select org_id from t_org_pipe where pipe_id=?)",
+	ok, err = comm.Db.Context(ctx).Where("deleted!=1 and identifier=? and org_id in (select org_id from t_org_pipe where pipe_id=?)",
 		idnt, build.build.PipelineId).Get(arty)
 	if err != nil {
 		return "", fmt.Errorf("findArtVersionId: query artifactory %q: %w", idnt, err)
@@ -380,14 +389,14 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 	}
 
 	artp := &model.TArtifactPackage{}
-	ok, err = comm.Db.Context(comm.Ctx).Where("deleted!=1 and repo_id=? and name=?", arty.Id, name).Get(artp)
+	ok, err = comm.Db.Context(ctx).Where("deleted!=1 and repo_id=? and name=?", arty.Id, name).Get(artp)
 	if err != nil {
 		return "", fmt.Errorf("findArtVersionId: query artifact package %q: %w", name, err)
 	} else if !ok {
 		return "", fmt.Errorf("findArtVersionId: %w: %q", ErrArtifactNotFound, names)
 	}
 	artv := &model.TArtifactVersion{}
-	ses := comm.Db.Context(comm.Ctx).Where("package_id=?", artp.Id)
+	ses := comm.Db.Context(ctx).Where("package_id=?", artp.Id)
 	if vers != "" {
 		ses.And("version=? or sha=?", vers)
 	}
@@ -400,6 +409,14 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 	return artv.Id, nil
 }
 func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string, error) {
+	return c.NewArtVersionIdWithContext(comm.Ctx, buildID, idnt, name)
+}
+
+// NewArtVersionIdWithContext creates a new artifact version ID using the provided context.
+// This allows callers to control cancellation and timeouts for database operations.
+// The original NewArtVersionId method delegates to this with the global comm.Ctx for
+// backward compatibility.
+func (c *baseRunner) NewArtVersionIdWithContext(ctx context.Context, buildID, idnt string, name string) (string, error) {
 	name = strings.Split(strings.TrimSpace(name), "@")[0]
 	if buildID == "" || idnt == "" || name == "" {
 		return "", fmt.Errorf("newArtVersionId: %w: buildID=%q, identifier=%q, name=%q", ErrEmptyParams, buildID, idnt, name)
@@ -411,7 +428,7 @@ func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string,
 
 	arty := &model.TArtifactory{}
 	var err error
-	ok, err = comm.Db.Context(comm.Ctx).Where("deleted!=1 and identifier=? and org_id in (select org_id from t_org_pipe where pipe_id=?)",
+	ok, err = comm.Db.Context(ctx).Where("deleted!=1 and identifier=? and org_id in (select org_id from t_org_pipe where pipe_id=?)",
 		idnt, build.build.PipelineId).Get(arty)
 	if err != nil {
 		return "", fmt.Errorf("newArtVersionId: query artifactory %q: %w", idnt, err)
@@ -423,7 +440,7 @@ func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string,
 	}
 
 	artp := &model.TArtifactPackage{}
-	ok, err = comm.Db.Context(comm.Ctx).Where("deleted!=1 and repo_id=? and name=?", arty.Id, name).Get(artp)
+	ok, err = comm.Db.Context(ctx).Where("deleted!=1 and repo_id=? and name=?", arty.Id, name).Get(artp)
 	if err != nil {
 		return "", fmt.Errorf("newArtVersionId: query artifact package %q: %w", name, err)
 	}
@@ -433,7 +450,7 @@ func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string,
 		artp.Name = name
 		artp.Created = time.Now()
 		artp.Updated = time.Now()
-		_, err := comm.Db.Context(comm.Ctx).InsertOne(artp)
+		_, err := comm.Db.Context(ctx).InsertOne(artp)
 		if err != nil {
 			return "", fmt.Errorf("insert artifact package: %w", err)
 		}
@@ -448,7 +465,7 @@ func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string,
 		Updated:   time.Now(),
 	}
 	artv.Sha = artv.Id
-	_, err = comm.Db.Context(comm.Ctx).InsertOne(artv)
+	_, err = comm.Db.Context(ctx).InsertOne(artv)
 	if err != nil {
 		return "", fmt.Errorf("insert artifact version: %w", err)
 	}

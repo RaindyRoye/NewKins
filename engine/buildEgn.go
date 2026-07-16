@@ -2,6 +2,7 @@ package engine
 
 import (
 	"container/list"
+	"context"
 	"sync"
 	"time"
 
@@ -47,26 +48,32 @@ func (c *BuildEngine) Stop() {
 	}
 }
 func (c *BuildEngine) init() {
+	c.initWithContext(comm.Ctx)
+}
+
+// initWithContext initializes the build engine using the provided context for database operations.
+// This allows for better control over initialization timeouts and cancellation.
+func (c *BuildEngine) initWithContext(ctx context.Context) {
 	cont := "server restart"
-	if _, err := comm.Db.Context(comm.Ctx).Exec(
+	if _, err := comm.Db.Context(ctx).Exec(
 		"update `t_build` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	); err != nil {
 		logrus.Errorf("BuildEngine init: failed to cancel pending builds: %v", err)
 	}
-	if _, err := comm.Db.Context(comm.Ctx).Exec(
+	if _, err := comm.Db.Context(ctx).Exec(
 		"update `t_stage` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	); err != nil {
 		logrus.Errorf("BuildEngine init: failed to cancel pending stages: %v", err)
 	}
-	if _, err := comm.Db.Context(comm.Ctx).Exec(
+	if _, err := comm.Db.Context(ctx).Exec(
 		"update `t_step` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	); err != nil {
 		logrus.Errorf("BuildEngine init: failed to cancel pending steps: %v", err)
 	}
-	if _, err := comm.Db.Context(comm.Ctx).Exec(
+	if _, err := comm.Db.Context(ctx).Exec(
 		"update `t_cmd_line` set `status`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	); err != nil {

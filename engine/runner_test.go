@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"errors"
 	"testing"
 )
@@ -138,5 +139,57 @@ func TestErrorWrapping(t *testing.T) {
 	wrapped := errors.Join(errors.New("context"), baseErr)
 	if !errors.Is(wrapped, baseErr) {
 		t.Error("errors.Is should find base error in chain")
+	}
+}
+
+func TestBaseRunner_FindArtVersionIdWithContext_EmptyParams(t *testing.T) {
+	r := &baseRunner{}
+	tests := []struct {
+		name    string
+		buildID string
+		idnt    string
+		names   string
+	}{
+		{"empty buildID", "", "ident", "name"},
+		{"empty idnt", "build", "", "name"},
+		{"empty names", "build", "ident", ""},
+		{"all empty", "", "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := r.FindArtVersionIdWithContext(context.Background(), tt.buildID, tt.idnt, tt.names)
+			if err == nil {
+				t.Error("FindArtVersionIdWithContext() expected error for empty params")
+			}
+			if !errors.Is(err, ErrEmptyParams) {
+				t.Errorf("FindArtVersionIdWithContext() error = %v, want ErrEmptyParams", err)
+			}
+		})
+	}
+}
+
+func TestBaseRunner_NewArtVersionIdWithContext_EmptyParams(t *testing.T) {
+	r := &baseRunner{}
+	tests := []struct {
+		name    string
+		buildID string
+		idnt    string
+		nameArg string
+	}{
+		{"empty buildID", "", "ident", "name"},
+		{"empty idnt", "build", "", "name"},
+		{"empty name", "build", "ident", ""},
+		{"all empty", "", "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := r.NewArtVersionIdWithContext(context.Background(), tt.buildID, tt.idnt, tt.nameArg)
+			if err == nil {
+				t.Error("NewArtVersionIdWithContext() expected error for empty params")
+			}
+			if !errors.Is(err, ErrEmptyParams) {
+				t.Errorf("NewArtVersionIdWithContext() error = %v, want ErrEmptyParams", err)
+			}
+		})
 	}
 }
