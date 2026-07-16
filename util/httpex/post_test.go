@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -130,7 +131,7 @@ func TestPosts_Success(t *testing.T) {
 }
 
 func TestPostResult_ErrorWrapping(t *testing.T) {
-	// Test that read errors are properly wrapped with %w
+	// Test that request errors are properly wrapped with %w
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Hijack the connection to simulate a read error
 		hj, ok := w.(http.Hijacker)
@@ -151,9 +152,9 @@ func TestPostResult_ErrorWrapping(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostResult with broken connection expected error, got nil")
 	}
-	// Verify the error can be unwrapped (proving %w is used)
-	if !errors.Is(err, err) {
-		t.Fatal("error should be self-referential with errors.Is")
+	// Verify the error message contains wrapping context
+	if !strings.Contains(err.Error(), "executing POST request") {
+		t.Errorf("expected error to contain 'executing POST request', got: %v", err)
 	}
 }
 

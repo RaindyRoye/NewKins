@@ -19,7 +19,7 @@ func CreateToken(claims jwt.MapClaims, key string, tmout time.Duration) (string,
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	tokens, err := token.SignedString([]byte(key))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("sign token: %w", err)
 	}
 	return tokens, nil
 }
@@ -30,7 +30,7 @@ func SetToken(c *gin.Context, p jwt.MapClaims, key string, rem bool, doman ...st
 	}
 	tokens, err := CreateToken(p, key, tmout)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("create auth token: %w", err)
 	}
 	cke := http.Cookie{ // #nosec G124 -- cookie attributes are configurable at runtime
 		Name:     "gokinstk",
