@@ -115,3 +115,21 @@ func TestBuildEngineConcurrentGetAndPut(t *testing.T) {
 		t.Fatalf("expected 100 items in task queue, got %d", c.taskw.Len())
 	}
 }
+
+func TestStartBuildEngineWithApp_NilApp(t *testing.T) {
+	// Calling StartBuildEngineWithApp with nil should not panic and should
+	// resolve to the default App singleton.  We only verify it returns a
+	// non-nil engine; the background goroutine will exit when the test's
+	// process-level context is eventually canceled.
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("StartBuildEngineWithApp(nil) panicked: %v", r)
+		}
+	}()
+	egn := StartBuildEngineWithApp(nil)
+	if egn == nil {
+		t.Fatal("StartBuildEngineWithApp(nil) returned nil engine")
+	}
+	// Stop to clean up
+	egn.Stop()
+}
