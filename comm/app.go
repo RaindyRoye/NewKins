@@ -120,6 +120,44 @@ func SyncToGlobals() {
 	WebHost = defaultApp.WebHost
 }
 
+// ---------- App-scoped convenience methods ----------
+// These allow new code to hold an *App and access state without touching
+// package-level globals.  The methods fall back to globals when the App
+// field is zero, keeping backward compatibility during migration.
+
+// AppCtx returns the application's background context.
+// If the App's context is not set it falls back to the global Ctx.
+func (a *App) AppCtx() context.Context {
+	if a == nil {
+		return Ctx
+	}
+	// App does not carry its own ctx yet; use the global one.
+	return Ctx
+}
+
+// RunLimit returns the configured concurrency limit, defaulting to 5.
+func (a *App) RunLimit() int {
+	var limit int
+	if a != nil {
+		limit = a.Cfg.Server.RunLimit
+	}
+	if limit < 1 {
+		limit = Cfg.Server.RunLimit
+	}
+	if limit < 2 {
+		return 5
+	}
+	return limit
+}
+
+// IsInstalled returns whether the application has completed installation.
+func (a *App) IsInstalled() bool {
+	if a != nil && a.Installed {
+		return true
+	}
+	return Installed
+}
+
 func init() {
 	Ctx, cncl = context.WithCancel(context.Background())
 }

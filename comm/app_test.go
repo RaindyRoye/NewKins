@@ -253,3 +253,45 @@ func TestCtx_Cancellation(t *testing.T) {
 	err = Ctx.Err()
 	assert.ErrorIs(t, err, context.Canceled, "context should be canceled")
 }
+
+func TestApp_AppCtx(t *testing.T) {
+	// AppCtx should return a non-nil context even from a zero App
+	var zero App
+	assert.NotNil(t, zero.AppCtx(), "AppCtx from zero App must not be nil")
+
+	// A nil *App should also return the global Ctx
+	var nilApp *App
+	assert.NotNil(t, nilApp.AppCtx(), "AppCtx from nil App must not be nil")
+}
+
+func TestApp_RunLimit(t *testing.T) {
+	// zero App with global Cfg unset -> default 5
+	var zero App
+	assert.Equal(t, 5, zero.RunLimit(), "default RunLimit should be 5")
+
+	// App with a valid limit
+	a := &App{}
+	a.Cfg.Server.RunLimit = 8
+	assert.Equal(t, 8, a.RunLimit(), "RunLimit should return configured value")
+
+	// App with limit below minimum falls back to 5
+	b := &App{}
+	b.Cfg.Server.RunLimit = 1
+	assert.Equal(t, 5, b.RunLimit(), "RunLimit below 2 should default to 5")
+}
+
+func TestApp_IsInstalled(t *testing.T) {
+	oldInstalled := Installed
+	defer func() { Installed = oldInstalled }()
+
+	Installed = false
+
+	var zero App
+	assert.False(t, zero.IsInstalled(), "zero App should not be installed")
+
+	a := &App{Installed: true}
+	assert.True(t, a.IsInstalled(), "App.Installed=true should report installed")
+
+	Installed = true
+	assert.True(t, zero.IsInstalled(), "global Installed should be honored")
+}

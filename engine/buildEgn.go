@@ -14,6 +14,8 @@ import (
 )
 
 type BuildEngine struct {
+	app *comm.App // dependency-injected application state
+
 	tskwlk sync.RWMutex
 	taskw  *list.List
 
@@ -21,18 +23,32 @@ type BuildEngine struct {
 	tasks  map[string]*BuildTask
 }
 
+// StartBuildEngine creates a BuildEngine using the default App singleton.
+// This is the backward-compatible entry point; prefer StartBuildEngineWithApp
+// in new code so the dependency is explicit.
 func StartBuildEngine() *BuildEngine {
-	if comm.Cfg.Server.RunLimit < 2 {
-		comm.Cfg.Server.RunLimit = 5
+	return StartBuildEngineWithApp(comm.GetApp())
+}
+
+// StartBuildEngineWithApp creates a BuildEngine that reads configuration and
+// database state from the supplied *comm.App instead of package-level globals.
+// Passing nil falls back to the default App (same as StartBuildEngine).
+func StartBuildEngineWithApp(app *comm.App) *BuildEngine {
+	if app == nil {
+		app = comm.GetApp()
 	}
+	limit := app.RunLimit()
 	c := &BuildEngine{
+		app:   app,
 		taskw: list.New(),
 		tasks: make(map[string]*BuildTask),
 	}
+	// Persist the resolved limit back so callers that read Cfg still see it.
+	comm.Cfg.Server.RunLimit = limit
 	go func() {
 		defer util.RecoverLog("BuildEngine.goroutine")
 		c.init()
-		for !hbtp.EndContext(comm.Ctx) {
+		for !hbtp.EndContext(app.AppCtx()) {
 			c.run()
 			time.Sleep(time.Second)
 		}
