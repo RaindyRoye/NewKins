@@ -70,18 +70,15 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 	stages := map[string]*model.RunStage{}
 	steps := map[string]*model.RunStep{}
 	for _, v := range ls {
-		spls := stepsMap[v.Id]
-		if len(spls) >= 0 {
-			ids = append(ids, v.Id)
-			stages[v.Id] = v
-			for _, step := range spls {
-				if step.Id != "" {
-					if err := json.Unmarshal([]byte(step.Waits), &step.Waitings); err != nil {
-						logrus.Warnf("runtime: unmarshal step waits (step=%s): %v", step.Id, err)
-					}
-					v.Stepids = append(v.Stepids, step.Id)
-					steps[step.Id] = step
+		ids = append(ids, v.Id)
+		stages[v.Id] = v
+		for _, step := range stepsMap[v.Id] {
+			if step.Id != "" {
+				if err := json.Unmarshal([]byte(step.Waits), &step.Waitings); err != nil {
+					logrus.Warnf("runtime: unmarshal step waits (step=%s): %v", step.Id, err)
 				}
+				v.Stepids = append(v.Stepids, step.Id)
+				steps[step.Id] = step
 			}
 		}
 	}
