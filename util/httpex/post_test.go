@@ -15,7 +15,7 @@ func TestPostResult_NilResult(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostResult with nil result expected error, got nil")
 	}
-	if err.Error() != "result is nil" {
+	if !errors.Is(err, errResultNil) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -75,7 +75,7 @@ func TestPostJSONResult_NilResult(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostJSONResult with nil result expected error, got nil")
 	}
-	if err.Error() != "result is nil" {
+	if !errors.Is(err, errResultNil) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -330,7 +330,7 @@ func TestPostResultCtx_NilResult(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostResultCtx with nil result expected error, got nil")
 	}
-	if err.Error() != "result is nil" {
+	if !errors.Is(err, errResultNil) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -340,7 +340,7 @@ func TestPostJSONResultCtx_NilResult(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostJSONResultCtx with nil result expected error, got nil")
 	}
-	if err.Error() != "result is nil" {
+	if !errors.Is(err, errResultNil) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
