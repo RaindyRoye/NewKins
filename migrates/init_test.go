@@ -182,10 +182,233 @@ func TestMigrateErrorWrapping(t *testing.T) {
 				t.Error("error message is empty")
 			}
 
-			// Verify errors.Is works with base error
-			baseErr := errors.New("database config not found")
-			if !errors.Is(err, baseErr) && !strings.Contains(err.Error(), baseErr.Error()) {
-				t.Errorf("error should be related to %q, got %q", baseErr.Error(), err.Error())
+			// Verify errors.Is works with sentinel error
+			if !errors.Is(err, ErrDatabaseConfigMissing) {
+				t.Errorf("error should wrap ErrDatabaseConfigMissing, got %q", err.Error())
+			}
+		})
+	}
+}
+
+func TestInitMysqlMigrate_SentinelError(t *testing.T) {
+	_, _, err := InitMysqlMigrate("", "", "", "")
+	if err == nil {
+		t.Fatal("expected error for empty params")
+	}
+	if !errors.Is(err, ErrDatabaseConfigMissing) {
+		t.Errorf("error should wrap ErrDatabaseConfigMissing, got %q", err.Error())
+	}
+}
+
+func TestInitPostgresMigrate_SentinelError(t *testing.T) {
+	_, _, err := InitPostgresMigrate("", "", "", "")
+	if err == nil {
+		t.Fatal("expected error for empty params")
+	}
+	if !errors.Is(err, ErrDatabaseConfigMissing) {
+		t.Errorf("error should wrap ErrDatabaseConfigMissing, got %q", err.Error())
+	}
+}
+
+func TestUpMysqlMigrate_SentinelError(t *testing.T) {
+	err := UpMysqlMigrate("")
+	if err == nil {
+		t.Fatal("expected error for empty URL")
+	}
+	if !errors.Is(err, ErrDatabaseConfigMissing) {
+		t.Errorf("error should wrap ErrDatabaseConfigMissing, got %q", err.Error())
+	}
+}
+
+func TestUpPostgresMigrate_SentinelError(t *testing.T) {
+	err := UpPostgresMigrate("")
+	if err == nil {
+		t.Fatal("expected error for empty URL")
+	}
+	if !errors.Is(err, ErrDatabaseConfigMissing) {
+		t.Errorf("error should wrap ErrDatabaseConfigMissing, got %q", err.Error())
+	}
+}
+
+func TestUpSqliteMigrate_SentinelError(t *testing.T) {
+	err := UpSqliteMigrate("")
+	if err == nil {
+		t.Fatal("expected error for empty URL")
+	}
+	if !errors.Is(err, ErrDatabaseConfigMissing) {
+		t.Errorf("error should wrap ErrDatabaseConfigMissing, got %q", err.Error())
+	}
+}
+
+func TestInitMysqlMigrate_InvalidHost(t *testing.T) {
+	// Test with invalid host that will fail on ping or DB creation
+	wait, _, err := InitMysqlMigrate("invalid-host:3306", "testdb", "root", "password")
+	if err == nil {
+		t.Skip("skipping: database connection succeeded unexpectedly")
+	}
+	// When DB operations fail, wait is expected to remain true (signaling retry)
+	// Error should mention create database, dial, or lookup
+	errLower := strings.ToLower(err.Error())
+	if !strings.Contains(errLower, "create database") &&
+		!strings.Contains(errLower, "dial") &&
+		!strings.Contains(errLower, "lookup") {
+		t.Errorf("error should mention connection failure, got %q", err.Error())
+	}
+	// Verify wait reflects that DB is not yet ready
+	if !wait {
+		t.Error("wait should be true when connection fails before migrations complete")
+	}
+}
+
+func TestInitPostgresMigrate_InvalidHost(t *testing.T) {
+	// Test with invalid host that will fail on ping or connection
+	wait, _, err := InitPostgresMigrate("invalid-host:5432", "testdb", "postgres", "password")
+	if err == nil {
+		t.Skip("skipping: database connection succeeded unexpectedly")
+	}
+	// When DB operations fail, wait is expected to remain true (signaling retry)
+	// Error should mention connection failure
+	errLower := strings.ToLower(err.Error())
+	if !strings.Contains(errLower, "dial") &&
+		!strings.Contains(errLower, "lookup") &&
+		!strings.Contains(errLower, "connection") &&
+		!strings.Contains(errLower, "ping") {
+		t.Errorf("error should mention connection failure, got %q", err.Error())
+	}
+	// Verify wait reflects that DB is not yet ready
+	if !wait {
+		t.Error("wait should be true when connection fails before migrations complete")
+	}
+}
+
+func TestInitSqliteMigrate_InvalidPath(t *testing.T) {
+	// Test with invalid path that doesn't exist
+	_, err := InitSqliteMigrate()
+	// This might succeed if comm.WorkPath is set, so we just verify it doesn't panic
+	if err != nil {
+		// Error should mention sqlite
+		if !strings.Contains(strings.ToLower(err.Error()), "sqlite") {
+			t.Errorf("error should mention sqlite, got %q", err.Error())
+		}
+	}
+}
+
+func TestUpMysqlMigrate_InvalidConnectionString(t *testing.T) {
+	// Test with invalid connection string format
+	err := UpMysqlMigrate("invalid-format-without-protocol")
+	if err == nil {
+		t.Skip("skipping: database connection succeeded unexpectedly")
+	}
+	// Should fail at ping or migration stage
+	if err.Error() == "" {
+		t.Error("error message should not be empty")
+	}
+}
+
+func TestUpPostgresMigrate_InvalidConnectionString(t *testing.T) {
+	// Test with invalid connection string format
+	err := UpPostgresMigrate("not-a-valid-postgres-url")
+	if err == nil {
+		t.Skip("skipping: database connection succeeded unexpectedly")
+	}
+	// Should fail at ping or migration stage
+	if err.Error() == "" {
+		t.Error("error message should not be empty")
+	}
+}
+
+func TestConnectionStringFormats(t *testing.T) {
+	tests := []struct {
+		name   string
+		format string
+		args   []interface{}
+		expect string
+	}{
+		{
+			name:   "mysql format",
+			format: "%s:%s@tcp(%s)/%s?parseTime=true&multiStatements=true",
+			args:   []interface{}{"root", "pass", "localhost:3306", "testdb"},
+			expect: "root:pass@tcp(localhost:3306)/testdb?parseTime=true&multiStatements=true",
+		},
+		{
+			name:   "postgres format",
+			format: "postgres://%s:%s@%s/%s?sslmode=disable",
+			args:   []interface{}{"user", "pass", "localhost:5432", "testdb"},
+			expect: "postgres://user:pass@localhost:5432/testdb?sslmode=disable",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := fmt.Sprintf(tt.format, tt.args...)
+			if result != tt.expect {
+				t.Errorf("got %q, want %q", result, tt.expect)
+			}
+		})
+	}
+}
+
+func TestInitMysqlMigrate_PartialParams(t *testing.T) {
+	tests := []struct {
+		name string
+		host string
+		dbs  string
+		user string
+		pass string
+	}{
+		{"only host", "localhost", "", "", ""},
+		{"only dbs", "", "testdb", "", ""},
+		{"only user", "", "", "root", ""},
+		{"only pass", "", "", "", "password"},
+		{"host and dbs", "localhost", "testdb", "", ""},
+		{"host and user", "localhost", "", "root", ""},
+		{"host and pass", "localhost", "", "", "password"},
+		{"dbs and user", "", "testdb", "root", ""},
+		{"dbs and pass", "", "testdb", "", "password"},
+		{"user and pass", "", "", "root", "password"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := InitMysqlMigrate(tt.host, tt.dbs, tt.user, tt.pass)
+			if err == nil {
+				t.Error("expected error for partial params")
+			}
+			if !errors.Is(err, ErrDatabaseConfigMissing) {
+				t.Errorf("error should wrap ErrDatabaseConfigMissing, got %q", err.Error())
+			}
+		})
+	}
+}
+
+func TestInitPostgresMigrate_PartialParams(t *testing.T) {
+	tests := []struct {
+		name string
+		host string
+		dbs  string
+		user string
+		pass string
+	}{
+		{"only host", "localhost", "", "", ""},
+		{"only dbs", "", "testdb", "", ""},
+		{"only user", "", "", "postgres", ""},
+		{"only pass", "", "", "", "password"},
+		{"host and dbs", "localhost", "testdb", "", ""},
+		{"host and user", "localhost", "", "postgres", ""},
+		{"host and pass", "localhost", "", "", "password"},
+		{"dbs and user", "", "testdb", "postgres", ""},
+		{"dbs and pass", "", "testdb", "", "password"},
+		{"user and pass", "", "", "postgres", "password"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := InitPostgresMigrate(tt.host, tt.dbs, tt.user, tt.pass)
+			if err == nil {
+				t.Error("expected error for partial params")
+			}
+			if !errors.Is(err, ErrDatabaseConfigMissing) {
+				t.Errorf("error should wrap ErrDatabaseConfigMissing, got %q", err.Error())
 			}
 		})
 	}
