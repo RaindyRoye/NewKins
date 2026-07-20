@@ -31,6 +31,7 @@ func StartTimerEngine() *TimerEngine {
 		tasks: make(map[string]*timerExec),
 	}
 	go func() {
+		defer util.RecoverLog("TimerEngine.goroutine")
 		c.refresh()
 		for !hbtp.EndContext(comm.Ctx) {
 			c.run()
