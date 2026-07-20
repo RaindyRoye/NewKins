@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -342,5 +343,132 @@ func TestPostJSONResultCtx_NilResult(t *testing.T) {
 	}
 	if err.Error() != "result is nil" {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// --- Convenience wrapper tests (Post / PostJSON without context) ---
+
+func TestPost_ConvenienceWrapper(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		ct := r.Header.Get("Content-Type")
+		if ct != "application/x-www-form-urlencoded; charset=utf-8" {
+			t.Errorf("expected form content-type, got %s", ct)
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer server.Close()
+
+	params := &url.Values{}
+	params.Set("key", "value")
+	resp, err := Post(server.URL, params, 5*time.Second)
+	if err != nil {
+		t.Fatalf("Post returned error: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+}
+
+func TestPost_NilParams(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	resp, err := Post(server.URL, nil, 5*time.Second)
+	if err != nil {
+		t.Fatalf("Post with nil params returned error: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+}
+
+func TestPostJSON_ConvenienceWrapper(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		ct := r.Header.Get("Content-Type")
+		if ct != "application/json; charset=utf-8" {
+			t.Errorf("expected JSON content-type, got %s", ct)
+		}
+		// Verify the JSON body was sent correctly
+		var body map[string]string
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Errorf("decode body error: %v", err)
+		}
+		if body["key"] != "val" {
+			t.Errorf("expected key=val, got %v", body)
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer server.Close()
+
+	resp, err := PostJSON(server.URL, map[string]string{"key": "val"}, 5*time.Second)
+	if err != nil {
+		t.Fatalf("PostJSON returned error: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+}
+
+func TestPostJSON_NilParams(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	resp, err := PostJSON(server.URL, nil, 5*time.Second)
+	if err != nil {
+		t.Fatalf("PostJSON with nil params returned error: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+}
+
+func TestPost_InvalidURL(t *testing.T) {
+	_, err := Post("http://invalid.host.that.does.not.exist:99999", nil, 2*time.Second)
+	if err == nil {
+		t.Fatal("Post with invalid URL expected error, got nil")
+	}
+}
+
+func TestPostJSON_InvalidURL(t *testing.T) {
+	_, err := PostJSON("http://invalid.host.that.does.not.exist:99999", map[string]string{"k": "v"}, 2*time.Second)
+	if err == nil {
+		t.Fatal("PostJSON with invalid URL expected error, got nil")
+	}
+}
+
+func TestPosts_CustomHeaders(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Custom") != "test-value" {
+			t.Errorf("expected X-Custom=test-value, got %s", r.Header.Get("X-Custom"))
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("with-header"))
+	}))
+	defer server.Close()
+
+	hdr := http.Header{}
+	hdr.Set("X-Custom", "test-value")
+	code, body, err := Posts(server.URL, nil, 5*time.Second, hdr)
+	if err != nil {
+		t.Fatalf("Posts returned error: %v", err)
+	}
+	if code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", code)
+	}
+	if string(body) != "with-header" {
+		t.Fatalf("expected 'with-header', got %q", string(body))
 	}
 }

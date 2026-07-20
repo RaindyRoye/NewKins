@@ -122,14 +122,14 @@ func CacheGet(key string) ([]byte, error) {
 	if expired {
 		go func() {
 			defer util.RecoverLog("CacheGet.expired-cleanup")
-			if err := BCache.Update(func(tx *bolt.Tx) error {
+			if updErr := BCache.Update(func(tx *bolt.Tx) error {
 				bk := tx.Bucket(mainCacheBucket)
 				if bk == nil {
 					return nil
 				}
 				return bk.Delete([]byte(key))
-			}); err != nil {
-				logrus.Warnf("CacheGet: failed to delete expired key %q: %v", key, err)
+			}); updErr != nil {
+				logrus.Warnf("CacheGet: failed to delete expired key %q: %v", key, updErr)
 			}
 		}()
 	}

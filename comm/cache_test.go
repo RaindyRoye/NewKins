@@ -308,6 +308,46 @@ func TestCacheFlush_Integration(t *testing.T) {
 	}
 }
 
+func TestCacheGets_InvalidJSON(t *testing.T) {
+	cleanup := setupTestCache(t)
+	defer cleanup()
+
+	// Manually insert raw bytes that are not valid JSON
+	if err := CacheSet("bad-json-key", []byte("not-json-at-all"), time.Hour); err != nil {
+		t.Fatalf("CacheSet failed: %v", err)
+	}
+
+	// CacheGets should fail to unmarshal
+	var result struct {
+		Name string `json:"name"`
+	}
+	err := CacheGets("bad-json-key", &result)
+	if err == nil {
+		t.Fatal("CacheGets with invalid JSON expected error, got nil")
+	}
+}
+
+func TestCacheSets_NilData_CallsCacheSetDelete(t *testing.T) {
+	cleanup := setupTestCache(t)
+	defer cleanup()
+
+	// First set a real value
+	if err := CacheSet("to-delete", []byte("data"), time.Hour); err != nil {
+		t.Fatalf("CacheSet failed: %v", err)
+	}
+
+	// CacheSets with nil data should trigger delete via CacheSet(key, nil)
+	if err := CacheSets("to-delete", nil); err != nil {
+		t.Fatalf("CacheSets(nil) failed: %v", err)
+	}
+
+	// Verify the key was deleted
+	_, err := CacheGet("to-delete")
+	if !errors.Is(err, ErrKeyNotFound) {
+		t.Errorf("expected ErrKeyNotFound after CacheSets(nil), got: %v", err)
+	}
+}
+
 func TestCache_NilBCache(t *testing.T) {
 	oldCache := BCache
 	BCache = nil

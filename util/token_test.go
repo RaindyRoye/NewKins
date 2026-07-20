@@ -199,6 +199,22 @@ func TestGetTokenAuth_EmptyHeader(t *testing.T) {
 	}
 }
 
+func TestGetTokenAuth_URLDecodeError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	// %ZZ is an invalid URL escape sequence that triggers PathUnescape error
+	req.Header.Set("Authorization", "%ZZ-invalid-url-encoding")
+	c.Request = req
+
+	got := getTokenAuth(c)
+	if got != "" {
+		t.Errorf("expected empty string for invalid URL encoding, got %q", got)
+	}
+}
+
 func TestGetTokenAuth_NoTokenPrefix(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
