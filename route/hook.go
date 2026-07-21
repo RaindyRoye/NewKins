@@ -8,6 +8,7 @@ import (
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/engine"
 	"github.com/gokins/gokins/model"
+	"github.com/gokins/gokins/pkg/middleware"
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
@@ -17,14 +18,14 @@ type HookController struct {
 }
 
 // hookRateLimiter limits webhook requests to 30 per minute per IP to prevent abuse.
-var hookRateLimiter = util.NewRateLimiter(30, time.Minute)
+var hookRateLimiter = middleware.NewRateLimiter(30, time.Minute)
 
 func (HookController) GetPath() string {
 	return "/trigger"
 }
 func (c *HookController) Routes(g gin.IRoutes) {
-	g.POST("/hook/:triggerId", util.MidRateLimit(hookRateLimiter), c.hooks)
-	g.POST("/web/:triggerId", util.MidRateLimit(hookRateLimiter), util.GinReqParseJson(c.web))
+	g.POST("/hook/:triggerId", middleware.MidRateLimit(hookRateLimiter), c.hooks)
+	g.POST("/web/:triggerId", middleware.MidRateLimit(hookRateLimiter), util.GinReqParseJson(c.web))
 }
 func (HookController) hooks(c *gin.Context) {
 	triggerId := c.Param("triggerId")

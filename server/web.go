@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gokins/gokins/pkg/middleware"
 	"github.com/gokins/gokins/util/httpex"
 
 	"github.com/gin-gonic/gin"
@@ -30,13 +31,13 @@ import (
 const shutdownTimeout = 10 * time.Second
 
 // apiRateLimiter limits all API requests to 120 per minute per IP.
-var apiRateLimiter = util.NewRateLimiter(120, time.Minute)
+var apiRateLimiter = middleware.NewRateLimiter(120, time.Minute)
 
 func runWeb() {
 	defer util.RecoverLog("Web")
 	comm.WebEgn = gin.Default()
-	comm.WebEgn.Use(util.MidRequestID())
-	comm.WebEgn.Use(util.MidSecurityHeaders())
+	comm.WebEgn.Use(middleware.MidRequestID())
+	comm.WebEgn.Use(middleware.MidSecurityHeaders())
 	comm.WebEgn.Use(midUiHandle)
 
 	srv := &http.Server{
@@ -82,13 +83,13 @@ func regApi() {
 	// Apply rate limiting to all /api/* routes.
 	comm.WebEgn.Use(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.URL.Path, "/api/") || c.Request.URL.Path == "/api" {
-			util.MidRateLimit(apiRateLimiter)(c)
+			middleware.MidRateLimit(apiRateLimiter)(c)
 			return
 		}
 		c.Next()
 	})
 	if core.Debug {
-		comm.WebEgn.Use(util.MidAccessAllowFun)
+		comm.WebEgn.Use(middleware.MidCORS())
 		// pprof profiling endpoints (debug mode only)
 		pprofGroup := comm.WebEgn.Group("/debug/pprof")
 		{
