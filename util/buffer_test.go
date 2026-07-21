@@ -89,27 +89,42 @@ func TestBufPool_ConcurrentAccess(t *testing.T) {
 }
 
 func BenchmarkBufPool_Small(b *testing.B) {
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		buf := GetSmallBuf()
+		(*buf)[0] = byte(i)
 		PutSmallBuf(buf)
 	}
 }
 
 func BenchmarkBufPool_Large(b *testing.B) {
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		buf := GetLargeBuf()
+		(*buf)[0] = byte(i)
 		PutLargeBuf(buf)
 	}
 }
 
+// benchSink prevents the compiler from eliding allocations.
+var benchSink []byte
+
 func BenchmarkBufPool_SmallAlloc(b *testing.B) {
+	// Use a global sink to prevent the compiler from eliding the allocation.
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		_ = make([]byte, BufSizeSmall)
+		buf := make([]byte, BufSizeSmall)
+		buf[0] = byte(i)
+		benchSink = buf
 	}
 }
 
 func BenchmarkBufPool_LargeAlloc(b *testing.B) {
+	// Use a global sink to prevent the compiler from eliding the allocation.
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		_ = make([]byte, BufSizeLarge)
+		buf := make([]byte, BufSizeLarge)
+		buf[0] = byte(i)
+		benchSink = buf
 	}
 }
