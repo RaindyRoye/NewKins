@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gokins/core/common"
@@ -510,32 +509,48 @@ func BatchCountArtifactVersions(ctx context.Context, packageIds []string) (map[s
 	return result, nil
 }
 
+// replace substitutes ${VARNAME} placeholders in s with values from mVars.
+// When mustShow is true, secret values are rendered as-is; otherwise they are
+// masked with comm.MaskedValue. The returned bool is true if any secret
+// variable was encountered (used by callers that need to flag sensitive output).
+//
+// Compared to the original FindAllStringSubmatch + strings.ReplaceAll loop,
+// this implementation uses a single regexp pass, reducing allocations from
+// O(N) (one per variable occurrence) to O(1).
 func replace(s string, mVars map[string]*runtime.Variables, mustShow ...bool) (string, bool) {
 	if s == "" {
 		return "", false
 	}
-	conts := s
 	ms := len(mustShow) == 1 && mustShow[0]
+
+	// Fast path: skip the regexp when there are no placeholders at all.
+	if !common.RegVar.MatchString(s) {
+		return s, false
+	}
+
 	secret := false
-	if common.RegVar.MatchString(s) {
-		all := common.RegVar.FindAllStringSubmatch(s, -1)
-		for _, v2 := range all {
-			rVar, ok := mVars[v2[1]]
-			va := ""
-			st := false
-			if ok {
-				st = rVar.Secret
-				va = rVar.Value
-				if !secret && rVar.Secret {
-					secret = true
-				}
-			}
-			if !ms && st {
-				conts = strings.ReplaceAll(conts, v2[0], comm.MaskedValue)
-			} else {
-				conts = strings.ReplaceAll(conts, v2[0], va)
+	out := common.RegVar.ReplaceAllStringFunc(s, func(match string) string {
+		// RegVar is `\$\{\{\s*([^}\s]+)\s*\}\}` — match looks like "${{ VAR }}".
+		// ReplaceAllStringFunc only gives the full match, so we re-run
+		// FindStringSubmatch to extract the captured variable name (group 1).
+		sub := common.RegVar.FindStringSubmatch(match)
+		if len(sub) < 2 {
+			return match
+		}
+		name := sub[1]
+		v, ok := mVars[name]
+		if !ok {
+			// Variable not defined — replace with empty string (matches old behavior).
+			return ""
+		}
+		if v.Secret {
+			secret = true
+			if !ms {
+				return comm.MaskedValue
 			}
 		}
-	}
-	return conts, secret
+		return v.Value
+	})
+	return out, secret
 }
+

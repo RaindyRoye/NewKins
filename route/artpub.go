@@ -152,13 +152,14 @@ func (ArtPublicController) downFile(c *gin.Context, fls string) {
 	c.Header("Content-Length", fmt.Sprintf("%d", contsz))
 	c.Header("Content-Disposition", fmt.Sprintf(`attachment;filename="%s"`, url.QueryEscape(nms)))
 	c.Status(http.StatusOK)
-	bts := make([]byte, 10240)
+	buf := util.GetLargeBuf()
+	defer util.PutLargeBuf(buf)
 	for !hbtp.EndContext(c) {
-		n, err := rdr.Read(bts)
+		n, err := rdr.Read(*buf)
 		if n <= 0 {
 			break
 		}
-		if _, werr := c.Writer.Write(bts[:n]); werr != nil {
+		if _, werr := c.Writer.Write((*buf)[:n]); werr != nil {
 			break
 		}
 		if err != nil {

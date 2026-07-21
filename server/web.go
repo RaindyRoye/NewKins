@@ -207,13 +207,14 @@ func midUiHandle(c *gin.Context) {
 		c.Writer.Header().Set("Content-Type", "application/x-font-ttf")
 	}
 	c.Status(200)
-	bts := make([]byte, 1024)
+	buf := util.GetSmallBuf()
+	defer util.PutSmallBuf(buf)
 	for !hbtp.EndContext(c) {
-		n, err := rd.Read(bts)
+		n, err := rd.Read(*buf)
 		if n <= 0 {
 			break
 		}
-		if _, werr := c.Writer.Write(bts[:n]); werr != nil {
+		if _, werr := c.Writer.Write((*buf)[:n]); werr != nil {
 			break
 		}
 		if err != nil {
