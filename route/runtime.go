@@ -203,16 +203,17 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 
 	var lastoff int64
 	ls := make([]*bean.LogOutJsonRes, 0)
-	bts := make([]byte, 1024*5)
+	buf := util.GetMediumBuf()
+	defer util.PutMediumBuf(buf)
 	linebuf := &bytes.Buffer{}
 	for !hbtp.EndContext(c) {
-		rn, err := fl.Read(bts)
+		rn, err := fl.Read(*buf)
 		if rn <= 0 {
 			break
 		}
 		for i := 0; i < rn; i++ {
 			off++
-			b := bts[i]
+			b := (*buf)[i]
 			if b == '{' {
 				linebuf.Reset()
 			}
