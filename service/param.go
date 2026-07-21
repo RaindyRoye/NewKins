@@ -125,11 +125,12 @@ func GetsParamCacheCtx(ctx context.Context, key string, data any, outm ...time.D
 		return nil
 	}
 	err = GetsParamCtx(ctx, key, data)
-	if err == nil {
-		errs := comm.CacheSets(key, data, outm...)
-		if errs != nil {
-			logrus.Errorf("GetsParamCache.CacheSets(%s) err:%v", key, errs)
-		}
+	if err != nil {
+		return fmt.Errorf("get param %q for cache: %w", key, err)
 	}
-	return err
+	errs := comm.CacheSets(key, data, outm...)
+	if errs != nil {
+		logrus.Errorf("GetsParamCache.CacheSets(%s) err:%v", key, errs)
+	}
+	return nil
 }
