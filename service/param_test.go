@@ -76,3 +76,22 @@ func TestGetParamCtx_CancelledContext(t *testing.T) {
 		t.Fatal("GetParamCtx with canceled context should return error")
 	}
 }
+
+func TestGetsParamCacheCtx_ErrorWrapping(t *testing.T) {
+	// Test that GetsParamCacheCtx properly wraps errors when the underlying
+	// GetsParamCtx call fails (cache miss path)
+	if comm.Db == nil {
+		t.Skip("skipping: comm.Db is nil (no database)")
+	}
+	ctx := context.Background()
+	var data map[string]string
+	// Use a non-existent key to trigger a cache miss and DB lookup
+	err := GetsParamCacheCtx(ctx, "non-existent-key-for-error-test", &data)
+	// Should return ErrParamNotFound wrapped in a context message
+	if err == nil {
+		t.Fatal("GetsParamCacheCtx with non-existent key should return error")
+	}
+	if !errors.Is(err, ErrParamNotFound) {
+		t.Errorf("GetsParamCacheCtx error = %v, should wrap ErrParamNotFound", err)
+	}
+}
