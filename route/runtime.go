@@ -71,7 +71,7 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 	steps := map[string]*model.RunStep{}
 	for _, v := range ls {
 		spls := stepsMap[v.Id]
-		if len(spls) >= 0 {
+		if len(spls) > 0 {
 			ids = append(ids, v.Id)
 			stages[v.Id] = v
 			for _, step := range spls {
