@@ -44,14 +44,11 @@ type jobSync struct {
 	ended bool
 }
 
-func (c *jobSync) status(stat, errs string, event ...string) {
+func (c *jobSync) status(stat, errs string) {
 	c.Lock()
 	defer c.Unlock()
 	c.step.Status = stat
 	c.step.Error = errs
-	if len(event) > 0 {
-		c.step.Event = event[0]
-	}
 }
 
 func StartJobEngine() *JobEngine {
