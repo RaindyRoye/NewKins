@@ -32,7 +32,7 @@ func TestMidCORS_PreflightRequest(t *testing.T) {
 		"Access-Control-Allow-Methods":     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		"Access-Control-Allow-Headers":     "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-Request-Id",
 		"Access-Control-Allow-Credentials": "true",
-		"Vary": "Origin",
+		"Vary":                             "Origin",
 	}
 
 	for header, expected := range headers {
