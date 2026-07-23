@@ -126,22 +126,49 @@ func CurrUserCacheCtx(ctx context.Context, c *gin.Context) (*model.TUser, bool) 
 func IsAdmin(usr *model.TUser) bool {
 	return usr.Id == "admin"
 }
+
+// IsOrgAdmin checks whether a user is an org admin using the global context.
+// Prefer IsOrgAdminCtx when a request context is available.
 func IsOrgAdmin(uid, orgId string) bool {
-	usero, ok := GetUserOrg(uid, orgId)
+	return IsOrgAdminCtx(comm.Ctx, uid, orgId)
+}
+
+// IsOrgAdminCtx checks whether a user is an org admin with the provided context
+// for cancellation/timeout support.
+func IsOrgAdminCtx(ctx context.Context, uid, orgId string) bool {
+	usero, ok := GetUserOrgCtx(ctx, uid, orgId)
 	if !ok {
 		return false
 	}
 	return usero.PermAdm != 0
 }
+
+// GetUsePermRwr returns the read-write permission level for a user in an org
+// using the global context. Prefer GetUsePermRwrCtx when a request context is available.
 func GetUsePermRwr(uid, orgId string) int {
-	usero, ok := GetUserOrg(uid, orgId)
+	return GetUsePermRwrCtx(comm.Ctx, uid, orgId)
+}
+
+// GetUsePermRwrCtx returns the read-write permission level for a user in an org
+// with the provided context for cancellation/timeout support.
+func GetUsePermRwrCtx(ctx context.Context, uid, orgId string) int {
+	usero, ok := GetUserOrgCtx(ctx, uid, orgId)
 	if !ok {
 		return 0
 	}
 	return usero.PermRw
 }
+
+// HasOrgExec checks whether a user has exec permission in an org using the global context.
+// Prefer HasOrgExecCtx when a request context is available.
 func HasOrgExec(uid, orgId string) bool {
-	usero, ok := GetUserOrg(uid, orgId)
+	return HasOrgExecCtx(comm.Ctx, uid, orgId)
+}
+
+// HasOrgExecCtx checks whether a user has exec permission in an org with the
+// provided context for cancellation/timeout support.
+func HasOrgExecCtx(ctx context.Context, uid, orgId string) bool {
+	usero, ok := GetUserOrgCtx(ctx, uid, orgId)
 	if !ok {
 		return false
 	}

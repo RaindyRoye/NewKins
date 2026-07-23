@@ -31,8 +31,21 @@ func setupBatchTestDB(t *testing.T) *xorm.Engine {
 	err = eng.Sync2(
 		&model.TBuild{},
 		&model.TUser{},
+		&model.TUserInfo{},
 		&model.TArtifactPackage{},
 		&model.TArtifactVersion{},
+		&model.TOrg{},
+		&model.TUserOrg{},
+		&model.TPipeline{},
+		&model.TPipelineConf{},
+		&model.TPipelineVersion{},
+		&model.TStage{},
+		&model.TStep{},
+		&model.TTrigger{},
+		&model.TTriggerRun{},
+		&model.TOrgVar{},
+		&model.TPipelineVar{},
+		&model.TParam{},
 	)
 	if err != nil {
 		t.Fatalf("failed to sync database schema: %v", err)
