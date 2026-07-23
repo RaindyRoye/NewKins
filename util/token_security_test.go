@@ -21,7 +21,7 @@ func TestSetToken_CookieSecurityAttributes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("GET", "/", nil)
+	c.Request = httptest.NewRequest("GET", "/", nil) //nolint:noctx // httptest.NewRequest without context is acceptable in tests
 
 	key := testSecretKey
 	claims := jwt.MapClaims{"uid": "user1"}
@@ -68,7 +68,7 @@ func TestSetToken_SecureFlagForTLS(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	// Simulate TLS request
-	req := httptest.NewRequest("GET", "https://example.com/", nil)
+	req := httptest.NewRequest("GET", "https://example.com/", nil) //nolint:noctx // httptest.NewRequest without context is acceptable in tests
 	req.TLS = &tls.ConnectionState{}
 	c.Request = req
 
@@ -94,7 +94,7 @@ func TestSetToken_RememberMeMaxAge(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("GET", "/", nil)
+	c.Request = httptest.NewRequest("GET", "/", nil) //nolint:noctx // httptest.NewRequest without context is acceptable in tests
 
 	key := testSecretKey
 	claims := jwt.MapClaims{"uid": "user1"}

@@ -17,7 +17,7 @@ func TestMidCORS_PreflightRequest(t *testing.T) {
 		c.String(http.StatusOK, "OK")
 	})
 
-	req := httptest.NewRequest("OPTIONS", "/test", nil)
+	req := httptest.NewRequest("OPTIONS", "/test", nil) //nolint:noctx // httptest.NewRequest without context is acceptable in tests
 	req.Header.Set("Origin", "https://example.com")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -52,7 +52,7 @@ func TestMidCORS_SimpleRequest(t *testing.T) {
 		c.String(http.StatusOK, "OK")
 	})
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest("GET", "/test", nil) //nolint:noctx // httptest.NewRequest without context is acceptable in tests
 	req.Header.Set("Origin", "https://example.com")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -83,7 +83,7 @@ func TestMidCORS_NoOrigin(t *testing.T) {
 		c.String(http.StatusOK, "OK")
 	})
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest("GET", "/test", nil) //nolint:noctx // httptest.NewRequest without context is acceptable in tests
 	// No Origin header
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)

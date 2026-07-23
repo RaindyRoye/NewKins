@@ -206,7 +206,7 @@ func runDaemon() error {
 		return fmt.Errorf("resolve executable path: %w", err)
 	}
 	fmt.Println("starting background process...")
-	cmd := exec.Command(fullpth, args...) //nolint:gosec // G204: CLI tool needs to execute user commands
+	cmd := exec.Command(fullpth, args...) //nolint:gosec,noctx // G204: CLI tool needs to execute user commands; noctx: daemon doesn't inherit parent context
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start daemon process: %w", err)
 	}
@@ -366,9 +366,9 @@ func generateConfigTemplate(driver string) []byte {
 	var dbURL string
 	switch driver {
 	case comm.DatasourceDriverMySQL:
-		dbURL = "root:changeme@tcp(localhost:3306)/gokins?charset=utf8mb4&parseTime=true"
+		dbURL = "root:changeme@tcp(localhost:3306)/gokins?charset=utf8mb4&parseTime=true" //nolint:gosec // G101: example config template, not real credentials
 	case comm.DatasourceDriverPostgres:
-		dbURL = "postgres://gokins:changeme@localhost:5432/gokins?sslmode=disable"
+		dbURL = "postgres://gokins:***@localhost:5432/gokins?sslmode=disable" //nolint:gosec // G101: example config template, not real credentials
 	default:
 		dbURL = "./gokins.db"
 		driver = comm.DatasourceDriverSQLite

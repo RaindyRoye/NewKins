@@ -8,7 +8,7 @@ import (
 )
 
 func TestParseHook_UnknownType(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/hook", strings.NewReader("{}"))
+	req := httptest.NewRequest(http.MethodPost, "/hook", strings.NewReader("{}")) //nolint:noctx // test request
 	_, err := parseHook("unknown", req, "secret")
 	if err == nil {
 		t.Fatal("expected error for unknown hook type, got nil")
@@ -19,7 +19,7 @@ func TestParseHook_UnknownType(t *testing.T) {
 }
 
 func TestParseHook_UnknownType_Empty(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/hook", strings.NewReader("{}"))
+	req := httptest.NewRequest(http.MethodPost, "/hook", strings.NewReader("{}")) //nolint:noctx // test request
 	_, err := parseHook("", req, "secret")
 	if err == nil {
 		t.Fatal("expected error for empty hook type, got nil")
@@ -33,7 +33,7 @@ func TestParseHook_CaseInsensitive(t *testing.T) {
 		"gitlab", "GITLAB", "GitLab", "gitea", "GITEA", "Gitea", "giteepremium", "GiteePremium"}
 	for _, hookType := range types {
 		t.Run(hookType, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPost, "/hook", strings.NewReader("{}"))
+			req := httptest.NewRequest(http.MethodPost, "/hook", strings.NewReader("{}")) //nolint:noctx // test request
 			_, err := parseHook(hookType, req, "")
 			if err != nil && strings.Contains(err.Error(), "unknown webhook type") {
 				t.Errorf("parseHook(%q) should recognize this type, got: %v", hookType, err)

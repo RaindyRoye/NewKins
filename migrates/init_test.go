@@ -71,7 +71,7 @@ func TestPostgresConnectionStringFormat(t *testing.T) {
 	user, host, dbs := "testuser", "localhost:5432", "testdb"
 	masked := fmt.Sprintf("postgres://%s:***@%s/%s?sslmode=disable", user, host, dbs)
 
-	expected := "postgres://testuser:***@localhost:5432/testdb?sslmode=disable"
+	expected := "postgres://testuser:***@localhost:5432/testdb?sslmode=disable" //nolint:gosec // G101: test assertion string, not real credentials
 	if masked != expected {
 		t.Errorf("masked connection string = %q, want %q", masked, expected)
 	}

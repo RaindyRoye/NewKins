@@ -81,7 +81,7 @@ func TestMidRateLimit(t *testing.T) {
 
 	// First 2 requests should succeed
 	for i := 0; i < 2; i++ {
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", nil) //nolint:noctx // httptest.NewRequest without context is acceptable in tests
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -91,7 +91,7 @@ func TestMidRateLimit(t *testing.T) {
 	}
 
 	// 3rd request should be rate limited
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest("GET", "/test", nil) //nolint:noctx // httptest.NewRequest without context is acceptable in tests
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 

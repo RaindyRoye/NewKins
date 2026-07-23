@@ -18,7 +18,7 @@ func TestMidRequestID_GeneratesNew(t *testing.T) {
 		c.String(http.StatusOK, rid)
 	})
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest("GET", "/test", nil) //nolint:noctx // httptest.NewRequest without context is acceptable in tests
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -50,7 +50,7 @@ func TestMidRequestID_ReusesProvided(t *testing.T) {
 	})
 
 	providedID := "custom-request-id-12345"
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest("GET", "/test", nil) //nolint:noctx // httptest.NewRequest without context is acceptable in tests
 	req.Header.Set(RequestIDHeader, providedID)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -79,7 +79,7 @@ func TestGetRequestID_Missing(t *testing.T) {
 		c.String(http.StatusOK, rid)
 	})
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest("GET", "/test", nil) //nolint:noctx // httptest.NewRequest without context is acceptable in tests
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 

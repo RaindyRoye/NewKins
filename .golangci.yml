@@ -43,6 +43,7 @@ linters:
         linters:
           - errcheck
           - bodyclose
+          - noctx  # httptest.NewRequest without context is acceptable in tests
       # Exclude known false positives
       - text: "SA1019"  # Deprecated usage - we have intentional deprecated constants
         linters:

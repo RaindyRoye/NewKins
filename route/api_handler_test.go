@@ -63,7 +63,7 @@ func TestVersion_Returns200(t *testing.T) {
 		comm.GitCommit = oldGitCommit
 	}()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/version", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/version", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -90,7 +90,7 @@ func TestVersion_Returns200(t *testing.T) {
 func TestVersion_ContentTypeIsJSON(t *testing.T) {
 	r := setupApiTestRouter(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/version", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/version", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -115,7 +115,7 @@ func TestVersion_WithDefaultValues(t *testing.T) {
 		comm.GitCommit = oldGitCommit
 	}()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/version", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/version", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 

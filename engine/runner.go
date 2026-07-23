@@ -327,7 +327,7 @@ func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, 
 	if err := os.MkdirAll(dirs, 0750); err != nil {
 		return nil, fmt.Errorf("create upload dirs %s: %w", dirs, err)
 	}
-	fl, err := os.OpenFile(pths, os.O_CREATE|os.O_RDWR, 0600)
+	fl, err := os.OpenFile(pths, os.O_CREATE|os.O_RDWR, 0600) //nolint:gosec // G304: file path from validated upload metadata
 	if err != nil {
 		return nil, fmt.Errorf("open upload file %s: %w", pths, err)
 	}
