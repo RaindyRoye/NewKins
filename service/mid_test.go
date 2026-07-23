@@ -174,12 +174,12 @@ func TestContextAwareFunctions_WithData(t *testing.T) {
 
 	// Insert user-org relationship with full permissions
 	userOrg := &model.TUserOrg{
-		Uid:       "user1",
-		OrgId:     "org1",
-		PermAdm:   1,
-		PermRw:    1,
-		PermExec:  1,
-		PermDown:  1,
+		Uid:      "user1",
+		OrgId:    "org1",
+		PermAdm:  1,
+		PermRw:   1,
+		PermExec: 1,
+		PermDown: 1,
 	}
 	if _, err := eng.Insert(userOrg); err != nil {
 		t.Fatalf("failed to insert user org: %v", err)
@@ -210,12 +210,12 @@ func TestContextAwareFunctions_WithData(t *testing.T) {
 		t.Fatalf("failed to insert user2: %v", err)
 	}
 	user2Org := &model.TUserOrg{
-		Uid:       "user2",
-		OrgId:     "org1",
-		PermAdm:   0,
-		PermRw:    0,
-		PermExec:  0,
-		PermDown:  0,
+		Uid:      "user2",
+		OrgId:    "org1",
+		PermAdm:  0,
+		PermRw:   0,
+		PermExec: 0,
+		PermDown: 0,
 	}
 	if _, err := eng.Insert(user2Org); err != nil {
 		t.Fatalf("failed to insert user2 org: %v", err)
@@ -236,4 +236,3 @@ func TestContextAwareFunctions_WithData(t *testing.T) {
 		t.Error("HasOrgExecCtx should return false for user without exec permission")
 	}
 }
-
