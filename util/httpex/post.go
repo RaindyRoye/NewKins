@@ -141,7 +141,7 @@ func PostResultCtx(ctx context.Context, ul string, params *url.Values, result an
 		return res.StatusCode, nil, fmt.Errorf("reading response body: %w", err)
 	}
 	if res.StatusCode != 200 {
-		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %w", res.StatusCode, errors.New(string(bts)))
+		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %s", res.StatusCode, string(bts))
 	}
 	if err := json.Unmarshal(bts, result); err != nil {
 		return res.StatusCode, bts, fmt.Errorf("unmarshaling response: %w", err)
@@ -170,7 +170,7 @@ func PostJSONResultCtx(ctx context.Context, ul string, params any, result any, t
 		return res.StatusCode, nil, fmt.Errorf("reading response body: %w", err)
 	}
 	if res.StatusCode != 200 {
-		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %w", res.StatusCode, errors.New(string(bts)))
+		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %s", res.StatusCode, string(bts))
 	}
 	if err := json.Unmarshal(bts, result); err != nil {
 		return res.StatusCode, bts, fmt.Errorf("unmarshaling response: %w", err)

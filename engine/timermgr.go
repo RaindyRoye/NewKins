@@ -32,9 +32,15 @@ func StartTimerEngine() *TimerEngine {
 	}
 	go func() {
 		c.refresh()
-		for !hbtp.EndContext(comm.Ctx) {
-			c.run()
-			time.Sleep(time.Millisecond * 10)
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-comm.Ctx.Done():
+				return
+			case <-ticker.C:
+				c.run()
+			}
 		}
 	}()
 	return c

@@ -11,7 +11,6 @@ import (
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/util"
 	"github.com/gokins/runner/runners"
-	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 )
 
 type JobEngine struct {
@@ -62,9 +61,15 @@ func StartJobEngine() *JobEngine {
 	}
 	go func() {
 		defer util.RecoverLog("JobEngine.goroutine")
-		for !hbtp.EndContext(comm.Ctx) {
-			c.run()
-			time.Sleep(time.Second)
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-comm.Ctx.Done():
+				return
+			case <-ticker.C:
+				c.run()
+			}
 		}
 	}()
 	return c
