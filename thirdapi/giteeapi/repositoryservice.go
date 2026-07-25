@@ -48,7 +48,8 @@ func (s *RepositoryService) GetRepos(ctx context.Context, accessToken, username,
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitee api GetRepos failed (status %d)", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return nil, thirdapi.NewAPIError("gitee", "GetRepos", resp.StatusCode, string(body))
 	}
 	repos, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -96,7 +97,7 @@ func (s *RepositoryService) DeleteHooks(ctx context.Context, accessToken, owner,
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("gitee api DeleteHooks failed (status %d): %s", resp.StatusCode, string(all))
+		return thirdapi.NewAPIError("gitee", "DeleteHooks", resp.StatusCode, string(all))
 	}
 	return nil
 }
@@ -136,7 +137,7 @@ func (s *RepositoryService) CreateWebHooks(ctx context.Context, accessToken, own
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("gitee api CreateWebHooks failed (status %d): %s", resp.StatusCode, string(all))
+		return nil, thirdapi.NewAPIError("gitee", "CreateWebHooks", resp.StatusCode, string(all))
 	}
 	k := &thirdbean.ResultGetGiteeHook{}
 	err = json.Unmarshal(all, k)
@@ -167,7 +168,7 @@ func (s *RepositoryService) GetRepoBranches(ctx context.Context, accessToken, ow
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitee api GetRepoBranches failed (status %d): %s", resp.StatusCode, string(all))
+		return nil, thirdapi.NewAPIError("gitee", "GetRepoBranches", resp.StatusCode, string(all))
 	}
 
 	var branchList []*thirdbean.ResultGiteeRepoBranch
@@ -199,7 +200,7 @@ func (s *RepositoryService) GetWebHooks(ctx context.Context, accessToken, owner,
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitee api GetWebHooks failed (status %d): %s", resp.StatusCode, string(all))
+		return nil, thirdapi.NewAPIError("gitee", "GetWebHooks", resp.StatusCode, string(all))
 	}
 	hs := make([]*thirdbean.ResultGetGiteeHook, 0)
 	err = json.Unmarshal(all, &hs)
