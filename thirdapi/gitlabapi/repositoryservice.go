@@ -36,7 +36,8 @@ func (s *RepositoryService) GetRepos(ctx context.Context, accessToken, username,
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitlab api GetRepos failed (status %d)", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return nil, thirdapi.NewAPIError("gitlab", "GetRepos", resp.StatusCode, string(body))
 	}
 	repos, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -86,7 +87,7 @@ func (s *RepositoryService) DeleteHooks(ctx context.Context, accessToken, owner,
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("gitlab api DeleteHooks failed (status %d): %s", resp.StatusCode, string(all))
+		return thirdapi.NewAPIError("gitlab", "DeleteHooks", resp.StatusCode, string(all))
 	}
 	return nil
 }
@@ -131,7 +132,7 @@ func (s *RepositoryService) CreateWebHooks(ctx context.Context, accessToken, own
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("gitlab api CreateWebHooks failed (status %d): %s", resp.StatusCode, string(all))
+		return nil, thirdapi.NewAPIError("gitlab", "CreateWebHooks", resp.StatusCode, string(all))
 	}
 	k := &thirdbean.ResultGetGitlabHook{}
 	err = json.Unmarshal(all, k)
@@ -164,7 +165,7 @@ func (s *RepositoryService) GetRepoBranches(ctx context.Context, accessToken, ow
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitlab api GetRepoBranches failed (status %d): %s", resp.StatusCode, string(all))
+		return nil, thirdapi.NewAPIError("gitlab", "GetRepoBranches", resp.StatusCode, string(all))
 	}
 	var branchList []*thirdbean.ResultGitlabRepoBranch
 	err = json.Unmarshal(all, &branchList)
@@ -197,7 +198,7 @@ func (s *RepositoryService) GetWebHooks(ctx context.Context, accessToken, owner,
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitlab api GetWebHooks failed (status %d): %s", resp.StatusCode, string(all))
+		return nil, thirdapi.NewAPIError("gitlab", "GetWebHooks", resp.StatusCode, string(all))
 	}
 
 	hs := make([]*thirdbean.ResultGetGitlabHook, 0)
