@@ -60,6 +60,11 @@ func Start() error {
 func (c *Manager) BuildEgn() *BuildEngine {
 	return c.buildEgn
 }
+
+// SetBuildEngine replaces the build engine (for testing only).
+func (c *Manager) SetBuildEngine(be *BuildEngine) {
+	c.buildEgn = be
+}
 func (c *Manager) HRun() *HbtpRunner {
 	return c.hrun
 }
