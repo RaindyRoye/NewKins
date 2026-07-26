@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -171,12 +172,12 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 	}
 	return nil
 }
-func (c *TimerEngine) Refresh(tmrid string) error {
+func (c *TimerEngine) Refresh(ctx context.Context, tmrid string) error {
 	if tmrid == "" {
 		return fmt.Errorf("timer id is empty: %w", ErrEmptyParams)
 	}
 	tmr := &model.TTrigger{}
-	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", tmrid).Get(tmr)
+	ok, err := comm.Db.Context(ctx).Where("id=?", tmrid).Get(tmr)
 	if err != nil {
 		return fmt.Errorf("query trigger %s: %w", tmrid, err)
 	}

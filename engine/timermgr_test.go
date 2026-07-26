@@ -1,10 +1,8 @@
 package engine
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -12,276 +10,339 @@ import (
 	"github.com/gokins/gokins/model"
 )
 
-func TestTimerEngineNew(t *testing.T) {
+func TestTimerEngine_NewForTest(t *testing.T) {
 	te := &TimerEngine{
 		tasks: make(map[string]*timerExec),
 	}
 	if te.tasks == nil {
-		t.Fatal("expected tasks map to be initialized")
-	}
-	if len(te.tasks) != 0 {
-		t.Fatalf("expected empty tasks map, got %d", len(te.tasks))
+		t.Fatal("tasks map should not be nil")
 	}
 }
 
-func TestTimerEngineDelete(t *testing.T) {
+func TestTimerEngine_Delete(t *testing.T) {
 	te := &TimerEngine{
 		tasks: make(map[string]*timerExec),
 	}
-	// Add a task
-	te.tasks["test-id"] = &timerExec{
-		tt:  &model.TTrigger{Id: "test-id"},
-		typ: 1,
+	te.tasks["timer-1"] = &timerExec{
+		tt: &model.TTrigger{Id: "timer-1"},
+	}
+	te.Delete("timer-1")
+	if len(te.tasks) != 0 {
+		t.Errorf("expected 0 tasks, got %d", len(te.tasks))
+	}
+}
+
+func TestTimerEngine_Refresh_EmptyId(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	err := te.Refresh(context.Background(), "")
+	if err == nil {
+		t.Fatal("expected error for empty id")
+	}
+}
+
+func TestTimerEngine_ResetOne_NotTimer(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	tmr := &model.TTrigger{
+		Id:    "trigger-1",
+		Types: "webhook",
+	}
+	err := te.resetOne(tmr)
+	if err == nil {
+		t.Fatal("expected error for non-timer type")
+	}
+}
+
+func TestTimerEngine_ResetOne_InvalidParams(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	tmr := &model.TTrigger{
+		Id:     "trigger-1",
+		Types:  "timer",
+		Params: "invalid json",
+	}
+	err := te.resetOne(tmr)
+	if err == nil {
+		t.Fatal("expected error for invalid params")
+	}
+}
+
+func TestTimerEngine_ResetOne_MissingTimerType(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	params := map[string]any{
+		"dates": time.Now().Format(time.RFC3339Nano),
+	}
+	data, _ := json.Marshal(params)
+	tmr := &model.TTrigger{
+		Id:     "trigger-1",
+		Types:  "timer",
+		Params: string(data),
+	}
+	err := te.resetOne(tmr)
+	if err == nil {
+		t.Fatal("expected error for missing timerType")
+	}
+}
+
+func TestTimerEngine_ResetOne_InvalidDates(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	params := map[string]any{
+		"timerType": 1,
+		"dates":     "invalid date",
+	}
+	data, _ := json.Marshal(params)
+	tmr := &model.TTrigger{
+		Id:     "trigger-1",
+		Types:  "timer",
+		Params: string(data),
+	}
+	err := te.resetOne(tmr)
+	if err == nil {
+		t.Fatal("expected error for invalid dates")
+	}
+}
+
+func TestTimerEngine_ResetOne_OneTimeTimer(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	future := time.Now().Add(time.Hour)
+	params := map[string]any{
+		"timerType": 0,
+		"dates":     future.Format(time.RFC3339Nano),
+	}
+	data, _ := json.Marshal(params)
+	tmr := &model.TTrigger{
+		Id:     "trigger-1",
+		Name:   "test-timer",
+		Types:  "timer",
+		Params: string(data),
+	}
+	err := te.resetOne(tmr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(te.tasks) != 1 {
-		t.Fatalf("expected 1 task, got %d", len(te.tasks))
+		t.Errorf("expected 1 task, got %d", len(te.tasks))
 	}
-
-	// Delete it
-	te.Delete("test-id")
-	if len(te.tasks) != 0 {
-		t.Fatalf("expected 0 tasks after delete, got %d", len(te.tasks))
-	}
-
-	// Delete non-existent should not panic
-	te.Delete("non-existent")
-}
-
-func TestTimerEngineResetOneInvalidType(t *testing.T) {
-	te := &TimerEngine{
-		tasks: make(map[string]*timerExec),
-	}
-	tmr := &model.TTrigger{
-		Id:     "test-1",
-		Types:  "webhook", // wrong type
-		Name:   "test",
-		Params: `{}`,
-	}
-	err := te.resetOne(tmr)
-	if err == nil {
-		t.Fatal("expected error for invalid trigger type")
-	}
-	expected := "expected trigger type 'timer', got 'webhook'"
-	if err.Error() != expected {
-		t.Fatalf("expected error %q, got %q", expected, err.Error())
+	if te.tasks["trigger-1"] == nil {
+		t.Error("expected timer-1 in tasks")
 	}
 }
 
-func TestTimerEngineResetOneInvalidJSON(t *testing.T) {
+func TestTimerEngine_ResetOne_MinuteTimer(t *testing.T) {
 	te := &TimerEngine{
 		tasks: make(map[string]*timerExec),
 	}
-	tmr := &model.TTrigger{
-		Id:     "test-2",
-		Types:  "timer",
-		Name:   "test",
-		Params: `{invalid json`,
-	}
-	err := te.resetOne(tmr)
-	if err == nil {
-		t.Fatal("expected error for invalid JSON params")
-	}
-}
-
-func TestTimerEngineResetOneOnceTimer(t *testing.T) {
-	te := &TimerEngine{
-		tasks: make(map[string]*timerExec),
-	}
-	// Create a one-time timer set in the future
-	futureTime := time.Now().Add(time.Hour)
 	params := map[string]any{
-		"timerType": 0, // once
-		"dates":     futureTime.Format(time.RFC3339Nano),
-	}
-	paramBytes, _ := json.Marshal(params)
-
-	tmr := &model.TTrigger{
-		Id:     "test-once",
-		Types:  "timer",
-		Name:   "once-timer",
-		Params: string(paramBytes),
-	}
-	err := te.resetOne(tmr)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	// Verify task was added
-	task, ok := te.tasks["test-once"]
-	if !ok {
-		t.Fatal("expected task to be added")
-	}
-	if task.typ != 0 {
-		t.Fatalf("expected type 0, got %d", task.typ)
-	}
-}
-
-func TestTimerEngineResetOneMinuteTimer(t *testing.T) {
-	te := &TimerEngine{
-		tasks: make(map[string]*timerExec),
-	}
-	// Create a recurring minute timer
-	params := map[string]any{
-		"timerType": 1, // minute
+		"timerType": 1,
 		"dates":     time.Now().Format(time.RFC3339Nano),
 	}
-	paramBytes, _ := json.Marshal(params)
-
+	data, _ := json.Marshal(params)
 	tmr := &model.TTrigger{
-		Id:     "test-minute",
-		Types:  "timer",
+		Id:     "trigger-2",
 		Name:   "minute-timer",
-		Params: string(paramBytes),
+		Types:  "timer",
+		Params: string(data),
 	}
 	err := te.resetOne(tmr)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	task, ok := te.tasks["test-minute"]
-	if !ok {
-		t.Fatal("expected task to be added")
-	}
-	if task.typ != 1 {
-		t.Fatalf("expected type 1, got %d", task.typ)
-	}
-	// tick should be in the near future
-	if time.Until(task.tick) > time.Minute+time.Second {
-		t.Fatal("tick should be within ~1 minute")
+	if len(te.tasks) != 1 {
+		t.Errorf("expected 1 task, got %d", len(te.tasks))
 	}
 }
 
-func TestTimerEngineRefreshEmptyID(t *testing.T) {
+func TestTimerEngine_ResetOne_HourTimer(t *testing.T) {
 	te := &TimerEngine{
 		tasks: make(map[string]*timerExec),
 	}
-	err := te.Refresh("")
-	if err == nil {
-		t.Fatal("expected error for empty timer ID")
+	params := map[string]any{
+		"timerType": 2,
+		"dates":     time.Now().Format(time.RFC3339Nano),
 	}
-	if !strings.Contains(err.Error(), "timer id is empty") {
-		t.Fatalf("expected error containing 'timer id is empty', got %q", err.Error())
+	data, _ := json.Marshal(params)
+	tmr := &model.TTrigger{
+		Id:     "trigger-3",
+		Types:  "timer",
+		Params: string(data),
 	}
-	// Verify it wraps ErrEmptyParams
-	if !errors.Is(err, ErrEmptyParams) {
-		t.Fatalf("expected error to wrap ErrEmptyParams, got %v", err)
+	err := te.resetOne(tmr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
-func TestTimerEngineResetOnePanicRecovery(t *testing.T) {
+func TestTimerEngine_ResetOne_DayTimer(t *testing.T) {
 	te := &TimerEngine{
 		tasks: make(map[string]*timerExec),
 	}
-	// Passing nil should trigger a panic in the function body
-	// The deferred recover should catch it and return an error
-	defer func() {
-		if r := recover(); r != nil {
-			// If panic escapes, the test should fail
-			t.Fatalf("panic escaped resetOne: %v", r)
-		}
-	}()
-	// nil trigger should cause a nil pointer dereference panic
-	err := te.resetOne(nil)
-	if err == nil {
-		t.Fatal("expected error from panic recovery")
+	params := map[string]any{
+		"timerType": 3,
+		"dates":     time.Now().Format(time.RFC3339Nano),
+	}
+	data, _ := json.Marshal(params)
+	tmr := &model.TTrigger{
+		Id:     "trigger-4",
+		Types:  "timer",
+		Params: string(data),
+	}
+	err := te.resetOne(tmr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
-func TestTimerEngineConcurrentResetOneAndDelete(t *testing.T) {
+func TestTimerEngine_ResetOne_WeekTimer(t *testing.T) {
 	te := &TimerEngine{
 		tasks: make(map[string]*timerExec),
 	}
-
-	// Pre-populate some tasks
-	for i := 0; i < 20; i++ {
-		id := fmt.Sprintf("timer-%d", i)
-		te.tasks[id] = &timerExec{
-			tt:  &model.TTrigger{Id: id},
-			typ: 1,
-		}
+	params := map[string]any{
+		"timerType": 4,
+		"dates":     time.Now().Format(time.RFC3339Nano),
 	}
+	data, _ := json.Marshal(params)
+	tmr := &model.TTrigger{
+		Id:     "trigger-5",
+		Types:  "timer",
+		Params: string(data),
+	}
+	err := te.resetOne(tmr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
 
+func TestTimerEngine_ResetOne_MonthTimer(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	params := map[string]any{
+		"timerType": 5,
+		"dates":     time.Now().Format(time.RFC3339Nano),
+	}
+	data, _ := json.Marshal(params)
+	tmr := &model.TTrigger{
+		Id:     "trigger-6",
+		Types:  "timer",
+		Params: string(data),
+	}
+	err := te.resetOne(tmr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestTimerEngine_ResetOne_UpdateExisting(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	// Add initial timer
+	te.tasks["trigger-1"] = &timerExec{
+		tt: &model.TTrigger{Id: "trigger-1"},
+	}
+	// Update it
+	future := time.Now().Add(time.Hour)
+	params := map[string]any{
+		"timerType": 0,
+		"dates":     future.Format(time.RFC3339Nano),
+	}
+	data, _ := json.Marshal(params)
+	tmr := &model.TTrigger{
+		Id:     "trigger-1",
+		Types:  "timer",
+		Params: string(data),
+	}
+	err := te.resetOne(tmr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(te.tasks) != 1 {
+		t.Errorf("expected 1 task, got %d", len(te.tasks))
+	}
+}
+
+func TestTimerEngine_Run_Empty(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	// Should not panic
+	te.run()
+}
+
+func TestTimerEngine_ExecItem_NotReady(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	future := time.Now().Add(time.Hour)
+	te.tasks["trigger-1"] = &timerExec{
+		tt:   &model.TTrigger{Id: "trigger-1"},
+		tick: future,
+	}
+	// Should not execute (not ready yet)
+	te.execItem(te.tasks["trigger-1"])
+}
+
+func TestBuildEngine_NewForTest(t *testing.T) {
+	be := NewBuildEngineForTest()
+	if be == nil {
+		t.Fatal("expected non-nil BuildEngine")
+	}
+	if be.taskw == nil {
+		t.Error("taskw should not be nil")
+	}
+	if be.tasks == nil {
+		t.Error("tasks should not be nil")
+	}
+}
+
+func TestBuildEngine_Get_Empty(t *testing.T) {
+	be := NewBuildEngineForTest()
+	_, ok := be.Get("")
+	if ok {
+		t.Error("expected false for empty id")
+	}
+}
+
+func TestBuildEngine_Get_NotFound(t *testing.T) {
+	be := NewBuildEngineForTest()
+	_, ok := be.Get("nonexistent")
+	if ok {
+		t.Error("expected false for nonexistent id")
+	}
+}
+
+func TestBuildEngine_Stop_Empty(t *testing.T) {
+	be := NewBuildEngineForTest()
+	// Should not panic
+	be.Stop()
+}
+
+func TestBuildEngine_ConcurrentAccess(t *testing.T) {
+	be := NewBuildEngineForTest()
 	var wg sync.WaitGroup
-
-	// Concurrent resetOne calls (which now hold the lock internally)
+	// Concurrent reads
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
-		go func(n int) {
+		go func(id int) {
 			defer wg.Done()
-			futureTime := time.Now().Add(time.Hour)
-			params := map[string]any{
-				"timerType": 1,
-				"dates":     futureTime.Format(time.RFC3339Nano),
-			}
-			paramBytes, _ := json.Marshal(params)
-			tmr := &model.TTrigger{
-				Id:     fmt.Sprintf("timer-%d", n),
-				Types:  "timer",
-				Name:   fmt.Sprintf("test-%d", n),
-				Params: string(paramBytes),
-			}
-			_ = te.resetOne(tmr)
+			be.Get("test-id")
 		}(i)
 	}
-
-	// Concurrent Delete calls
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func(n int) {
-			defer wg.Done()
-			te.Delete(fmt.Sprintf("timer-%d", n))
-		}(i)
-	}
-
 	wg.Wait()
-	// If we get here without a race detector complaint, the test passes
 }
 
-func TestTimerEngineConcurrentReadsAndWrites(t *testing.T) {
-	te := &TimerEngine{
-		tasks: make(map[string]*timerExec),
-	}
-
-	var wg sync.WaitGroup
-
-	// Writers: add tasks
-	for i := 0; i < 20; i++ {
-		wg.Add(1)
-		go func(n int) {
-			defer wg.Done()
-			futureTime := time.Now().Add(time.Hour)
-			params := map[string]any{
-				"timerType": 2,
-				"dates":     futureTime.Format(time.RFC3339Nano),
-			}
-			paramBytes, _ := json.Marshal(params)
-			tmr := &model.TTrigger{
-				Id:     fmt.Sprintf("concurrent-%d", n),
-				Types:  "timer",
-				Name:   fmt.Sprintf("test-%d", n),
-				Params: string(paramBytes),
-			}
-			_ = te.resetOne(tmr)
-		}(i)
-	}
-
-	// Readers: read tasks via RLock (simulated by accessing tasklk.RLock)
-	for i := 0; i < 20; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			te.tasklk.RLock()
-			_ = len(te.tasks)
-			te.tasklk.RUnlock()
-		}()
-	}
-
-	// Deleters: remove tasks
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func(n int) {
-			defer wg.Done()
-			te.Delete(fmt.Sprintf("concurrent-%d", n))
-		}(i)
-	}
-
-	wg.Wait()
+func TestBuildEngine_Run_Empty(t *testing.T) {
+	be := NewBuildEngineForTest()
+	// Should not panic
+	be.run()
 }

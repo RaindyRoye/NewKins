@@ -39,6 +39,15 @@ func StartBuildEngine() *BuildEngine {
 	}()
 	return c
 }
+
+// NewBuildEngineForTest creates a BuildEngine without background goroutines.
+// Safe for use in unit tests where comm.Db and comm.Ctx may not be initialized.
+func NewBuildEngineForTest() *BuildEngine {
+	return &BuildEngine{
+		taskw: list.New(),
+		tasks: make(map[string]*BuildTask),
+	}
+}
 func (c *BuildEngine) Stop() {
 	c.tskslk.RLock()
 	defer c.tskslk.RUnlock()

@@ -140,7 +140,7 @@ func (TriggerController) save(c *gin.Context, tp *bean.TriggerParam) {
 		}
 	}
 	if tt.Types == "timer" {
-		if err := engine.Mgr.TimerEng().Refresh(tt.Id); err != nil {
+		if err := engine.Mgr.TimerEng().Refresh(ctx, tt.Id); err != nil {
 			util.RespInternalErr(c, "timer refresh", err)
 			return
 		}

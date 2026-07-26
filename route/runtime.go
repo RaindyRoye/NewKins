@@ -97,7 +97,7 @@ func (RuntimeController) cmds(c *gin.Context, m *hbtp.Map) {
 		c.String(http.StatusBadRequest, "param err")
 		return
 	}
-	var ls []*model.TCmdLine
+	ls := make([]*model.TCmdLine, 0)
 	err := comm.Db.Context(c.Request.Context()).Where("step_id=?", stepId).OrderBy("num ASC").Find(&ls)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
