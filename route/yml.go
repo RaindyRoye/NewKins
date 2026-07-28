@@ -41,6 +41,7 @@ func (YmlController) plugins(c *gin.Context) {
 		util.RespInternalErr(c, "query yml plugins", err)
 		return
 	}
+	// engine.Mgr.Plugins() returns nil before engine.Start(), which is safe
 	plugs := engine.Mgr.Plugins()
 	for i, v := range plugs {
 		ls = append(ls, &model.TYmlPlugin{

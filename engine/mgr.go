@@ -69,5 +69,8 @@ func (c *Manager) TimerEng() *TimerEngine {
 }
 
 func (c *Manager) Plugins() []string {
+	if c.jobEgn == nil {
+		return nil
+	}
 	return c.jobEgn.Plugins()
 }
