@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"container/list"
 	"os"
 	"path/filepath"
 
@@ -70,4 +71,20 @@ func (c *Manager) TimerEng() *TimerEngine {
 
 func (c *Manager) Plugins() []string {
 	return c.jobEgn.Plugins()
+}
+
+// InitForTest initializes the Manager with minimal setup for testing.
+// This does NOT start background goroutines or external services.
+func (c *Manager) InitForTest() {
+	// Initialize build engine without starting workers
+	c.buildEgn = &BuildEngine{
+		taskw: list.New(),
+		tasks: make(map[string]*BuildTask),
+	}
+	
+	// Initialize job engine without starting the background goroutine
+	c.jobEgn = &JobEngine{
+		execs: make(map[string]*executer),
+		jobs:  make(map[string]*jobSync),
+	}
 }

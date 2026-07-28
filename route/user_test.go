@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/service"
@@ -225,6 +226,115 @@ func TestUserController_upass_MissingParams(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("status code = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestUserController_upass_UserNotFound(t *testing.T) {
+	setupUserTestDB(t)
+	adminUser := &model.TUser{Id: "admin", Name: "admin", Active: 1}
+	c, w := makeGinContext(t, hbtp.Map{"id": "nonexistent", "pass": "newpass"}, adminUser)
+	ctrl := UserController{}
+	ctrl.upass(c, &hbtp.Map{"id": "nonexistent", "pass": "newpass"})
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status code = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestUserController_upass_NotAdminChangingOtherUser(t *testing.T) {
+	setupUserTestDB(t)
+	user := createUserForTest(t, "testuser", "Test User", "hash", 1)
+	regularUser := &model.TUser{Id: "regular", Name: "regular", Active: 1}
+
+	c, w := makeGinContext(t, hbtp.Map{"id": user.Id, "pass": "newpass"}, regularUser)
+	ctrl := UserController{}
+	ctrl.upass(c, &hbtp.Map{"id": user.Id, "pass": "newpass"})
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("status code = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+func TestUserController_upass_SelfUpdateMissingOldPass(t *testing.T) {
+	setupUserTestDB(t)
+	user := createUserForTest(t, "testuser", "Test User", "hash", 1)
+
+	c, w := makeGinContext(t, hbtp.Map{"id": user.Id, "pass": "newpass"}, user)
+	ctrl := UserController{}
+	ctrl.upass(c, &hbtp.Map{"id": user.Id, "pass": "newpass"})
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status code = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestUserController_upass_SelfUpdateWrongOldPass(t *testing.T) {
+	setupUserTestDB(t)
+	user := createUserForTest(t, "testuser", "Test User", "hash", 1)
+
+	c, w := makeGinContext(t, hbtp.Map{"id": user.Id, "pass": "newpass", "olds": "wrongold"}, user)
+	ctrl := UserController{}
+	ctrl.upass(c, &hbtp.Map{"id": user.Id, "pass": "newpass", "olds": "wrongold"})
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status code = %d, want %d", w.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestUserController_upass_SelfUpdateSuccess(t *testing.T) {
+	setupUserTestDB(t)
+	// Create user with known MD5-hashed password
+	oldPass := "oldpass123"
+	user := createUserForTest(t, "testuser", "Test User", utils.Md5String(oldPass), 1)
+
+	c, w := makeGinContext(t, hbtp.Map{"id": user.Id, "pass": "newpass", "olds": oldPass}, user)
+	ctrl := UserController{}
+	ctrl.upass(c, &hbtp.Map{"id": user.Id, "pass": "newpass", "olds": oldPass})
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status code = %d, want %d, body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	// Verify password was updated
+	updated := &model.TUser{}
+	ok, err := comm.Db.Where("id=?", user.Id).Get(updated)
+	if err != nil {
+		t.Fatalf("query updated user: %v", err)
+	}
+	if !ok {
+		t.Fatal("user not found after update")
+	}
+	// The new password should be hashed (different from original)
+	if updated.Pass == utils.Md5String(oldPass) {
+		t.Error("password was not updated")
+	}
+}
+
+func TestUserController_upass_AdminUpdateOtherUser(t *testing.T) {
+	setupUserTestDB(t)
+	user := createUserForTest(t, "testuser", "Test User", "hash", 1)
+	adminUser := &model.TUser{Id: "admin", Name: "admin", Active: 1}
+
+	c, w := makeGinContext(t, hbtp.Map{"id": user.Id, "pass": "newpass"}, adminUser)
+	ctrl := UserController{}
+	ctrl.upass(c, &hbtp.Map{"id": user.Id, "pass": "newpass"})
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status code = %d, want %d, body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	// Verify password was updated
+	updated := &model.TUser{}
+	ok, err := comm.Db.Where("id=?", user.Id).Get(updated)
+	if err != nil {
+		t.Fatalf("query updated user: %v", err)
+	}
+	if !ok {
+		t.Fatal("user not found after update")
+	}
+	// The new password should be hashed
+	if updated.Pass == "hash" {
+		t.Error("password was not updated")
 	}
 }
 
