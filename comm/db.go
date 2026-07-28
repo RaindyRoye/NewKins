@@ -32,7 +32,11 @@ func findCount(cds builder.Cond, data any) (int64, error) {
 
 		ses := Db.NewSession()
 		defer func() { _ = ses.Close() }()
-		return ses.Where(cds).Count(pv.Interface())
+		cnt, err := ses.Where(cds).Count(pv.Interface())
+		if err != nil {
+			return 0, fmt.Errorf("findCount: query count: %w", err)
+		}
+		return cnt, nil
 	}
 	return 0, fmt.Errorf("findCount: expected pointer to slice, got %T", data)
 }

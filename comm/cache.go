@@ -34,7 +34,7 @@ func CacheSet(key string, data []byte, outm ...time.Duration) error {
 		if bk == nil {
 			bk, err = tx.CreateBucket(mainCacheBucket)
 			if err != nil {
-				return err
+				return fmt.Errorf("create cache bucket: %w", err)
 			}
 		}
 		if data == nil {
@@ -147,7 +147,7 @@ func CacheGets(key string, data any) error {
 	}
 	bts, err := CacheGet(key)
 	if err != nil {
-		return err
+		return fmt.Errorf("cache gets %q: %w", key, err)
 	}
 	if err := json.Unmarshal(bts, data); err != nil {
 		return fmt.Errorf("cache unmarshal: %w", err)
