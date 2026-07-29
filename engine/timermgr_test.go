@@ -149,6 +149,234 @@ func TestTimerEngineResetOneMinuteTimer(t *testing.T) {
 	}
 }
 
+func TestTimerEngineResetOneHourlyTimer(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	params := map[string]any{
+		"timerType": 2, // hourly
+		"dates":     time.Now().Format(time.RFC3339Nano),
+	}
+	paramBytes, _ := json.Marshal(params)
+
+	tmr := &model.TTrigger{
+		Id:     "test-hourly",
+		Types:  "timer",
+		Name:   "hourly-timer",
+		Params: string(paramBytes),
+	}
+	if err := te.resetOne(tmr); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	task, ok := te.tasks["test-hourly"]
+	if !ok {
+		t.Fatal("expected task to be added")
+	}
+	if task.typ != 2 {
+		t.Fatalf("expected type 2, got %d", task.typ)
+	}
+	if time.Until(task.tick) > time.Hour+time.Second {
+		t.Fatal("tick should be within ~1 hour")
+	}
+}
+
+func TestTimerEngineResetOneDailyTimer(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	params := map[string]any{
+		"timerType": 3, // daily
+		"dates":     time.Now().Format(time.RFC3339Nano),
+	}
+	paramBytes, _ := json.Marshal(params)
+
+	tmr := &model.TTrigger{
+		Id:     "test-daily",
+		Types:  "timer",
+		Name:   "daily-timer",
+		Params: string(paramBytes),
+	}
+	if err := te.resetOne(tmr); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	task, ok := te.tasks["test-daily"]
+	if !ok {
+		t.Fatal("expected task to be added")
+	}
+	if task.typ != 3 {
+		t.Fatalf("expected type 3, got %d", task.typ)
+	}
+	if time.Until(task.tick) > 24*time.Hour+time.Second {
+		t.Fatal("tick should be within ~24 hours")
+	}
+}
+
+func TestTimerEngineResetOneWeeklyTimer(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	params := map[string]any{
+		"timerType": 4, // weekly
+		"dates":     time.Now().Format(time.RFC3339Nano),
+	}
+	paramBytes, _ := json.Marshal(params)
+
+	tmr := &model.TTrigger{
+		Id:     "test-weekly",
+		Types:  "timer",
+		Name:   "weekly-timer",
+		Params: string(paramBytes),
+	}
+	if err := te.resetOne(tmr); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	task, ok := te.tasks["test-weekly"]
+	if !ok {
+		t.Fatal("expected task to be added")
+	}
+	if task.typ != 4 {
+		t.Fatalf("expected type 4, got %d", task.typ)
+	}
+	if time.Until(task.tick) > 7*24*time.Hour+time.Second {
+		t.Fatal("tick should be within ~7 days")
+	}
+}
+
+func TestTimerEngineResetOneMonthlyTimer(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	params := map[string]any{
+		"timerType": 5, // monthly
+		"dates":     time.Now().Format(time.RFC3339Nano),
+	}
+	paramBytes, _ := json.Marshal(params)
+
+	tmr := &model.TTrigger{
+		Id:     "test-monthly",
+		Types:  "timer",
+		Name:   "monthly-timer",
+		Params: string(paramBytes),
+	}
+	if err := te.resetOne(tmr); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	task, ok := te.tasks["test-monthly"]
+	if !ok {
+		t.Fatal("expected task to be added")
+	}
+	if task.typ != 5 {
+		t.Fatalf("expected type 5, got %d", task.typ)
+	}
+	if time.Until(task.tick) > 31*24*time.Hour+time.Second {
+		t.Fatal("tick should be within ~30 days")
+	}
+}
+
+func TestTimerEngineResetOneMissingTimerType(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	// Params without timerType field
+	params := map[string]any{
+		"dates": time.Now().Format(time.RFC3339Nano),
+	}
+	paramBytes, _ := json.Marshal(params)
+
+	tmr := &model.TTrigger{
+		Id:     "test-nomtype",
+		Types:  "timer",
+		Name:   "bad-timer",
+		Params: string(paramBytes),
+	}
+	err := te.resetOne(tmr)
+	if err == nil {
+		t.Fatal("expected error for missing timerType")
+	}
+}
+
+func TestTimerEngineResetOneInvalidDates(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	params := map[string]any{
+		"timerType": 1,
+		"dates":     "not-a-date",
+	}
+	paramBytes, _ := json.Marshal(params)
+
+	tmr := &model.TTrigger{
+		Id:     "test-baddates",
+		Types:  "timer",
+		Name:   "bad-timer",
+		Params: string(paramBytes),
+	}
+	err := te.resetOne(tmr)
+	if err == nil {
+		t.Fatal("expected error for invalid dates")
+	}
+}
+
+func TestTimerEngineResetOneOnceTimerPastTime(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	// One-time timer set in the past — should not be scheduled
+	pastTime := time.Now().Add(-time.Hour)
+	params := map[string]any{
+		"timerType": 0, // once
+		"dates":     pastTime.Format(time.RFC3339Nano),
+	}
+	paramBytes, _ := json.Marshal(params)
+
+	tmr := &model.TTrigger{
+		Id:     "test-once-past",
+		Types:  "timer",
+		Name:   "once-past-timer",
+		Params: string(paramBytes),
+	}
+	if err := te.resetOne(tmr); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Past one-time timer should not be added
+	if _, ok := te.tasks["test-once-past"]; ok {
+		t.Fatal("past one-time timer should not be scheduled")
+	}
+}
+
+func TestTimerEngineResetOneOverwriteExisting(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	// Pre-populate a task
+	te.tasks["test-overwrite"] = &timerExec{
+		tt:  &model.TTrigger{Id: "test-overwrite"},
+		typ: 1,
+	}
+
+	// Reset with different type
+	params := map[string]any{
+		"timerType": 3, // daily
+		"dates":     time.Now().Format(time.RFC3339Nano),
+	}
+	paramBytes, _ := json.Marshal(params)
+
+	tmr := &model.TTrigger{
+		Id:     "test-overwrite",
+		Types:  "timer",
+		Name:   "overwrite-timer",
+		Params: string(paramBytes),
+	}
+	if err := te.resetOne(tmr); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	task := te.tasks["test-overwrite"]
+	// resetOne updates typ but not tt when overwriting an existing task
+	if task.typ != 3 {
+		t.Fatalf("expected overwritten type 3, got %d", task.typ)
+	}
+}
+
 func TestTimerEngineRefreshEmptyID(t *testing.T) {
 	te := &TimerEngine{
 		tasks: make(map[string]*timerExec),
