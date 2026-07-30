@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"context"
 	"github.com/gokins/gokins/service"
 
 	"github.com/gokins/core/common"
@@ -399,6 +400,138 @@ func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (strin
 	}
 	return artv.Id, nil
 }
+
+// FindArtVersionIdCtx is like FindArtVersionId but accepts an explicit context
+// for database operations, enabling proper cancellation and timeout propagation.
+// When a non-nil context is provided, it replaces the global comm.Ctx for all
+// database queries within this method.
+func (c *baseRunner) FindArtVersionIdCtx(ctx context.Context, buildID, idnt string, names string) (string, error) {
+	if ctx == nil {
+		ctx = comm.Ctx
+	}
+	tnms := strings.Split(strings.TrimSpace(names), "@")
+	name := tnms[0]
+	vers := ""
+	if len(tnms) > 1 {
+		vers = tnms[1]
+	}
+	if buildID == "" || idnt == "" || name == "" {
+		return "", fmt.Errorf("findArtVersionId: %w: buildID=%q, identifier=%q, name=%q", ErrEmptyParams, buildID, idnt, name)
+	}
+	build, ok := Mgr.buildEgn.Get(buildID)
+	if !ok {
+		return "", fmt.Errorf("findArtVersionId: %w: %q", ErrBuildNotFound, buildID)
+	}
+
+	arty := &model.TArtifactory{}
+	var err error
+	ok, err = comm.Db.Context(ctx).Where("deleted!=1 and identifier=? and org_id in (select org_id from t_org_pipe where pipe_id=?)",
+		idnt, build.build.PipelineId).Get(arty)
+	if err != nil {
+		return "", fmt.Errorf("findArtVersionId: query artifactory %q: %w", idnt, err)
+	} else if !ok {
+		return "", fmt.Errorf("findArtVersionId: %w: %q", ErrArtifactoryNotFound, idnt)
+	}
+
+	pv := &model.TPipelineVersion{}
+	ok = service.GetIdOrAid(build.build.PipelineVersionId, pv)
+	if !ok {
+		return "", fmt.Errorf("findArtVersionId: %w: pipeline version %q", ErrBuildNotFound, build.build.PipelineVersionId)
+	}
+	usr := &model.TUser{}
+	ok = service.GetIdOrAid(pv.Uid, usr)
+	if !ok {
+		return "", fmt.Errorf("findArtVersionId: %w: user %q", ErrBuildNotFound, pv.Uid)
+	}
+	perm := service.NewOrgPerm(usr, arty.OrgId)
+	if !perm.CanExec() {
+		return "", fmt.Errorf("user put '%s': %w", idnt, ErrPermissionDenied)
+	}
+
+	artp := &model.TArtifactPackage{}
+	ok, err = comm.Db.Context(ctx).Where("deleted!=1 and repo_id=? and name=?", arty.Id, name).Get(artp)
+	if err != nil {
+		return "", fmt.Errorf("findArtVersionId: query artifact package %q: %w", name, err)
+	} else if !ok {
+		return "", fmt.Errorf("findArtVersionId: %w: %q", ErrArtifactNotFound, names)
+	}
+	artv := &model.TArtifactVersion{}
+	ses := comm.Db.Context(ctx).Where("package_id=?", artp.Id)
+	if vers != "" {
+		ses.And("version=? or sha=?", vers)
+	}
+	ok, err = ses.OrderBy("aid DESC").Get(artv)
+	if err != nil {
+		return "", fmt.Errorf("findArtVersionId: query artifact version %q: %w", names, err)
+	} else if !ok {
+		return "", fmt.Errorf("findArtVersionId: %w: %q", ErrArtifactNotFound, names)
+	}
+	return artv.Id, nil
+}
+
+// NewArtVersionIdCtx is like NewArtVersionId but accepts an explicit context
+// for database operations, enabling proper cancellation and timeout propagation.
+// When a non-nil context is provided, it replaces the global comm.Ctx for all
+// database queries within this method.
+func (c *baseRunner) NewArtVersionIdCtx(ctx context.Context, buildID, idnt string, name string) (string, error) {
+	if ctx == nil {
+		ctx = comm.Ctx
+	}
+	name = strings.Split(strings.TrimSpace(name), "@")[0]
+	if buildID == "" || idnt == "" || name == "" {
+		return "", fmt.Errorf("newArtVersionId: %w: buildID=%q, identifier=%q, name=%q", ErrEmptyParams, buildID, idnt, name)
+	}
+	build, ok := Mgr.buildEgn.Get(buildID)
+	if !ok {
+		return "", fmt.Errorf("newArtVersionId: %w: %q", ErrBuildNotFound, buildID)
+	}
+
+	arty := &model.TArtifactory{}
+	var err error
+	ok, err = comm.Db.Context(ctx).Where("deleted!=1 and identifier=? and org_id in (select org_id from t_org_pipe where pipe_id=?)",
+		idnt, build.build.PipelineId).Get(arty)
+	if err != nil {
+		return "", fmt.Errorf("newArtVersionId: query artifactory %q: %w", idnt, err)
+	} else if !ok {
+		return "", fmt.Errorf("newArtVersionId: %w: %q", ErrArtifactoryNotFound, idnt)
+	}
+	if arty.Disabled == 1 {
+		return "", fmt.Errorf("newArtVersionId: artifactory %q is disabled", idnt)
+	}
+
+	artp := &model.TArtifactPackage{}
+	ok, err = comm.Db.Context(ctx).Where("deleted!=1 and repo_id=? and name=?", arty.Id, name).Get(artp)
+	if err != nil {
+		return "", fmt.Errorf("newArtVersionId: query artifact package %q: %w", name, err)
+	}
+	if !ok {
+		artp.Id = utils.NewXid()
+		artp.RepoId = arty.Id
+		artp.Name = name
+		artp.Created = time.Now()
+		artp.Updated = time.Now()
+		_, err := comm.Db.Context(ctx).InsertOne(artp)
+		if err != nil {
+			return "", fmt.Errorf("insert artifact package: %w", err)
+		}
+	}
+	artv := &model.TArtifactVersion{
+		Id:        utils.NewXid(),
+		RepoId:    arty.Id,
+		PackageId: artp.Id,
+		Name:      artp.Name,
+		Preview:   1,
+		Created:   time.Now(),
+		Updated:   time.Now(),
+	}
+	artv.Sha = artv.Id
+	_, err = comm.Db.Context(ctx).InsertOne(artv)
+	if err != nil {
+		return "", fmt.Errorf("insert artifact version: %w", err)
+	}
+	return artv.Id, nil
+}
+
 func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string, error) {
 	name = strings.Split(strings.TrimSpace(name), "@")[0]
 	if buildID == "" || idnt == "" || name == "" {
