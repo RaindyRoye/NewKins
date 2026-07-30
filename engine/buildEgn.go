@@ -112,7 +112,7 @@ func (c *BuildEngine) Put(bd *runtime.Build) {
 	c.taskw.PushBack(bd)
 }
 func (c *BuildEngine) Get(buildid string) (*BuildTask, bool) {
-	if buildid == "" {
+	if c == nil || buildid == "" {
 		return nil, false
 	}
 	c.tskslk.RLock()
