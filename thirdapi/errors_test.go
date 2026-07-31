@@ -141,5 +141,6 @@ func TestAPIError_AsErrors(t *testing.T) {
 	}
 	if !apiErr.IsAuthError() && apiErr.StatusCode == 422 {
 		// 422 is not an auth error, just verifying the method works correctly
+		t.Log("422 is correctly not classified as an auth error")
 	}
 }

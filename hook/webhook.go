@@ -14,6 +14,16 @@ var ErrSecretValidationFailed = errors.New("webhook secret validation failed")
 // but the comment is not associated with a pull request (e.g., issue comment).
 var ErrCommentNotPullRequest = errors.New("comment is not associated with a pull request")
 
+// ErrUnsupportedEvent is returned when a webhook parser receives an event
+// type header that it does not recognize. Callers can use errors.Is to
+// detect this condition and skip processing.
+var ErrUnsupportedEvent = errors.New("unsupported webhook event type")
+
+// ErrUnsupportedAction is returned when a webhook payload contains an
+// action value that the parser does not handle (e.g., a PR "closed" event
+// when only "opened" and "synchronize" are supported).
+var ErrUnsupportedAction = errors.New("unsupported webhook action")
+
 type (
 	WebHook interface {
 		Repository() Repository
