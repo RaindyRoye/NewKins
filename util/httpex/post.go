@@ -30,6 +30,25 @@ var defaultClient = &http.Client{
 	},
 }
 
+// clientWithTimeout returns a copy of defaultClient with a timeout derived from
+// the context deadline and/or the explicit timeout parameter. The shorter of the
+// two wins, ensuring that context cancellation is never shadowed by a larger
+// explicit timeout.
+func clientWithTimeout(ctx context.Context, timeout time.Duration) *http.Client {
+	c := *defaultClient
+	if dl, ok := ctx.Deadline(); ok {
+		remaining := time.Until(dl)
+		if remaining > 0 && (timeout <= 0 || remaining < time.Second*timeout) {
+			c.Timeout = remaining
+			return &c
+		}
+	}
+	if timeout > 0 {
+		c.Timeout = time.Second * timeout
+	}
+	return &c
+}
+
 // Post sends a POST request with form-encoded parameters.
 // For context-aware usage, prefer PostCtx.
 func Post(ul string, params *url.Values, timeout time.Duration, hds ...http.Header) (*http.Response, error) {
@@ -52,8 +71,7 @@ func PostCtx(ctx context.Context, ul string, params *url.Values, timeout time.Du
 	}
 	header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
 	request.Header = header
-	client := *defaultClient
-	client.Timeout = time.Second * timeout
+	client := clientWithTimeout(ctx, timeout)
 	return client.Do(request)
 }
 
@@ -78,8 +96,7 @@ func PostsCtx(ctx context.Context, ul string, params *url.Values, timeout time.D
 	}
 	header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
 	request.Header = header
-	client := *defaultClient
-	client.Timeout = time.Second * timeout
+	client := clientWithTimeout(ctx, timeout)
 	res, err := client.Do(request)
 	if err != nil {
 		return 0, nil, fmt.Errorf("executing POST request: %w", err)
@@ -115,8 +132,7 @@ func PostJSONCtx(ctx context.Context, ul string, params any, timeout time.Durati
 	}
 	header.Add("Content-Type", "application/json; charset=utf-8")
 	request.Header = header
-	client := *defaultClient
-	client.Timeout = time.Second * timeout
+	client := clientWithTimeout(ctx, timeout)
 	return client.Do(request)
 }
 
@@ -141,7 +157,7 @@ func PostResultCtx(ctx context.Context, ul string, params *url.Values, result an
 		return res.StatusCode, nil, fmt.Errorf("reading response body: %w", err)
 	}
 	if res.StatusCode != 200 {
-		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %w", res.StatusCode, errors.New(string(bts)))
+		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %s", res.StatusCode, string(bts))
 	}
 	if err := json.Unmarshal(bts, result); err != nil {
 		return res.StatusCode, bts, fmt.Errorf("unmarshaling response: %w", err)
@@ -170,7 +186,7 @@ func PostJSONResultCtx(ctx context.Context, ul string, params any, result any, t
 		return res.StatusCode, nil, fmt.Errorf("reading response body: %w", err)
 	}
 	if res.StatusCode != 200 {
-		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %w", res.StatusCode, errors.New(string(bts)))
+		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %s", res.StatusCode, string(bts))
 	}
 	if err := json.Unmarshal(bts, result); err != nil {
 		return res.StatusCode, bts, fmt.Errorf("unmarshaling response: %w", err)

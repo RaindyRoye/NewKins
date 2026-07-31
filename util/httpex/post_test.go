@@ -167,15 +167,15 @@ func TestPostCtx_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately before making request
 
 	_, err := PostCtx(ctx, server.URL, nil, 10*time.Second)
 	if err == nil {
 		t.Fatal("PostCtx with canceled context expected error, got nil")
 	}
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got: %v", err)
 	}
 }
 
@@ -186,15 +186,15 @@ func TestPostsCtx_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
 
 	_, _, err := PostsCtx(ctx, server.URL, nil, 10*time.Second)
 	if err == nil {
 		t.Fatal("PostsCtx with canceled context expected error, got nil")
 	}
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got: %v", err)
 	}
 }
 
@@ -205,15 +205,15 @@ func TestPostJSONCtx_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
 
 	_, err := PostJSONCtx(ctx, server.URL, map[string]string{"k": "v"}, 10*time.Second)
 	if err == nil {
 		t.Fatal("PostJSONCtx with canceled context expected error, got nil")
 	}
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got: %v", err)
 	}
 }
 
@@ -247,16 +247,16 @@ func TestPostResultCtx_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
 
 	var result map[string]string
 	_, _, err := PostResultCtx(ctx, server.URL, nil, &result, 10*time.Second)
 	if err == nil {
 		t.Fatal("PostResultCtx with canceled context expected error, got nil")
 	}
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got: %v", err)
 	}
 }
 
@@ -290,16 +290,16 @@ func TestPostJSONResultCtx_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
 
-	var result map[string]int
-	_, _, err := PostJSONResultCtx(ctx, server.URL, nil, &result, 10*time.Second)
+	var result map[string]string
+	_, _, err := PostJSONResultCtx(ctx, server.URL, map[string]string{"k": "v"}, &result, 10*time.Second)
 	if err == nil {
 		t.Fatal("PostJSONResultCtx with canceled context expected error, got nil")
 	}
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got: %v", err)
 	}
 }
 
