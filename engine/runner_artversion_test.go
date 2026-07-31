@@ -110,7 +110,9 @@ func TestNewArtVersionIdCtx_BuildNotFound(t *testing.T) {
 func TestFindArtVersionId_DeprecatedWrapper(t *testing.T) {
 	// Initialize comm.Ctx for the wrapper function
 	if comm.Ctx == nil {
-		comm.Ctx, _ = context.WithCancel(context.Background())
+		var cancel context.CancelFunc
+		comm.Ctx, cancel = context.WithCancel(context.Background())
+		defer cancel()
 	}
 
 	br := &baseRunner{}
@@ -125,7 +127,9 @@ func TestFindArtVersionId_DeprecatedWrapper(t *testing.T) {
 func TestNewArtVersionId_DeprecatedWrapper(t *testing.T) {
 	// Initialize comm.Ctx for the wrapper function
 	if comm.Ctx == nil {
-		comm.Ctx, _ = context.WithCancel(context.Background())
+		var cancel context.CancelFunc
+		comm.Ctx, cancel = context.WithCancel(context.Background())
+		defer cancel()
 	}
 
 	br := &baseRunner{}

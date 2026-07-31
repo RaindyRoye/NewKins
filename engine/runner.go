@@ -340,6 +340,7 @@ func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, 
 	}
 	return fl, nil
 }
+
 // FindArtVersionId finds an artifact version ID.
 // Deprecated: Use FindArtVersionIdCtx for proper context propagation.
 func (c *baseRunner) FindArtVersionId(buildID, idnt string, names string) (string, error) {
@@ -407,6 +408,7 @@ func (c *baseRunner) FindArtVersionIdCtx(ctx context.Context, buildID, idnt stri
 	}
 	return artv.Id, nil
 }
+
 // NewArtVersionId creates a new artifact version ID.
 // Deprecated: Use NewArtVersionIdCtx for proper context propagation.
 func (c *baseRunner) NewArtVersionId(buildID, idnt string, name string) (string, error) {
