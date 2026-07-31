@@ -36,7 +36,7 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 	case hook.GiteaEventPR:
 		wb, err = parsePullRequestHook(data)
 	default:
-		return nil, fmt.Errorf("hook contains unknown header: %v", req.Header.Get(hook.GiteaEvent))
+		return nil, fmt.Errorf("%w: gitea %v", hook.ErrUnsupportedEvent, req.Header.Get(hook.GiteaEvent))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("gitea: %w", err)
@@ -99,7 +99,7 @@ func parsePullRequestHook(data []byte) (*hook.PullRequestHook, error) {
 		case hook.ActionOpened:
 			gp.Action = hook.ActionOpen
 		default:
-			return nil, fmt.Errorf("action is %v", gp.Action)
+			return nil, fmt.Errorf("%w: gitea %v", hook.ErrUnsupportedAction, gp.Action)
 		}
 	}
 	return convertPullRequestHook(gp), nil

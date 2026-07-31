@@ -35,7 +35,7 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 	case hook.GithubEventPR:
 		wb, err = parsePullRequestHook(data)
 	default:
-		return nil, fmt.Errorf("hook contains unknown header: %v", req.Header.Get(hook.GithubEvent))
+		return nil, fmt.Errorf("%w: github %v", hook.ErrUnsupportedEvent, req.Header.Get(hook.GithubEvent))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("github: %w", err)
@@ -99,7 +99,7 @@ func parsePullRequestHook(data []byte) (*hook.PullRequestHook, error) {
 		case hook.ActionOpened:
 			gp.Action = hook.ActionOpen
 		default:
-			return nil, fmt.Errorf("action is %v", gp.Action)
+			return nil, fmt.Errorf("%w: github %v", hook.ErrUnsupportedAction, gp.Action)
 		}
 	}
 	return convertPullRequestHook(gp), nil

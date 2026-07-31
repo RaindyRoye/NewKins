@@ -48,7 +48,7 @@ func (s *RepositoryService) GetRepos(ctx context.Context, accessToken, username,
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitea api GetRepos failed (status %d)", resp.StatusCode)
+		return nil, thirdapi.NewAPIError("gitea", "GetRepos", resp.StatusCode, "")
 	}
 	repos, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -101,7 +101,7 @@ func (s *RepositoryService) DeleteHooks(ctx context.Context, accessToken, owner,
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("gitea api DeleteHooks failed (status %d): %s", resp.StatusCode, string(all))
+		return thirdapi.NewAPIError("gitea", "DeleteHooks", resp.StatusCode, string(all))
 	}
 	return nil
 }
@@ -148,7 +148,7 @@ func (s *RepositoryService) CreateWebHooks(ctx context.Context, accessToken, own
 		return nil, fmt.Errorf("gitea CreateWebHooks: read response body: %w", err)
 	}
 	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("gitea api CreateWebHooks failed (status %d): %s", resp.StatusCode, string(all))
+		return nil, thirdapi.NewAPIError("gitea", "CreateWebHooks", resp.StatusCode, string(all))
 	}
 	k := &thirdbean.ResultGetGiteaHook{}
 	err = json.Unmarshal(all, k)
@@ -180,7 +180,7 @@ func (s *RepositoryService) GetRepoBranches(ctx context.Context, accessToken, ow
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitea api GetRepoBranches failed (status %d): %s", resp.StatusCode, string(all))
+		return nil, thirdapi.NewAPIError("gitea", "GetRepoBranches", resp.StatusCode, string(all))
 	}
 	var branchList []*thirdbean.ResultGiteaRepoBranch
 	err = json.Unmarshal(all, &branchList)
@@ -212,7 +212,7 @@ func (s *RepositoryService) GetPullQuest(ctx context.Context, accessToken, owner
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitea api GetPullQuest failed (status %d): %s", resp.StatusCode, string(bys))
+		return nil, thirdapi.NewAPIError("gitea", "GetPullQuest", resp.StatusCode, string(bys))
 	}
 	return bys, nil
 }
@@ -239,7 +239,7 @@ func (s *RepositoryService) GetWebHooks(ctx context.Context, accessToken, owner,
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitea api GetWebHooks failed (status %d): %s", resp.StatusCode, string(all))
+		return nil, thirdapi.NewAPIError("gitea", "GetWebHooks", resp.StatusCode, string(all))
 	}
 
 	hs := make([]*thirdbean.ResultGetGiteaHook, 0)

@@ -32,7 +32,7 @@ func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
 	// case "issues":
 	// case "issue_comment":
 	default:
-		return nil, fmt.Errorf("hook contains unknown header: %v", req.Header.Get(hook.GiteeEvent))
+		return nil, fmt.Errorf("%w: gitee %v", hook.ErrUnsupportedEvent, req.Header.Get(hook.GiteeEvent))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("gitee: %w", err)
@@ -61,7 +61,7 @@ func parsePullRequestHook(data []byte) (*hook.PullRequestHook, error) {
 	}
 	if gp.Action != "" {
 		if gp.Action != hook.ActionOpen && gp.Action != hook.ActionUpdate {
-			return nil, fmt.Errorf("action is %v", gp.Action)
+			return nil, fmt.Errorf("%w: gitee %v", hook.ErrUnsupportedAction, gp.Action)
 		}
 	}
 	return convertPullRequestHook(gp), nil
