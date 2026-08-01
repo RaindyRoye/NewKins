@@ -330,6 +330,57 @@ func TestCache_NilBCache(t *testing.T) {
 	}
 }
 
+func TestCacheGets_PreservesSentinelErrors(t *testing.T) {
+	cleanup := setupTestCache(t)
+	defer cleanup()
+
+	// ErrKeyNotFound should be preserved (not wrapped)
+	var result struct{}
+	err := CacheGets("nonexistent-key", &result)
+	if !errors.Is(err, ErrKeyNotFound) {
+		t.Errorf("expected ErrKeyNotFound, got: %v", err)
+	}
+}
+
+func TestCacheGets_KeyTimeout(t *testing.T) {
+	cleanup := setupTestCache(t)
+	defer cleanup()
+
+	// Insert an expired key manually
+	expiredEntry := buildCacheEntry(time.Now().Add(-time.Hour), []byte(`{"name":"old"}`))
+	if err := BCache.Update(func(tx *bolt.Tx) error {
+		bk, err := tx.CreateBucketIfNotExists(mainCacheBucket)
+		if err != nil {
+			return err
+		}
+		return bk.Put([]byte("expired-key"), expiredEntry)
+	}); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	// Give the async cleanup a moment to run
+	time.Sleep(50 * time.Millisecond)
+
+	var result struct{}
+	err := CacheGets("expired-key", &result)
+	// Should be either ErrKeyTimeout or ErrKeyNotFound (if async cleanup ran)
+	if !errors.Is(err, ErrKeyTimeout) && !errors.Is(err, ErrKeyNotFound) {
+		t.Errorf("expected ErrKeyTimeout or ErrKeyNotFound, got: %v", err)
+	}
+}
+
+func TestCacheGets_NilBCache(t *testing.T) {
+	oldCache := BCache
+	BCache = nil
+	defer func() { BCache = oldCache }()
+
+	var result struct{}
+	err := CacheGets("key", &result)
+	if !errors.Is(err, ErrCacheNotInit) {
+		t.Errorf("expected ErrCacheNotInit, got: %v", err)
+	}
+}
+
 func TestMainCacheClear_RemovesExpiredKeepsValid(t *testing.T) {
 	cleanup := setupTestCache(t)
 	defer cleanup()

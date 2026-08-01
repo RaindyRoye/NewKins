@@ -147,7 +147,11 @@ func CacheGets(key string, data any) error {
 	}
 	bts, err := CacheGet(key)
 	if err != nil {
-		return err
+		// Preserve sentinel errors for errors.Is checks, but wrap unexpected errors with key context.
+		if errors.Is(err, ErrKeyNotFound) || errors.Is(err, ErrKeyTimeout) || errors.Is(err, ErrCacheNotInit) {
+			return err
+		}
+		return fmt.Errorf("cache gets key %q: %w", key, err)
 	}
 	if err := json.Unmarshal(bts, data); err != nil {
 		return fmt.Errorf("cache unmarshal: %w", err)
