@@ -71,17 +71,15 @@ func (RuntimeController) stages(c *gin.Context, m *hbtp.Map) {
 	steps := map[string]*model.RunStep{}
 	for _, v := range ls {
 		spls := stepsMap[v.Id]
-		if len(spls) >= 0 {
-			ids = append(ids, v.Id)
-			stages[v.Id] = v
-			for _, step := range spls {
-				if step.Id != "" {
-					if err := json.Unmarshal([]byte(step.Waits), &step.Waitings); err != nil {
-						logrus.Warnf("runtime: unmarshal step waits (step=%s): %v", step.Id, err)
-					}
-					v.Stepids = append(v.Stepids, step.Id)
-					steps[step.Id] = step
+		ids = append(ids, v.Id)
+		stages[v.Id] = v
+		for _, step := range spls {
+			if step.Id != "" {
+				if err := json.Unmarshal([]byte(step.Waits), &step.Waitings); err != nil {
+					logrus.Warnf("runtime: unmarshal step waits (step=%s): %v", step.Id, err)
 				}
+				v.Stepids = append(v.Stepids, step.Id)
+				steps[step.Id] = step
 			}
 		}
 	}
@@ -107,16 +105,6 @@ func (RuntimeController) cmds(c *gin.Context, m *hbtp.Map) {
 		"stepId": stepId,
 		"cmds":   ls,
 	})
-	/*ids:=make([]string,0)
-	cmds := map[string]*model.TCmdLine{}
-	for _, v := range ls {
-		ids = append(ids, v.Id)
-		cmds[v.Id] = v
-	}
-	c.JSON(http.StatusOK, hbtp.Map{
-		//"ids":    ids,
-		"cmds": ls,
-	})*/
 }
 func (RuntimeController) build(c *gin.Context, m *hbtp.Map) {
 	bdid := m.GetString("buildId")
@@ -177,12 +165,6 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 		c.String(http.StatusBadRequest, "param err")
 		return
 	}
-	/*tstp := &model.TStep{}
-	ok, _ := comm.Db.Where("id=?", stepId).Get(tstp)
-	if !ok {
-		c.String(http.StatusNotFound, "Not Found")
-		return
-	}*/
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, buildId, common.PathJobs, stepId)
 	logpth := filepath.Join(dir, "build.log")
 	//nolint:gosec // logpth is constructed from comm.WorkPath + DB-derived buildId/stepId, not raw user input
@@ -219,9 +201,6 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 			if b == '\n' {
 				e := &bean.LogOutJsonRes{}
 				if uerr := json.Unmarshal(linebuf.Bytes(), e); uerr == nil {
-					/*if e.Type == hbtpBean.TypeCmdLogLineSys {
-						continue
-					}*/
 					e.Offset = off - 1
 					ls = append(ls, e)
 					lastoff = e.Offset
