@@ -61,9 +61,13 @@ func TestTimerEngineResetOneInvalidType(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for invalid trigger type")
 	}
-	expected := "expected trigger type 'timer', got 'webhook'"
-	if err.Error() != expected {
-		t.Fatalf("expected error %q, got %q", expected, err.Error())
+	// Verify the error wraps ErrInvalidTriggerType
+	if !errors.Is(err, ErrInvalidTriggerType) {
+		t.Fatalf("expected error to wrap ErrInvalidTriggerType, got %v", err)
+	}
+	// Verify the error message contains useful context
+	if !strings.Contains(err.Error(), "expected 'timer', got 'webhook'") {
+		t.Fatalf("expected error to contain context, got %q", err.Error())
 	}
 }
 

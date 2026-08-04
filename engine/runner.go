@@ -436,7 +436,7 @@ func (c *baseRunner) NewArtVersionIdCtx(ctx context.Context, buildID, idnt strin
 		return "", fmt.Errorf("newArtVersionId: %w: %q", ErrArtifactoryNotFound, idnt)
 	}
 	if arty.Disabled == 1 {
-		return "", fmt.Errorf("newArtVersionId: artifactory %q is disabled", idnt)
+		return "", fmt.Errorf("newArtVersionId: %w: %q", ErrArtifactoryDisabled, idnt)
 	}
 
 	artp := &model.TArtifactPackage{}

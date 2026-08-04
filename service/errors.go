@@ -40,4 +40,7 @@ var (
 
 	// ErrParamNotFound is returned when a parameter is not found.
 	ErrParamNotFound = errors.New("parameter not found")
+
+	// ErrUnknownWebhookType is returned when a webhook type string does not match any supported provider.
+	ErrUnknownWebhookType = errors.New("unknown webhook type")
 )

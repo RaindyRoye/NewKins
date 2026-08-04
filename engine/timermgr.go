@@ -96,7 +96,7 @@ func (c *TimerEngine) refresh() {
 func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 	defer util.RecoverResult(&rterr, "TimerEngine.resetOne")
 	if tmr.Types != "timer" {
-		return fmt.Errorf("expected trigger type 'timer', got '%s'", tmr.Types)
+		return fmt.Errorf("%w: expected 'timer', got '%s'", ErrInvalidTriggerType, tmr.Types)
 	}
 	mp := hbtp.Map{}
 	err := json.Unmarshal([]byte(tmr.Params), &mp)

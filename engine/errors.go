@@ -43,4 +43,25 @@ var (
 
 	// ErrPluginNotFound is returned when a step plugin is not registered in the job engine.
 	ErrPluginNotFound = errors.New("plugin not found")
+
+	// ErrInvalidTriggerType is returned when a trigger's type field does not match the expected value.
+	ErrInvalidTriggerType = errors.New("invalid trigger type")
+
+	// ErrArtifactoryDisabled is returned when an operation targets a disabled artifactory.
+	ErrArtifactoryDisabled = errors.New("artifactory is disabled")
+
+	// ErrUnknownWebhookType is returned when a webhook type string does not match any supported provider.
+	ErrUnknownWebhookType = errors.New("unknown webhook type")
+
+	// ErrAssetNotFound is returned when a requested embedded asset is not found.
+	ErrAssetNotFound = errors.New("asset not found")
+
+	// ErrInvalidConfig is returned when configuration validation fails.
+	ErrInvalidConfig = errors.New("invalid configuration")
+
+	// ErrDuplicateEntry is returned when a duplicate entry is detected during validation.
+	ErrDuplicateEntry = errors.New("duplicate entry")
+
+	// ErrRepositoryNil is returned when a repository reference is unexpectedly nil.
+	ErrRepositoryNil = errors.New("repository is nil")
 )
