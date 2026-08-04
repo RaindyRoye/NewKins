@@ -13,8 +13,8 @@ import (
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/service"
-	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	_ "github.com/mattn/go-sqlite3"
+	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"xorm.io/xorm"
 )
 
