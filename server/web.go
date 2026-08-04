@@ -90,7 +90,11 @@ func regApi() {
 	})
 	if core.Debug {
 		comm.WebEgn.Use(middleware.MidCORS())
-		// pprof profiling endpoints (debug mode only)
+	}
+
+	// Enable pprof in debug mode or when explicitly enabled via config
+	enablePprof := core.Debug || comm.Cfg.Server.EnablePprof
+	if enablePprof {
 		pprofGroup := comm.WebEgn.Group("/debug/pprof")
 		{
 			pprofGroup.GET("/", gin.WrapF(pprof.Index))
@@ -105,7 +109,7 @@ func regApi() {
 			pprofGroup.GET("/mutex", gin.WrapH(pprof.Handler("mutex")))
 			pprofGroup.GET("/threadcreate", gin.WrapH(pprof.Handler("threadcreate")))
 		}
-		logrus.Info("pprof profiling endpoints enabled at /debug/pprof")
+		logrus.Infof("pprof profiling endpoints enabled at /debug/pprof (debug=%v, config=%v)", core.Debug, comm.Cfg.Server.EnablePprof)
 	}
 	// Health check endpoints
 	comm.WebEgn.GET("/healthz", func(c *gin.Context) {

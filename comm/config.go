@@ -5,13 +5,14 @@ import "fmt"
 // Config holds the application configuration loaded from app.yml / app.yaml.
 type Config struct {
 	Server struct {
-		Host      string   `yaml:"host"` // 外网访问地址
-		LoginKey  string   `yaml:"loginKey"`
-		RunLimit  int      `yaml:"runLimit"`
-		HbtpHost  string   `yaml:"hbtpHost"`
-		Secret    string   `yaml:"secret"`
-		Shells    []string `yaml:"shells"`
-		DownToken string   `yaml:"DownToken"`
+		Host        string   `yaml:"host"` // 外网访问地址
+		LoginKey    string   `yaml:"loginKey"`
+		RunLimit    int      `yaml:"runLimit"`
+		HbtpHost    string   `yaml:"hbtpHost"`
+		Secret      string   `yaml:"secret"`
+		Shells      []string `yaml:"shells"`
+		DownToken   string   `yaml:"DownToken"`
+		EnablePprof bool     `yaml:"enablePprof"` // 启用性能分析端点（生产环境可通过此配置开启）
 	} `yaml:"server"`
 	Datasource struct {
 		Driver string `yaml:"driver"`
