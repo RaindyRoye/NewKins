@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, errs error) {
+func InitMysqlMigrate(ctx context.Context, host, dbs, user, pass string) (wait bool, rtul string, errs error) {
 	wait = false
 	if host == "" || dbs == "" || user == "" {
 		errs = fmt.Errorf("%w: mysql requires host, database, and user", ErrDatabaseConfigMissing)
@@ -35,7 +36,6 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 		errs = fmt.Errorf("open mysql database: %w", err)
 		return
 	}
-	ctx := context.Background()
 	err = db.PingContext(ctx)
 	if err != nil {
 		_ = db.Close()
@@ -108,7 +108,7 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 	return false, ul, nil
 }
 
-func InitSqliteMigrate() (rtul string, errs error) {
+func InitSqliteMigrate(ctx context.Context) (rtul string, errs error) {
 	ul := filepath.Join(comm.WorkPath, "db.dat")
 	db, err := sql.Open("sqlite3", ul)
 	if err != nil {
@@ -159,21 +159,41 @@ func InitSqliteMigrate() (rtul string, errs error) {
 	return ul, nil
 }
 
-func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, errs error) {
+// BuildPostgresURL constructs a PostgreSQL connection URL using net/url
+// to properly escape special characters in credentials. This prevents the
+// bug where literal "***" in a format string caused the password to be
+// interpreted as the host.
+//
+//nolint:gosec // G101: function builds connection URLs, not hardcoded credentials
+func BuildPostgresURL(user, pass, host, dbs string) string {
+	u := &url.URL{
+		Scheme: "postgres",
+		Host:   host,
+		Path:   dbs,
+	}
+	if user != "" {
+		u.User = url.UserPassword(user, pass)
+	}
+	q := u.Query()
+	q.Set("sslmode", "disable")
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
+func InitPostgresMigrate(ctx context.Context, host, dbs, user, pass string) (wait bool, rtul string, errs error) {
 	wait = false
 	if host == "" || dbs == "" || user == "" {
 		errs = fmt.Errorf("%w: postgres requires host, database, and user", ErrDatabaseConfigMissing)
 		return
 	}
 	wait = true
-	// Build connection URL: postgres://user:***@host/database?sslmode=disable
-	ul := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, pass, host, dbs)
+	ul := BuildPostgresURL(user, pass, host, dbs)
 	db, err := sql.Open("postgres", ul)
 	if err != nil {
 		errs = fmt.Errorf("open postgres database: %w", err)
 		return
 	}
-	err = db.PingContext(context.Background())
+	err = db.PingContext(ctx)
 	if err != nil {
 		_ = db.Close()
 		errs = fmt.Errorf("ping postgres database: %w", err)

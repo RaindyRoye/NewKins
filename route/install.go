@@ -107,13 +107,14 @@ func (InstallController) install(c *gin.Context, m *installConfig) {
 
 	var dataul string
 	var err error
+	ctx := c.Request.Context()
 	switch m.Datasource.Driver {
 	case "mysql":
-		_, dataul, err = migrates.InitMysqlMigrate(m.Datasource.Host, m.Datasource.Name, m.Datasource.User, m.Datasource.Pass)
+		_, dataul, err = migrates.InitMysqlMigrate(ctx, m.Datasource.Host, m.Datasource.Name, m.Datasource.User, m.Datasource.Pass)
 	case "postgres":
-		_, dataul, err = migrates.InitPostgresMigrate(m.Datasource.Host, m.Datasource.Name, m.Datasource.User, m.Datasource.Pass)
+		_, dataul, err = migrates.InitPostgresMigrate(ctx, m.Datasource.Host, m.Datasource.Name, m.Datasource.User, m.Datasource.Pass)
 	default:
-		dataul, err = migrates.InitSqliteMigrate()
+		dataul, err = migrates.InitSqliteMigrate(ctx)
 	}
 	if err != nil {
 		util.RespInternalErr(c, "database migration init", err)
