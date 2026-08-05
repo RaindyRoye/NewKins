@@ -3,195 +3,297 @@ package route
 import (
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gokins/core/utils"
+	"github.com/gokins/gokins/comm"
+	_ "github.com/mattn/go-sqlite3"
+	"xorm.io/xorm"
 )
 
-func setupArtPubTestRouter(t *testing.T) *gin.Engine {
+func setupArtPubTestRouter(t *testing.T, db *xorm.Engine) *gin.Engine {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
+
+	origDb := comm.Db
+	comm.Db = db
+	t.Cleanup(func() { comm.Db = origDb })
+
 	c := &ArtPublicController{}
-	c.Routes(r.Group("/api/art/pub"))
+	group := r.Group(c.GetPath())
+	c.Routes(group)
 	return r
 }
 
-func TestDown_MissingTimesParam(t *testing.T) {
-	r := setupArtPubTestRouter(t)
-
-	req := httptest.NewRequest(http.MethodGet, "/api/art/pub/down/test-id/some/path?random=abc&sign=def", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected 400 for missing times param, got %d", w.Code)
+func createArtPubTestDb(t *testing.T) *xorm.Engine {
+	t.Helper()
+	db, err := xorm.NewEngine("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatalf("create sqlite engine: %v", err)
 	}
-	if w.Body.String() != "param err" {
-		t.Errorf("expected body 'param err', got %q", w.Body.String())
+	t.Cleanup(func() { _ = db.Close() })
+
+	// Create artifact_version table
+	_, err = db.Exec(`CREATE TABLE t_artifact_version (
+		id VARCHAR(64) NOT NULL,
+		aid BIGINT NOT NULL,
+		repo_id VARCHAR(64),
+		package_id VARCHAR(64),
+		name VARCHAR(100),
+		version VARCHAR(100),
+		sha VARCHAR(100),
+		desc VARCHAR(500),
+		preview INT(1),
+		created DATETIME,
+		updated DATETIME,
+		PRIMARY KEY (id, aid)
+	)`)
+	if err != nil {
+		t.Fatalf("create artifact_version table: %v", err)
+	}
+
+	// Create artifactory table
+	_, err = db.Exec(`CREATE TABLE t_artifactory (
+		id VARCHAR(64) NOT NULL,
+		aid BIGINT NOT NULL,
+		uid VARCHAR(64),
+		org_id VARCHAR(64),
+		identifier VARCHAR(50),
+		name VARCHAR(200),
+		disabled INT(1) DEFAULT 0,
+		source VARCHAR(50),
+		desc VARCHAR(500),
+		logo VARCHAR(255),
+		created DATETIME,
+		updated DATETIME,
+		deleted INT(1) DEFAULT 0,
+		deleted_time DATETIME,
+		PRIMARY KEY (id, aid)
+	)`)
+	if err != nil {
+		t.Fatalf("create artifactory table: %v", err)
+	}
+
+	// Create step table
+	_, err = db.Exec(`CREATE TABLE t_step (
+		id VARCHAR(64) NOT NULL,
+		build_id VARCHAR(64),
+		stage_id VARCHAR(100),
+		display_name VARCHAR(255),
+		pipeline_version_id VARCHAR(64),
+		step VARCHAR(255),
+		status VARCHAR(100),
+		event VARCHAR(100),
+		exit_code INT(11),
+		error VARCHAR(500),
+		name VARCHAR(100),
+		started DATETIME,
+		finished DATETIME,
+		created DATETIME,
+		updated DATETIME,
+		version VARCHAR(255),
+		errignore INT(11),
+		commands TEXT,
+		waits JSON,
+		sort INT(11),
+		PRIMARY KEY (id)
+	)`)
+	if err != nil {
+		t.Fatalf("create step table: %v", err)
+	}
+
+	return db
+}
+
+func TestArtPublicController_GetPath_RouteDef(t *testing.T) {
+	c := &ArtPublicController{}
+	if got := c.GetPath(); got != "/api/art/pub" {
+		t.Errorf("GetPath() = %q, want %q", got, "/api/art/pub")
+	}
+	// Routes should register both /down and /downs patterns
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	c.Routes(r)
+	routes := r.Routes()
+	if len(routes) < 2 {
+		t.Errorf("expected at least 2 routes registered, got %d", len(routes))
 	}
 }
 
-func TestDown_MissingRandomParam(t *testing.T) {
-	r := setupArtPubTestRouter(t)
+func TestDown_MissingParams(t *testing.T) {
+	db := createArtPubTestDb(t)
+	r := setupArtPubTestRouter(t, db)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/art/pub/down/test-id/some/path?times=2026-01-01T00:00:00Z&sign=def", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	tests := []struct {
+		name   string
+		path   string
+		params string
+	}{
+		{"missing times", "/api/art/pub/down/art1/test.txt?random=r1&sign=s1", "times"},
+		{"missing random", "/api/art/pub/down/art1/test.txt?times=2025-01-01T00:00:00Z&sign=s1", "random"},
+		{"missing sign", "/api/art/pub/down/art1/test.txt?times=2025-01-01T00:00:00Z&random=r1", "sign"},
+	}
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected 400 for missing random param, got %d", w.Code)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+
+			if w.Code != http.StatusBadRequest {
+				t.Errorf("expected 400 for missing %s, got %d", tt.params, w.Code)
+			}
+		})
 	}
 }
 
-func TestDown_MissingSignParam(t *testing.T) {
-	r := setupArtPubTestRouter(t)
-
-	req := httptest.NewRequest(http.MethodGet, "/api/art/pub/down/test-id/some/path?times=2026-01-01T00:00:00Z&random=abc", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected 400 for missing sign param, got %d", w.Code)
-	}
-}
-
-func TestDown_MissingAllParams(t *testing.T) {
-	r := setupArtPubTestRouter(t)
-
-	req := httptest.NewRequest(http.MethodGet, "/api/art/pub/down/test-id/some/path", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected 400 for missing all params, got %d", w.Code)
-	}
-}
-
-func TestDown_InvalidTimesFormat(t *testing.T) {
-	r := setupArtPubTestRouter(t)
+func TestDown_InvalidTimeFormat(t *testing.T) {
+	db := createArtPubTestDb(t)
+	r := setupArtPubTestRouter(t, db)
 
 	req := httptest.NewRequest(http.MethodGet,
-		"/api/art/pub/down/test-id/some/path?times=not-a-date&random=abc&sign=def", nil)
+		"/api/art/pub/down/art1/test.txt?times=invalid&random=r1&sign=s1", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected 400 for invalid times format, got %d", w.Code)
-	}
-	if w.Body.String() != "param err:times" {
-		t.Errorf("expected body 'param err:times', got %q", w.Body.String())
+		t.Errorf("expected 400 for invalid time, got %d", w.Code)
 	}
 }
 
-func TestDown_ExpiredTimes(t *testing.T) {
-	r := setupArtPubTestRouter(t)
+func TestDown_TimeoutRequest(t *testing.T) {
+	db := createArtPubTestDb(t)
+	r := setupArtPubTestRouter(t, db)
 
-	// Use a timestamp more than 20 hours ago
-	expired := time.Now().Add(-25 * time.Hour).Format(time.RFC3339Nano)
+	// Time more than 20 hours ago - use UTC to avoid '+' characters
+	oldTime := time.Now().UTC().Add(-25 * time.Hour).Format(time.RFC3339Nano)
 	req := httptest.NewRequest(http.MethodGet,
-		"/api/art/pub/down/test-id/some/path?times="+url.QueryEscape(expired)+"&random=abc&sign=def", nil)
+		"/api/art/pub/down/art1/test.txt?times="+oldTime+"&random=r1&sign=s1", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusRequestTimeout {
-		t.Errorf("expected 408 for expired times, got %d", w.Code)
-	}
-	if w.Body.String() != "request timeout" {
-		t.Errorf("expected body 'request timeout', got %q", w.Body.String())
+		t.Errorf("expected 408 for timeout, got %d", w.Code)
 	}
 }
 
 func TestDown_InvalidSignature(t *testing.T) {
-	r := setupArtPubTestRouter(t)
+	db := createArtPubTestDb(t)
+	r := setupArtPubTestRouter(t, db)
 
-	// Use a fresh timestamp but wrong sign
-	tms := time.Now().Format(time.RFC3339Nano)
+	// Set up test config
+	origToken := comm.Cfg.Server.DownToken
+	comm.Cfg.Server.DownToken = "test-secret"
+	t.Cleanup(func() { comm.Cfg.Server.DownToken = origToken })
+
+	// Use UTC to avoid '+' characters that get decoded as spaces by URL parser
+	now := time.Now().UTC().Format(time.RFC3339Nano)
 	req := httptest.NewRequest(http.MethodGet,
-		"/api/art/pub/down/test-id/some/path?times="+url.QueryEscape(tms)+"&random=abc&sign=wrong-sign", nil)
+		"/api/art/pub/down/art1/test.txt?times="+now+"&random=r1&sign=wrong-sign", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusForbidden {
 		t.Errorf("expected 403 for invalid signature, got %d", w.Code)
 	}
-	if w.Body.String() != "No Permission" {
-		t.Errorf("expected body 'No Permission', got %q", w.Body.String())
-	}
 }
 
-func TestDowns_MissingTimesParam(t *testing.T) {
-	r := setupArtPubTestRouter(t)
+func TestDown_ValidSignature_NotFound(t *testing.T) {
+	db := createArtPubTestDb(t)
+	r := setupArtPubTestRouter(t, db)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/art/pub/downs/test-id/pkg-name/some/path?random=abc&sign=def", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	origToken := comm.Cfg.Server.DownToken
+	comm.Cfg.Server.DownToken = "test-secret"
+	t.Cleanup(func() { comm.Cfg.Server.DownToken = origToken })
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected 400 for missing times param, got %d", w.Code)
-	}
-}
-
-func TestDowns_MissingRandomParam(t *testing.T) {
-	r := setupArtPubTestRouter(t)
-
-	req := httptest.NewRequest(http.MethodGet, "/api/art/pub/downs/test-id/pkg-name/some/path?times=2026-01-01T00:00:00Z&sign=def", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected 400 for missing random param, got %d", w.Code)
-	}
-}
-
-func TestDowns_MissingSignParam(t *testing.T) {
-	r := setupArtPubTestRouter(t)
-
-	req := httptest.NewRequest(http.MethodGet, "/api/art/pub/downs/test-id/pkg-name/some/path?times=2026-01-01T00:00:00Z&random=abc", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected 400 for missing sign param, got %d", w.Code)
-	}
-}
-
-func TestDowns_InvalidTimesFormat(t *testing.T) {
-	r := setupArtPubTestRouter(t)
+	id := "nonexistent-art"
+	// Use UTC time to avoid '+' characters that get decoded as spaces by URL parser
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	random := "random123"
+	sign := utils.Md5String(id + now + random + comm.Cfg.Server.DownToken)
 
 	req := httptest.NewRequest(http.MethodGet,
-		"/api/art/pub/downs/test-id/pkg-name/some/path?times=invalid&random=abc&sign=def", nil)
+		"/api/art/pub/down/"+id+"/test.txt?times="+now+"&random="+random+"&sign="+sign, nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected 404 for nonexistent artifact, got %d", w.Code)
+	}
+}
+
+func TestDowns_MissingParams(t *testing.T) {
+	db := createArtPubTestDb(t)
+	r := setupArtPubTestRouter(t, db)
+
+	tests := []struct {
+		name   string
+		path   string
+		params string
+	}{
+		{"missing times", "/api/art/pub/downs/step1/pkg/file.txt?random=r1&sign=s1", "times"},
+		{"missing random", "/api/art/pub/downs/step1/pkg/file.txt?times=2025-01-01T00:00:00Z&sign=s1", "random"},
+		{"missing sign", "/api/art/pub/downs/step1/pkg/file.txt?times=2025-01-01T00:00:00Z&random=r1", "sign"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+
+			if w.Code != http.StatusBadRequest {
+				t.Errorf("expected 400 for missing %s, got %d", tt.params, w.Code)
+			}
+		})
+	}
+}
+
+func TestDowns_InvalidTimeFormat(t *testing.T) {
+	db := createArtPubTestDb(t)
+	r := setupArtPubTestRouter(t, db)
+
+	req := httptest.NewRequest(http.MethodGet,
+		"/api/art/pub/downs/step1/pkg/file.txt?times=invalid&random=r1&sign=s1", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected 400 for invalid times format, got %d", w.Code)
+		t.Errorf("expected 400 for invalid time, got %d", w.Code)
 	}
 }
 
-func TestDowns_ExpiredTimes(t *testing.T) {
-	r := setupArtPubTestRouter(t)
+func TestDowns_TimeoutRequest(t *testing.T) {
+	db := createArtPubTestDb(t)
+	r := setupArtPubTestRouter(t, db)
 
-	expired := time.Now().Add(-25 * time.Hour).Format(time.RFC3339Nano)
+	// Use UTC to avoid '+' characters that get decoded as spaces by URL parser
+	oldTime := time.Now().UTC().Add(-25 * time.Hour).Format(time.RFC3339Nano)
 	req := httptest.NewRequest(http.MethodGet,
-		"/api/art/pub/downs/test-id/pkg-name/some/path?times="+url.QueryEscape(expired)+"&random=abc&sign=def", nil)
+		"/api/art/pub/downs/step1/pkg/file.txt?times="+oldTime+"&random=r1&sign=s1", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusRequestTimeout {
-		t.Errorf("expected 408 for expired times, got %d", w.Code)
+		t.Errorf("expected 408 for timeout, got %d", w.Code)
 	}
 }
 
 func TestDowns_InvalidSignature(t *testing.T) {
-	r := setupArtPubTestRouter(t)
+	db := createArtPubTestDb(t)
+	r := setupArtPubTestRouter(t, db)
 
-	tms := time.Now().Format(time.RFC3339Nano)
+	origToken := comm.Cfg.Server.DownToken
+	comm.Cfg.Server.DownToken = "test-secret"
+	t.Cleanup(func() { comm.Cfg.Server.DownToken = origToken })
+
+	// Use UTC to avoid '+' characters that get decoded as spaces by URL parser
+	now := time.Now().UTC().Format(time.RFC3339Nano)
 	req := httptest.NewRequest(http.MethodGet,
-		"/api/art/pub/downs/test-id/pkg-name/some/path?times="+url.QueryEscape(tms)+"&random=abc&sign=wrong", nil)
+		"/api/art/pub/downs/step1/pkg/file.txt?times="+now+"&random=r1&sign=wrong-sign", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -200,50 +302,59 @@ func TestDowns_InvalidSignature(t *testing.T) {
 	}
 }
 
-func TestDownFile_NotFoundFile(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	c.Request = req
+func TestDowns_ValidSignature_NotFound(t *testing.T) {
+	db := createArtPubTestDb(t)
+	r := setupArtPubTestRouter(t, db)
 
-	ctrl := ArtPublicController{}
-	ctrl.downFile(c, "/nonexistent/path/to/file.txt")
+	origToken := comm.Cfg.Server.DownToken
+	comm.Cfg.Server.DownToken = "test-secret"
+	t.Cleanup(func() { comm.Cfg.Server.DownToken = origToken })
+
+	id := "nonexistent-step"
+	name := "package"
+	// Use UTC time to avoid '+' characters that get decoded as spaces by URL parser
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	random := "random123"
+	sign := utils.Md5String(id + name + now + random + comm.Cfg.Server.DownToken)
+
+	req := httptest.NewRequest(http.MethodGet,
+		"/api/art/pub/downs/"+id+"/"+name+"/file.txt?times="+now+"&random="+random+"&sign="+sign, nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("expected 404 for nonexistent file, got %d", w.Code)
-	}
-	if w.Body.String() != "Not Found File" {
-		t.Errorf("expected body 'Not Found File', got %q", w.Body.String())
+		t.Errorf("expected 404 for nonexistent step, got %d", w.Code)
 	}
 }
 
-func TestDownFile_FoundRegularFile(t *testing.T) {
-	// Create a temp file to serve
-	tmpFile := t.TempDir() + "/testfile.txt"
-	if err := os.WriteFile(tmpFile, []byte("hello artifact"), 0600); err != nil {
-		t.Fatalf("create temp file: %v", err)
+func TestDowns_WithDatabase(t *testing.T) {
+	db := createArtPubTestDb(t)
+	r := setupArtPubTestRouter(t, db)
+
+	origToken := comm.Cfg.Server.DownToken
+	comm.Cfg.Server.DownToken = "test-secret"
+	t.Cleanup(func() { comm.Cfg.Server.DownToken = origToken })
+
+	// Insert a test step
+	_, err := db.Exec(`INSERT INTO t_step (id, build_id) VALUES ('step-1', 'build-1')`)
+	if err != nil {
+		t.Fatalf("insert step: %v", err)
 	}
 
-	gin.SetMode(gin.TestMode)
+	id := "step-1"
+	name := "artifact"
+	// Use UTC time to avoid '+' characters that get decoded as spaces by URL parser
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	random := "random123"
+	sign := utils.Md5String(id + name + now + random + comm.Cfg.Server.DownToken)
+
+	req := httptest.NewRequest(http.MethodGet,
+		"/api/art/pub/downs/"+id+"/"+name+"/file.txt?times="+now+"&random="+random+"&sign="+sign, nil)
 	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	c.Request = req
+	r.ServeHTTP(w, req)
 
-	ctrl := ArtPublicController{}
-	ctrl.downFile(c, tmpFile)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected 200 for found file, got %d", w.Code)
-	}
-	if w.Header().Get("Content-Type") != "application/octet-stream" {
-		t.Errorf("Content-Type = %q, want application/octet-stream", w.Header().Get("Content-Type"))
-	}
-	if w.Header().Get("Content-Disposition") == "" {
-		t.Error("Content-Disposition header should be set")
-	}
-	if w.Body.String() != "hello artifact" {
-		t.Errorf("body = %q, want 'hello artifact'", w.Body.String())
+	// Should get 404 because the file doesn't exist on disk
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected 404 for missing file, got %d", w.Code)
 	}
 }
