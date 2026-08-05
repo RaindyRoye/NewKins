@@ -1,6 +1,7 @@
 package migrates
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -26,7 +27,8 @@ func TestInitMysqlMigrate_EmptyParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wait, _, errs := InitMysqlMigrate(tt.host, tt.dbs, tt.user, tt.pass)
+			ctx := context.Background()
+			wait, _, errs := InitMysqlMigrate(ctx, tt.host, tt.dbs, tt.user, tt.pass)
 			if errs == nil {
 				t.Error("expected error for empty params, got nil")
 			}
@@ -56,7 +58,8 @@ func TestInitPostgresMigrate_EmptyParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wait, _, errs := InitPostgresMigrate(tt.host, tt.dbs, tt.user, tt.pass)
+			ctx := context.Background()
+			wait, _, errs := InitPostgresMigrate(ctx, tt.host, tt.dbs, tt.user, tt.pass)
 			if errs == nil {
 				t.Error("expected error for empty params, got nil")
 			}
@@ -67,18 +70,74 @@ func TestInitPostgresMigrate_EmptyParams(t *testing.T) {
 	}
 }
 
-func TestPostgresConnectionStringFormat(t *testing.T) {
-	user, host, dbs := "testuser", "localhost:5432", "testdb"
-	masked := fmt.Sprintf("postgres://%s:***@%s/%s?sslmode=disable", user, host, dbs)
+func TestBuildPostgresURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		user     string
+		pass     string
+		host     string
+		dbs      string
+		contains []string
+	}{
+		{
+			name: "basic credentials",
+			user: "testuser",
+			pass: "testpass",
+			host: "localhost:5432",
+			dbs:  "testdb",
+			contains: []string{
+				"localhost:5432",
+				"testdb",
+				"sslmode=disable",
+			},
+		},
+		{
+			name: "special chars in password",
+			user: "user@domain",
+			pass: "p@ss:w/rd",
+			host: "db.example.com:5432",
+			dbs:  "mydb",
+			contains: []string{
+				"db.example.com:5432",
+				"mydb",
+				"sslmode=disable",
+			},
+		},
+		{
+			name: "empty password",
+			user: "admin",
+			pass: "",
+			host: "localhost",
+			dbs:  "postgres",
+			contains: []string{
+				"localhost",
+				"postgres",
+				"sslmode=disable",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := BuildPostgresURL(tt.user, tt.pass, tt.host, tt.dbs)
+			for _, want := range tt.contains {
+				if !strings.Contains(result, want) {
+					t.Errorf("BuildPostgresURL() = %q, want to contain %q", result, want)
+				}
+			}
+		})
+	}
+}
 
-	expected := "postgres://testuser:***@localhost:5432/testdb?sslmode=disable" //nolint:gosec // G101: test assertion string, not real credentials
-	if masked != expected {
-		t.Errorf("masked connection string = %q, want %q", masked, expected)
+func TestBuildPostgresURL_CorrectHost(t *testing.T) {
+	result := BuildPostgresURL("testuser", "testpass", "localhost:5432", "testdb")
+	expected := "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
+	if result != expected {
+		t.Errorf("BuildPostgresURL() = %q, want %q", result, expected)
 	}
 
-	// Verify password is masked
-	if strings.Contains(masked, "password") {
-		t.Error("connection string should not contain actual password")
+	// Verify password is in the URL (required for authentication)
+	if !strings.Contains(result, "testpass") {
+		t.Error("connection string should contain actual password for authentication")
 	}
 }
 
@@ -101,7 +160,8 @@ func TestMysqlConnectionStringFormat(t *testing.T) {
 }
 
 func TestUpMysqlMigrate_EmptyURL(t *testing.T) {
-	err := UpMysqlMigrate("")
+	ctx := context.Background()
+	err := UpMysqlMigrate(ctx, "")
 	if err == nil {
 		t.Error("expected error for empty URL, got nil")
 	}
@@ -111,7 +171,8 @@ func TestUpMysqlMigrate_EmptyURL(t *testing.T) {
 }
 
 func TestUpPostgresMigrate_EmptyURL(t *testing.T) {
-	err := UpPostgresMigrate("")
+	ctx := context.Background()
+	err := UpPostgresMigrate(ctx, "")
 	if err == nil {
 		t.Error("expected error for empty URL, got nil")
 	}
@@ -121,7 +182,8 @@ func TestUpPostgresMigrate_EmptyURL(t *testing.T) {
 }
 
 func TestUpSqliteMigrate_EmptyURL(t *testing.T) {
-	err := UpSqliteMigrate("")
+	ctx := context.Background()
+	err := UpSqliteMigrate(ctx, "")
 	if err == nil {
 		t.Error("expected error for empty URL, got nil")
 	}
@@ -131,7 +193,8 @@ func TestUpSqliteMigrate_EmptyURL(t *testing.T) {
 }
 
 func TestUpMysqlMigrate_InvalidURL(t *testing.T) {
-	err := UpMysqlMigrate("invalid:invalid@tcp(nonexistent:3306)/test")
+	ctx := context.Background()
+	err := UpMysqlMigrate(ctx, "invalid:invalid@tcp(nonexistent:3306)/test")
 	if err == nil {
 		t.Skip("skipping: database connection succeeded unexpectedly")
 	}
@@ -141,7 +204,8 @@ func TestUpMysqlMigrate_InvalidURL(t *testing.T) {
 }
 
 func TestUpPostgresMigrate_InvalidURL(t *testing.T) {
-	err := UpPostgresMigrate("postgres://invalid:invalid@nonexistent:5432/test")
+	ctx := context.Background()
+	err := UpPostgresMigrate(ctx, "postgres://invalid:***@nonexistent:5432/test")
 	if err == nil {
 		t.Skip("skipping: database connection succeeded unexpectedly")
 	}
@@ -151,7 +215,8 @@ func TestUpPostgresMigrate_InvalidURL(t *testing.T) {
 }
 
 func TestUpSqliteMigrate_InvalidPath(t *testing.T) {
-	err := UpSqliteMigrate("/nonexistent/path/to/db.sqlite")
+	ctx := context.Background()
+	err := UpSqliteMigrate(ctx, "/nonexistent/path/to/db.sqlite")
 	if err == nil {
 		t.Skip("skipping: database connection succeeded unexpectedly")
 	}
@@ -161,13 +226,14 @@ func TestUpSqliteMigrate_InvalidPath(t *testing.T) {
 }
 
 func TestMigrateErrorWrapping(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		name string
 		fn   func() error
 	}{
-		{"UpMysqlMigrate empty", func() error { return UpMysqlMigrate("") }},
-		{"UpPostgresMigrate empty", func() error { return UpPostgresMigrate("") }},
-		{"UpSqliteMigrate empty", func() error { return UpSqliteMigrate("") }},
+		{"UpMysqlMigrate empty", func() error { return UpMysqlMigrate(ctx, "") }},
+		{"UpPostgresMigrate empty", func() error { return UpPostgresMigrate(ctx, "") }},
+		{"UpSqliteMigrate empty", func() error { return UpSqliteMigrate(ctx, "") }},
 	}
 
 	for _, tt := range tests {
