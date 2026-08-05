@@ -49,12 +49,12 @@ func TestPprofEnabledByConfig(t *testing.T) {
 // TestConfigEnablePprofField verifies the config field is properly defined
 func TestConfigEnablePprofField(t *testing.T) {
 	cfg := comm.Config{}
-	
+
 	// Field should exist and default to false
 	if cfg.Server.EnablePprof != false {
 		t.Error("EnablePprof should default to false")
 	}
-	
+
 	// Should be settable
 	cfg.Server.EnablePprof = true
 	if !cfg.Server.EnablePprof {
