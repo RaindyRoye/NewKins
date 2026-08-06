@@ -7,6 +7,19 @@ import (
 	"strings"
 )
 
+// Sentinel errors returned by Pipeline.Check.
+// Callers can use errors.Is to programmatically distinguish validation
+// failures without relying on string matching.
+var (
+	ErrStagesEmpty     = errors.New("stages is empty")
+	ErrStageNameEmpty  = errors.New("stage name is empty")
+	ErrStepsEmpty      = errors.New("steps is empty")
+	ErrStepPluginEmpty = errors.New("step plugin is empty")
+	ErrStepNameEmpty   = errors.New("step name is empty")
+	ErrDuplicateStage  = errors.New("duplicate stage name")
+	ErrDuplicateStep   = errors.New("duplicate step name")
+)
+
 type Pipeline struct {
 	Version  string              `yaml:"version,omitempty" json:"version"`
 	Triggers map[string]*Trigger `yaml:"triggers,omitempty" json:"triggers"`
@@ -107,29 +120,29 @@ func (c *Pipeline) ConvertCmd() {
 func (c *Pipeline) Check() error {
 	stages := make(map[string]map[string]*Step)
 	if len(c.Stages) == 0 {
-		return errors.New("stages is empty")
+		return ErrStagesEmpty
 	}
 	for _, v := range c.Stages {
 		if v.Name == "" {
-			return errors.New("stage name is empty")
+			return ErrStageNameEmpty
 		}
 		if len(v.Steps) == 0 {
-			return errors.New("steps is empty")
+			return ErrStepsEmpty
 		}
 		if _, ok := stages[v.Name]; ok {
-			return fmt.Errorf("duplicate stage name: %s", v.Name)
+			return fmt.Errorf("duplicate stage name: %s: %w", v.Name, ErrDuplicateStage)
 		}
 		m := map[string]*Step{}
 		stages[v.Name] = m
 		for _, e := range v.Steps {
 			if strings.TrimSpace(e.Step) == "" {
-				return errors.New("step plugin is empty")
+				return ErrStepPluginEmpty
 			}
 			if e.Name == "" {
-				return errors.New("step name is empty")
+				return ErrStepNameEmpty
 			}
 			if _, ok := m[e.Name]; ok {
-				return fmt.Errorf("duplicate step name: %s", e.Name)
+				return fmt.Errorf("duplicate step name: %s: %w", e.Name, ErrDuplicateStep)
 			}
 			m[e.Name] = e
 		}
