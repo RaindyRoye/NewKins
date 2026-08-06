@@ -1,6 +1,7 @@
 package bean
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -92,12 +93,14 @@ func TestPipelineCheck(t *testing.T) {
 		pipeline *Pipeline
 		wantErr  bool
 		errMsg   string
+		errIs    error // sentinel error to match with errors.Is
 	}{
 		{
 			name:     "empty pipeline",
 			pipeline: &Pipeline{},
 			wantErr:  true,
 			errMsg:   "stages is empty",
+			errIs:    ErrStagesEmpty,
 		},
 		{
 			name: "nil stages",
@@ -106,6 +109,7 @@ func TestPipelineCheck(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "stages is empty",
+			errIs:   ErrStagesEmpty,
 		},
 		{
 			name: "empty stages slice",
@@ -114,6 +118,7 @@ func TestPipelineCheck(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "stages is empty",
+			errIs:   ErrStagesEmpty,
 		},
 		{
 			name: "stage with empty name",
@@ -127,6 +132,7 @@ func TestPipelineCheck(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "stage name is empty",
+			errIs:   ErrStageNameEmpty,
 		},
 		{
 			name: "stage with empty steps",
@@ -140,6 +146,7 @@ func TestPipelineCheck(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "steps is empty",
+			errIs:   ErrStepsEmpty,
 		},
 		{
 			name: "stage with nil steps",
@@ -153,6 +160,7 @@ func TestPipelineCheck(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "steps is empty",
+			errIs:   ErrStepsEmpty,
 		},
 		{
 			name: "duplicate stage names",
@@ -169,7 +177,8 @@ func TestPipelineCheck(t *testing.T) {
 				},
 			},
 			wantErr: true,
-			errMsg:  "duplicate stage name: build",
+			errMsg:  "duplicate stage name: build: duplicate stage name",
+			errIs:   ErrDuplicateStage,
 		},
 		{
 			name: "step with empty plugin",
@@ -185,6 +194,7 @@ func TestPipelineCheck(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "step plugin is empty",
+			errIs:   ErrStepPluginEmpty,
 		},
 		{
 			name: "step with whitespace-only plugin",
@@ -200,6 +210,7 @@ func TestPipelineCheck(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "step plugin is empty",
+			errIs:   ErrStepPluginEmpty,
 		},
 		{
 			name: "step with empty name",
@@ -215,6 +226,7 @@ func TestPipelineCheck(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "step name is empty",
+			errIs:   ErrStepNameEmpty,
 		},
 		{
 			name: "duplicate step names within same stage",
@@ -230,7 +242,8 @@ func TestPipelineCheck(t *testing.T) {
 				},
 			},
 			wantErr: true,
-			errMsg:  "duplicate step name: step1",
+			errMsg:  "duplicate step name: step1: duplicate step name",
+			errIs:   ErrDuplicateStep,
 		},
 		{
 			name: "same step name in different stages is OK",
@@ -279,6 +292,9 @@ func TestPipelineCheck(t *testing.T) {
 			}
 			if err != nil && tt.errMsg != "" && err.Error() != tt.errMsg {
 				t.Errorf("Pipeline.Check() error message = %q, want %q", err.Error(), tt.errMsg)
+			}
+			if err != nil && tt.errIs != nil && !errors.Is(err, tt.errIs) {
+				t.Errorf("Pipeline.Check() error should wrap %v, got %v", tt.errIs, err)
 			}
 		})
 	}
