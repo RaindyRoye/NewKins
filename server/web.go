@@ -254,17 +254,17 @@ func getRdr() (*zip.Reader, error) {
 }
 func getFile(pth string) (*zip.File, error) {
 	if pth == "" {
-		return nil, errors.New("getFile: path parameter is empty")
+		return nil, fmt.Errorf("%w: path parameter is empty", ErrFileNotFound)
 	}
 	// Prevent path traversal attacks
 	cleaned := filepath.Clean(pth)
 	if strings.Contains(cleaned, "..") || filepath.IsAbs(cleaned) {
-		return nil, errors.New("getFile: invalid path")
+		return nil, fmt.Errorf("%w: invalid path", ErrFileNotFound)
 	}
 	// println("getFile:" + pth)
 	r, err := getRdr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getRdr: %w", err)
 	}
 	for _, f := range r.File {
 		nm := strings.ReplaceAll(f.Name, "\\", "/")
@@ -273,5 +273,5 @@ func getFile(pth string) (*zip.File, error) {
 			return f, nil
 		}
 	}
-	return nil, errors.New("file not found")
+	return nil, fmt.Errorf("%w: %s", ErrFileNotFound, cleaned)
 }

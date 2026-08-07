@@ -14,6 +14,17 @@ import (
 	"time"
 )
 
+// Sentinel errors for the httpex package.
+//
+// These errors can be used with errors.Is() to check for specific error
+// conditions without relying on exact error message strings. All sentinel
+// errors are wrapped using fmt.Errorf with %w in the call sites, so
+// errors.Is() works through the error chain.
+var (
+	// ErrResultNil is returned when a result parameter is nil.
+	ErrResultNil = errors.New("result is nil")
+)
+
 // defaultClient is a shared HTTP client with connection pooling enabled.
 // Creating a new http.Client per request disables keep-alive and connection
 // reuse, which hurts latency and throughput. This client uses the default
@@ -129,7 +140,7 @@ func PostResult(ul string, params *url.Values, result any, timeout time.Duration
 // PostResultCtx sends a POST request with context support and unmarshals the JSON response into result.
 func PostResultCtx(ctx context.Context, ul string, params *url.Values, result any, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
 	if result == nil {
-		return 0, nil, errors.New("result is nil")
+		return 0, nil, fmt.Errorf("%w", ErrResultNil)
 	}
 	res, err := PostCtx(ctx, ul, params, timeout, hds...)
 	if err != nil {
@@ -158,7 +169,7 @@ func PostJSONResult(ul string, params any, result any, timeout time.Duration, hd
 // PostJSONResultCtx sends a POST request with a JSON body, context support, and unmarshals the response into result.
 func PostJSONResultCtx(ctx context.Context, ul string, params any, result any, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
 	if result == nil {
-		return 0, nil, errors.New("result is nil")
+		return 0, nil, fmt.Errorf("%w", ErrResultNil)
 	}
 	res, err := PostJSONCtx(ctx, ul, params, timeout, hds...)
 	if err != nil {

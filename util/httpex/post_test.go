@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,8 +16,8 @@ func TestPostResult_NilResult(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostResult with nil result expected error, got nil")
 	}
-	if err.Error() != "result is nil" {
-		t.Fatalf("unexpected error: %v", err)
+	if !errors.Is(err, ErrResultNil) {
+		t.Fatalf("expected ErrResultNil, got: %v", err)
 	}
 }
 
@@ -75,8 +76,8 @@ func TestPostJSONResult_NilResult(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostJSONResult with nil result expected error, got nil")
 	}
-	if err.Error() != "result is nil" {
-		t.Fatalf("unexpected error: %v", err)
+	if !errors.Is(err, ErrResultNil) {
+		t.Fatalf("expected ErrResultNil, got: %v", err)
 	}
 }
 
@@ -330,8 +331,8 @@ func TestPostResultCtx_NilResult(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostResultCtx with nil result expected error, got nil")
 	}
-	if err.Error() != "result is nil" {
-		t.Fatalf("unexpected error: %v", err)
+	if !errors.Is(err, ErrResultNil) {
+		t.Fatalf("expected ErrResultNil, got: %v", err)
 	}
 }
 
@@ -340,7 +341,16 @@ func TestPostJSONResultCtx_NilResult(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostJSONResultCtx with nil result expected error, got nil")
 	}
-	if err.Error() != "result is nil" {
-		t.Fatalf("unexpected error: %v", err)
+	if !errors.Is(err, ErrResultNil) {
+		t.Fatalf("expected ErrResultNil, got: %v", err)
+	}
+}
+
+// TestErrResultNil_Wrapping verifies that ErrResultNil is properly wrapped
+// and can be unwrapped with errors.Is through the error chain.
+func TestErrResultNil_Wrapping(t *testing.T) {
+	wrapped := fmt.Errorf("operation failed: %w", ErrResultNil)
+	if !errors.Is(wrapped, ErrResultNil) {
+		t.Fatal("wrapped error should match ErrResultNil with errors.Is")
 	}
 }
