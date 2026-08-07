@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -226,8 +227,8 @@ func TestGetFile_EmptyPath(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty path, got nil")
 	}
-	if err.Error() != "getFile: path parameter is empty" {
-		t.Errorf("unexpected error message: %v", err)
+	if !errors.Is(err, ErrFileNotFound) {
+		t.Errorf("expected ErrFileNotFound, got: %v", err)
 	}
 }
 
@@ -247,8 +248,8 @@ func TestGetFile_PathTraversal(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected error for path traversal, got nil")
 			}
-			if err.Error() != "getFile: invalid path" {
-				t.Errorf("unexpected error message: %v", err)
+			if !errors.Is(err, ErrFileNotFound) {
+				t.Errorf("expected ErrFileNotFound, got: %v", err)
 			}
 		})
 	}
