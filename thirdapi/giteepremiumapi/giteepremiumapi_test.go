@@ -1,18 +1,44 @@
 package giteepremiumapi
 
-//
-// func TestGiteePremiumContents(t *testing.T) {
-//
-//	u := fmt.Sprintf(ApiGiteePremiumGetRepositoryContent, "SuperHeroJim", "gokins-test", ".gokins", "1065cd3f8791b97224a823c954a0ec98")
-//	resp, err := http.Get(u)
-//	if err != nil {
-//		fmt.Println(fmt.Errorf("GiteePremium Api :%v err : %v", u, err))
-//		return
-//	}
-//	all, err := io.ReadAll(resp.Body)
-//	if err != nil {
-//		fmt.Println(fmt.Errorf("GiteePremium ReadAll :%v err : %v", u, err))
-//		return
-//	}
-//	fmt.Println(string(all))
-//}
+import (
+	"testing"
+)
+
+func TestNew(t *testing.T) {
+	tests := []struct {
+		name    string
+		uri     string
+		wantErr bool
+	}{
+		{
+			name:    "valid URL",
+			uri:     "https://gitee.com/api/v5",
+			wantErr: false,
+		},
+		{
+			name:    "invalid URL",
+			uri:     "://invalid",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, err := New(tt.uri)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && client == nil {
+				t.Error("New() returned nil client")
+			}
+		})
+	}
+}
+
+func TestNewDefault(t *testing.T) {
+	client := NewDefault()
+	if client == nil {
+		t.Fatal("NewDefault() returned nil")
+	}
+}
