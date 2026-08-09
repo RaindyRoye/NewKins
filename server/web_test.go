@@ -264,7 +264,7 @@ func TestGetFile_FileNotFound(t *testing.T) {
 	// Set up a valid but empty zip archive
 	origStaticPkg := comm.StaticPkg
 	defer func() { comm.StaticPkg = origStaticPkg }()
-	
+
 	// Create a minimal valid base64-encoded empty zip file
 	// This is an empty zip: PK\x05\x06 followed by 18 zero bytes
 	comm.StaticPkg = "UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA=="
