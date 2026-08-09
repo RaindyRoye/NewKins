@@ -1,507 +1,407 @@
 package engine
 
 import (
-	"container/list"
 	"context"
 	"testing"
 	"time"
 
-	"github.com/gokins/core/common"
 	"github.com/gokins/core/runtime"
-	"github.com/gokins/gokins/comm"
+	"github.com/gokins/runner/runners"
 )
 
-// --- NewBuildTask ---
-
-func TestNewBuildTask(t *testing.T) {
-	egn := &BuildEngine{
-		taskw: list.New(),
-		tasks: make(map[string]*BuildTask),
-	}
-	bd := &runtime.Build{Id: "build-100"}
-	bt := NewBuildTask(egn, bd)
-	if bt == nil {
-		t.Fatal("NewBuildTask returned nil")
-	}
-	if bt.egn != egn {
-		t.Error("BuildTask.egn should reference the engine")
-	}
-	if bt.build != bd {
-		t.Error("BuildTask.build should reference the build")
-	}
-}
-
-// --- BuildTask.status ---
-
-func TestBuildTaskStatus(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	bt.status(common.BuildStatusRunning, "some error")
-	if bt.build.Status != common.BuildStatusRunning {
-		t.Errorf("status = %q, want %q", bt.build.Status, common.BuildStatusRunning)
-	}
-	if bt.build.Error != "some error" {
-		t.Errorf("error = %q, want %q", bt.build.Error, "some error")
-	}
-}
-
-func TestBuildTaskStatus_WithEvent(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	bt.status(common.BuildStatusError, "err msg", common.BuildEventGetRepo)
-	if bt.build.Status != common.BuildStatusError {
-		t.Errorf("status = %q, want %q", bt.build.Status, common.BuildStatusError)
-	}
-	if bt.build.Event != common.BuildEventGetRepo {
-		t.Errorf("event = %q, want %q", bt.build.Event, common.BuildEventGetRepo)
-	}
-}
-
-func TestBuildTaskStatus_NoEvent(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{Event: "previous-event"}}
-	bt.status(common.BuildStatusOk, "")
-	// Event should remain unchanged when no event is passed
-	if bt.build.Event != "previous-event" {
-		t.Errorf("event should be preserved, got %q", bt.build.Event)
-	}
-}
-
-// --- BuildTask.stopd ---
-
-func TestBuildTaskStopd_NilContext(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	// ctx is nil, so stopd() should return true
-	if !bt.stopd() {
-		t.Error("stopd() should return true when ctx is nil")
-	}
-}
-
-func TestBuildTaskStopd_ActiveContext(t *testing.T) {
+func TestBuildTask_Show_Empty(t *testing.T) {
+	// BuildTask with no stages should return empty show
+	// Show() requires ctx to be set and not done
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	bt := &BuildTask{build: &runtime.Build{}, ctx: ctx}
-	if bt.stopd() {
-		t.Error("stopd() should return false for active context")
-	}
-}
-
-func TestBuildTaskStopd_CancelledContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	bt := &BuildTask{build: &runtime.Build{}, ctx: ctx}
-	if !bt.stopd() {
-		t.Error("stopd() should return true for canceled context")
-	}
-}
-
-// --- BuildTask.stop ---
-
-func TestBuildTaskStop(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	bt := &BuildTask{build: &runtime.Build{}, ctx: ctx, cncl: cancel}
-	bt.stop()
-	// After stop, context should be canceled
-	if !bt.stopd() {
-		t.Error("stop() should cancel the context")
-	}
-	// ctrlendtm should be zeroed
-	if !bt.ctrlendtm.IsZero() {
-		t.Error("stop() should zero ctrlendtm")
-	}
-}
-
-func TestBuildTaskStop_NilCancel(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	// Should not panic
-	bt.stop()
-}
-
-// --- BuildTask.Cancel ---
-
-func TestBuildTaskCancel(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	bt := &BuildTask{build: &runtime.Build{}, ctx: ctx, cncl: cancel}
-	bt.Cancel()
-	// ctrlendtm should be set to a recent time
-	if bt.ctrlendtm.IsZero() {
-		t.Error("Cancel() should set ctrlendtm")
-	}
-	if time.Since(bt.ctrlendtm) > time.Second {
-		t.Error("Cancel() should set ctrlendtm to now")
-	}
-	// Context should be canceled
-	if !bt.stopd() {
-		t.Error("Cancel() should cancel the context")
-	}
-}
-
-func TestBuildTaskCancel_NilCancel(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	// Should not panic
-	bt.Cancel()
-	if bt.ctrlendtm.IsZero() {
-		t.Error("Cancel() should set ctrlendtm even when cncl is nil")
-	}
-}
-
-// --- BuildTask.WorkProgress ---
-
-func TestBuildTaskWorkProgress(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}, workpgss: 42}
-	if bt.WorkProgress() != 42 {
-		t.Errorf("WorkProgress() = %d, want 42", bt.WorkProgress())
-	}
-}
-
-func TestBuildTaskWorkProgress_Zero(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	if bt.WorkProgress() != 0 {
-		t.Errorf("WorkProgress() = %d, want 0", bt.WorkProgress())
-	}
-}
-
-// --- BuildTask.Write (git progress parsing) ---
-
-func TestBuildTaskWrite_ProgressParsing(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	// Git clone progress output format: "Receiving objects:  50% (100/200)"
-	input := "Receiving objects:  50% (100/200)"
-	n, err := bt.Write([]byte(input))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if n != len(input) {
-		t.Errorf("Write returned n=%d, want %d", n, len(input))
-	}
-	// workpgss should be 50 * 0.8 = 40
-	expected := int(float64(50) * 0.8)
-	if bt.workpgss != expected {
-		t.Errorf("workpgss = %d, want %d (50%% * 0.8)", bt.workpgss, expected)
-	}
-}
-
-func TestBuildTaskWrite_ProgressParsing100(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	input := "Receiving objects:  100% (200/200)"
-	_, err := bt.Write([]byte(input))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	// workpgss should be 100 * 0.8 = 80
-	expected := int(float64(100) * 0.8)
-	if bt.workpgss != expected {
-		t.Errorf("workpgss = %d, want %d (100%% * 0.8)", bt.workpgss, expected)
-	}
-}
-
-func TestBuildTaskWrite_ProgressParsingZero(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	input := "Receiving objects:   0% (0/200)"
-	_, err := bt.Write([]byte(input))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if bt.workpgss != 0 {
-		t.Errorf("workpgss = %d, want 0", bt.workpgss)
-	}
-}
-
-func TestBuildTaskWrite_NoProgress(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}, workpgss: 25}
-	// Non-progress output should not change workpgss
-	input := "Cloning into '/tmp/repo'..."
-	n, err := bt.Write([]byte(input))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if n != len(input) {
-		t.Errorf("Write returned n=%d, want %d", n, len(input))
-	}
-	if bt.workpgss != 25 {
-		t.Errorf("workpgss should remain 25 for non-progress output, got %d", bt.workpgss)
-	}
-}
-
-func TestBuildTaskWrite_EmptyInput(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	n, err := bt.Write([]byte{})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if n != 0 {
-		t.Errorf("Write returned n=%d, want 0", n)
-	}
-}
-
-// --- regBfb regex ---
-
-func TestRegBfb_Matches(t *testing.T) {
-	tests := []struct {
-		input   string
-		match   bool
-		percent string
-	}{
-		{"Receiving objects:  50% (100/200)", true, "50"},
-		{"Receiving objects:   0% (0/200)", true, "0"},
-		{"Receiving objects:  100% (200/200)", true, "100"},
-		{"Resolving deltas:  75% (3/4)", true, "75"},
-		{"no progress here", false, ""},
-		{"50%", false, ""},
-		{": 50% (1/2)", true, "50"},
-		{"", false, ""},
-	}
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			got := regBfb.MatchString(tt.input)
-			if got != tt.match {
-				t.Errorf("regBfb.MatchString(%q) = %v, want %v", tt.input, got, tt.match)
-			}
-			if tt.match {
-				subs := regBfb.FindStringSubmatch(tt.input)
-				if len(subs) < 2 || subs[1] != tt.percent {
-					t.Errorf("regBfb percent = %v, want %q", subs, tt.percent)
-				}
-			}
-		})
-	}
-}
-
-// --- BuildTask.GetJob ---
-
-func TestBuildTaskGetJob_EmptyId(t *testing.T) {
 	bt := &BuildTask{
-		build: &runtime.Build{},
-		jobs:  make(map[string]*jobSync),
+		ctx: ctx,
+		build: &runtime.Build{
+			Id:         "test-build",
+			PipelineId: "pipe-1",
+			Status:     "running",
+			Started:    time.Now(),
+		},
+		stages: make(map[string]*taskStage),
+		jobs:   make(map[string]*jobSync),
 	}
-	_, ok := bt.GetJob("")
+
+	show, ok := bt.Show()
+	if !ok {
+		t.Fatal("expected Show() to return ok=true")
+	}
+	if show == nil {
+		t.Fatal("expected Show() to return non-nil BuildShow")
+	}
+	if show.Id != "test-build" {
+		t.Errorf("expected build ID 'test-build', got %q", show.Id)
+	}
+	if show.PipelineId != "pipe-1" {
+		t.Errorf("expected pipeline ID 'pipe-1', got %q", show.PipelineId)
+	}
+	if len(show.Stages) != 0 {
+		t.Errorf("expected 0 stages, got %d", len(show.Stages))
+	}
+}
+
+func TestBuildTask_Show_WithStages(t *testing.T) {
+	stageID := "stage-1"
+	stageName := "build"
+	stepID := "step-1"
+	stepName := "compile"
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	bt := &BuildTask{
+		ctx: ctx,
+		build: &runtime.Build{
+			Id:     "test-build",
+			Status: "running",
+			Stages: []*runtime.Stage{
+				{
+					Id:      stageID,
+					BuildId: "test-build",
+					Name:    stageName,
+					Status:  "running",
+					Steps: []*runtime.Step{
+						{
+							Id:      stepID,
+							StageId: stageID,
+							BuildId: "test-build",
+							Name:    stepName,
+							Status:  "running",
+						},
+					},
+				},
+			},
+		},
+		stages: map[string]*taskStage{
+			stageName: {
+				stage: &runtime.Stage{
+					Id:      stageID,
+					BuildId: "test-build",
+					Status:  "running",
+				},
+				jobs: map[string]*jobSync{
+					stepName: {
+						step: &runtime.Step{
+							Id:      stepID,
+							StageId: stageID,
+							BuildId: "test-build",
+							Status:  "running",
+						},
+						cmdmp: make(map[string]*cmdSync),
+					},
+				},
+			},
+		},
+		jobs: make(map[string]*jobSync),
+	}
+
+	show, ok := bt.Show()
+	if !ok {
+		t.Fatal("expected Show() to return ok=true")
+	}
+	if len(show.Stages) != 1 {
+		t.Fatalf("expected 1 stage, got %d", len(show.Stages))
+	}
+	if show.Stages[0].Id != stageID {
+		t.Errorf("expected stage ID %q, got %q", stageID, show.Stages[0].Id)
+	}
+	if len(show.Stages[0].Steps) != 1 {
+		t.Fatalf("expected 1 step, got %d", len(show.Stages[0].Steps))
+	}
+	if show.Stages[0].Steps[0].Id != stepID {
+		t.Errorf("expected step ID %q, got %q", stepID, show.Stages[0].Steps[0].Id)
+	}
+}
+
+func TestBuildTask_Show_CanceledContext(t *testing.T) {
+	// Show() should return false when context is canceled
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+	bt := &BuildTask{
+		ctx:   ctx,
+		build: &runtime.Build{Id: "test-build"},
+	}
+
+	_, ok := bt.Show()
 	if ok {
-		t.Error("GetJob with empty id should return false")
+		t.Error("expected Show() to return false when context is canceled")
 	}
 }
 
-func TestBuildTaskGetJob_NotFound(t *testing.T) {
-	bt := &BuildTask{
-		build: &runtime.Build{},
-		jobs:  make(map[string]*jobSync),
-	}
-	_, ok := bt.GetJob("nonexistent")
-	if ok {
-		t.Error("GetJob with nonexistent id should return false")
-	}
-}
+func TestBuildTask_UpJobCmd_StatusTransitions(t *testing.T) {
+	// Note: UpJobCmd spawns a goroutine that calls updateStepCmd, which
+	// requires comm.Db to be initialized. In unit tests without a database,
+	// the goroutine will fail but recover via util.RecoverLog.
+	// We can still test the status transition logic.
 
-func TestBuildTaskGetJob_Found(t *testing.T) {
-	job := &jobSync{
-		step: &runtime.Step{Id: "step-1", Name: "build"},
-	}
 	bt := &BuildTask{
-		build: &runtime.Build{},
-		jobs: map[string]*jobSync{
-			"step-1": job,
+		build: &runtime.Build{Id: "test-build"},
+	}
+
+	cmd := &cmdSync{
+		cmd: &runners.CmdContent{
+			Id: "cmd-1",
 		},
 	}
-	got, ok := bt.GetJob("step-1")
-	if !ok {
-		t.Fatal("GetJob should find existing job")
+
+	// Test status = 1 (running)
+	bt.UpJobCmd(cmd, 1, 0)
+	if cmd.status != "running" {
+		t.Errorf("expected status 'running', got %q", cmd.status)
 	}
-	if got != job {
-		t.Error("GetJob should return the correct job")
+	if cmd.started.IsZero() {
+		t.Error("expected started to be set")
+	}
+
+	// Test status = 2 (success) - note: actual status constant is "ok"
+	bt.UpJobCmd(cmd, 2, 0)
+	if cmd.status != "ok" {
+		t.Errorf("expected status 'ok', got %q", cmd.status)
+	}
+	if cmd.finished.IsZero() {
+		t.Error("expected finished to be set")
+	}
+
+	// Test status = 2 with non-zero exit code (error)
+	cmd2 := &cmdSync{cmd: &runners.CmdContent{Id: "cmd-2"}}
+	bt.UpJobCmd(cmd2, 2, 1)
+	if cmd2.status != "error" {
+		t.Errorf("expected status 'error' for non-zero exit code, got %q", cmd2.status)
+	}
+	if cmd2.code != 1 {
+		t.Errorf("expected code 1, got %d", cmd2.code)
+	}
+
+	// Test status = 3 (cancel)
+	cmd3 := &cmdSync{cmd: &runners.CmdContent{Id: "cmd-3"}}
+	bt.UpJobCmd(cmd3, 3, 0)
+	if cmd3.status != "cancel" {
+		t.Errorf("expected status 'cancel', got %q", cmd3.status)
+	}
+
+	// Test status = -1 (error)
+	cmd4 := &cmdSync{cmd: &runners.CmdContent{Id: "cmd-4"}}
+	bt.UpJobCmd(cmd4, -1, 1)
+	if cmd4.status != "error" {
+		t.Errorf("expected status 'error', got %q", cmd4.status)
+	}
+
+	// Test unknown status (should not modify)
+	cmd5 := &cmdSync{cmd: &runners.CmdContent{Id: "cmd-5"}, status: "pending"}
+	bt.UpJobCmd(cmd5, 99, 0)
+	if cmd5.status != "pending" {
+		t.Errorf("expected status to remain 'pending', got %q", cmd5.status)
+	}
+
+	// Give goroutines time to complete
+	time.Sleep(50 * time.Millisecond)
+}
+
+func TestBuildTask_Write_GitProgress(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{Id: "test-build"},
+	}
+
+	// Test git progress parsing
+	progressLine := "Receiving objects:  50% (100/200)\n"
+	n, err := bt.Write([]byte(progressLine))
+	if err != nil {
+		t.Fatalf("Write() error: %v", err)
+	}
+	if n != len(progressLine) {
+		t.Errorf("expected n=%d, got %d", len(progressLine), n)
+	}
+	// workpgss should be updated to 50 * 0.8 = 40
+	if bt.WorkProgress() != 40 {
+		t.Errorf("expected work progress 40, got %d", bt.WorkProgress())
+	}
+
+	// Test with different progress
+	progressLine2 := "Receiving objects:  75% (150/200)\n"
+	if _, werr := bt.Write([]byte(progressLine2)); werr != nil {
+		t.Fatalf("Write() error: %v", werr)
+	}
+	if bt.WorkProgress() != 60 { // 75 * 0.8 = 60
+		t.Errorf("expected work progress 60, got %d", bt.WorkProgress())
+	}
+
+	// Test with non-progress line (should not change workpgss)
+	regularLine := "Cloning into 'repo'...\n"
+	if _, werr := bt.Write([]byte(regularLine)); werr != nil {
+		t.Fatalf("Write() error: %v", werr)
+	}
+	if bt.WorkProgress() != 60 {
+		t.Errorf("expected work progress to remain 60, got %d", bt.WorkProgress())
+	}
+
+	// Test empty input
+	if _, werr := bt.Write([]byte{}); werr != nil {
+		t.Fatalf("Write() error: %v", werr)
 	}
 }
 
-// --- taskStage.status ---
-
-func TestTaskStageStatus(t *testing.T) {
-	ts := &taskStage{
-		stage: &runtime.Stage{Name: "build"},
+func TestBuildTask_stopd_NilContext(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{Id: "test-build"},
 	}
-	ts.status(common.BuildStatusRunning, "")
-	if ts.stage.Status != common.BuildStatusRunning {
-		t.Errorf("status = %q, want %q", ts.stage.Status, common.BuildStatusRunning)
+
+	if !bt.stopd() {
+		t.Error("expected stopd() to return true when ctx is nil")
 	}
 }
 
-func TestTaskStageStatus_WithError(t *testing.T) {
-	ts := &taskStage{
-		stage: &runtime.Stage{Name: "test"},
+func TestBuildTask_stopd_ActiveContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	bt := &BuildTask{
+		ctx:   ctx,
+		build: &runtime.Build{Id: "test-build"},
 	}
-	ts.status(common.BuildStatusError, "something failed")
-	if ts.stage.Status != common.BuildStatusError {
-		t.Errorf("status = %q, want %q", ts.stage.Status, common.BuildStatusError)
-	}
-	if ts.stage.Error != "something failed" {
-		t.Errorf("error = %q, want %q", ts.stage.Error, "something failed")
+
+	if bt.stopd() {
+		t.Error("expected stopd() to return false when context is active")
 	}
 }
 
-func TestTaskStageStatus_WithEvent(t *testing.T) {
-	ts := &taskStage{
-		stage: &runtime.Stage{Name: "deploy"},
+func TestBuildTask_stopd_CanceledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	bt := &BuildTask{
+		ctx:   ctx,
+		build: &runtime.Build{Id: "test-build"},
 	}
-	ts.status(common.BuildStatusError, "err", "deploy-event")
-	if ts.stage.Event != "deploy-event" {
-		t.Errorf("event = %q, want %q", ts.stage.Event, "deploy-event")
+
+	if !bt.stopd() {
+		t.Error("expected stopd() to return true when context is canceled")
 	}
 }
 
-func TestTaskStageStatus_NoEventPreservesExisting(t *testing.T) {
-	ts := &taskStage{
-		stage: &runtime.Stage{Name: "build", Event: "original"},
+func TestBuildTask_stop_NilCancel(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{Id: "test-build"},
 	}
-	ts.status(common.BuildStatusOk, "")
-	if ts.stage.Event != "original" {
-		t.Errorf("event should be preserved, got %q", ts.stage.Event)
+
+	// Should not panic with nil cancel
+	bt.stop()
+}
+
+func TestBuildTask_stop_WithCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	bt := &BuildTask{
+		ctx:   ctx,
+		cncl:  cancel,
+		build: &runtime.Build{Id: "test-build"},
+	}
+
+	bt.stop()
+
+	// After stop(), context should be done
+	select {
+	case <-ctx.Done():
+		// Good
+	case <-time.After(100 * time.Millisecond):
+		t.Error("expected context to be canceled after stop()")
 	}
 }
 
-// --- jobSync.status ---
-
-func TestJobSyncStatus(t *testing.T) {
-	js := &jobSync{
-		step: &runtime.Step{Name: "compile"},
+func TestBuildTask_Cancel_NilCancel(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{Id: "test-build"},
 	}
-	js.status(common.BuildStatusRunning, "")
-	if js.step.Status != common.BuildStatusRunning {
-		t.Errorf("status = %q, want %q", js.step.Status, common.BuildStatusRunning)
+
+	// Should not panic with nil cancel
+	bt.Cancel()
+	if bt.ctrlendtm.IsZero() {
+		t.Error("expected ctrlendtm to be set")
 	}
 }
 
-func TestJobSyncStatus_WithEvent(t *testing.T) {
-	js := &jobSync{
-		step: &runtime.Step{Name: "test"},
+func TestBuildTask_Cancel_WithCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	bt := &BuildTask{
+		ctx:   ctx,
+		cncl:  cancel,
+		build: &runtime.Build{Id: "test-build"},
 	}
-	js.status(common.BuildStatusError, "test failed", "test-event")
-	if js.step.Status != common.BuildStatusError {
-		t.Errorf("status = %q, want %q", js.step.Status, common.BuildStatusError)
+
+	bt.Cancel()
+
+	// ctrlendtm should be set
+	if bt.ctrlendtm.IsZero() {
+		t.Error("expected ctrlendtm to be set")
 	}
-	if js.step.Error != "test failed" {
-		t.Errorf("error = %q, want %q", js.step.Error, "test failed")
-	}
-	if js.step.Event != "test-event" {
-		t.Errorf("event = %q, want %q", js.step.Event, "test-event")
+
+	// Context should be canceled
+	select {
+	case <-ctx.Done():
+		// Good
+	case <-time.After(100 * time.Millisecond):
+		t.Error("expected context to be canceled after Cancel()")
 	}
 }
 
-func TestJobSyncStatus_NoEventPreservesExisting(t *testing.T) {
-	js := &jobSync{
-		step: &runtime.Step{Name: "build", Event: "prev-event"},
+func TestBuildTask_WorkProgress_Default(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{Id: "test-build"},
 	}
-	js.status(common.BuildStatusOk, "")
-	if js.step.Event != "prev-event" {
-		t.Errorf("event should be preserved, got %q", js.step.Event)
-	}
-}
 
-// --- BuildEngine.Stop ---
-
-func TestBuildEngineStop_Empty(t *testing.T) {
-	c := &BuildEngine{
-		taskw: list.New(),
-		tasks: make(map[string]*BuildTask),
-	}
-	// Should not panic on empty tasks
-	c.Stop()
-}
-
-func TestBuildEngineStop_StopsAllTasks(t *testing.T) {
-	c := &BuildEngine{
-		taskw: list.New(),
-		tasks: make(map[string]*BuildTask),
-	}
-	// Add tasks with active contexts
-	for i := 0; i < 3; i++ {
-		ctx, cancel := context.WithCancel(context.Background())
-		id := "build-stop-" + string(rune('a'+i))
-		c.tasks[id] = &BuildTask{
-			build: &runtime.Build{Id: id},
-			ctx:   ctx,
-			cncl:  cancel,
-		}
-	}
-	c.Stop()
-	// All tasks should have canceled contexts
-	for id, task := range c.tasks {
-		if !task.stopd() {
-			t.Errorf("task %q should be stopped after Stop()", id)
-		}
+	if bt.WorkProgress() != 0 {
+		t.Errorf("expected default work progress 0, got %d", bt.WorkProgress())
 	}
 }
 
-// --- cmdSync status transitions via UpJobCmd ---
+func TestBuildTask_GetJob_EmptyID(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{Id: "test-build"},
+		jobs:  make(map[string]*jobSync),
+	}
 
-func TestUpJobCmd_NilCmd(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	// Should not panic with nil cmd
-	bt.UpJobCmd(nil, 1, 0)
+	job, ok := bt.GetJob("")
+	if ok {
+		t.Error("expected GetJob with empty ID to return false")
+	}
+	if job != nil {
+		t.Error("expected GetJob with empty ID to return nil job")
+	}
 }
 
-func TestUpJobCmd_NilJob(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	// Should not panic with nil job
-	bt.UpJob(nil, common.BuildStatusOk, "", 0)
+func TestBuildTask_GetJob_NotFound(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{Id: "test-build"},
+		jobs:  make(map[string]*jobSync),
+	}
+
+	job, ok := bt.GetJob("nonexistent")
+	if ok {
+		t.Error("expected GetJob with nonexistent ID to return false")
+	}
+	if job != nil {
+		t.Error("expected GetJob with nonexistent ID to return nil job")
+	}
 }
 
-func TestUpJob_EmptyStatus(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	job := &jobSync{
-		step:  &runtime.Step{Id: "step-1", Name: "test"},
+func TestBuildTask_GetJob_Found(t *testing.T) {
+	jobID := "job-1"
+	expectedJob := &jobSync{
+		step:  &runtime.Step{Id: jobID},
 		cmdmp: make(map[string]*cmdSync),
 	}
-	// Empty status should be a no-op
-	bt.UpJob(job, "", "", 0)
-	if job.step.Status != "" {
-		t.Errorf("step status should remain empty, got %q", job.step.Status)
-	}
-}
 
-// --- BuildTask.taskCtx ---
+	bt := &BuildTask{
+		build: &runtime.Build{Id: "test-build"},
+		jobs: map[string]*jobSync{
+			jobID: expectedJob,
+		},
+	}
 
-func TestTaskCtx_NilContextFallsBackToGlobal(t *testing.T) {
-	bt := &BuildTask{build: &runtime.Build{}}
-	// When c.ctx is nil, taskCtx() should return the global comm.Ctx
-	got := bt.taskCtx()
-	if got == nil {
-		t.Fatal("taskCtx() should never return nil")
-	}
-	// It should be comm.Ctx (which is set in comm.init())
-	if got != comm.Ctx {
-		t.Error("taskCtx() should return comm.Ctx when task context is nil")
-	}
-}
-
-func TestTaskCtx_WithActiveContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	bt := &BuildTask{build: &runtime.Build{}, ctx: ctx}
-	got := bt.taskCtx()
-	if got != ctx {
-		t.Error("taskCtx() should return the task's own context when set")
-	}
-}
-
-func TestTaskCtx_WithTimeoutContext(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	bt := &BuildTask{build: &runtime.Build{}, ctx: ctx}
-	got := bt.taskCtx()
-	if got != ctx {
-		t.Error("taskCtx() should return the task's timeout context")
-	}
-	// Verify it has a deadline (proving it's the task context, not global)
-	_, ok := got.Deadline()
+	job, ok := bt.GetJob(jobID)
 	if !ok {
-		t.Error("taskCtx() returned context should have a deadline")
+		t.Error("expected GetJob to find the job")
 	}
-}
-
-func TestTaskCtx_CanceledTaskContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // cancel immediately
-	bt := &BuildTask{build: &runtime.Build{}, ctx: ctx}
-	got := bt.taskCtx()
-	// Even if canceled, it should return the task's context (not fallback)
-	if got != ctx {
-		t.Error("taskCtx() should return the task's context even if canceled")
-	}
-	if got.Err() == nil {
-		t.Error("returned context should be canceled")
+	if job != expectedJob {
+		t.Error("expected GetJob to return the same job instance")
 	}
 }

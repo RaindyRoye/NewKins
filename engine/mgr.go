@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -11,21 +12,34 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Mgr is the global Manager instance.
+// Deprecated: New code should prefer NewManager for dependency injection.
 var Mgr = &Manager{}
 
+// Manager coordinates build execution, job scheduling, and runner management.
+// It holds references to various engines and runners that work together to
+// execute CI/CD pipelines.
 type Manager struct {
+	// workPath is the base directory for build artifacts and temporary files.
+	// Used by DI-based constructors instead of the global comm.WorkPath.
+	workPath string
+
+	// ctx is the lifecycle context for this manager instance.
+	// Used by DI-based constructors instead of the global comm.Ctx.
+	ctx context.Context
+
 	buildEgn *BuildEngine
 	jobEgn   *JobEngine
 	shellRun *runners.Engine
 	brun     *baseRunner
 	hrun     *HbtpRunner
-	timerEgn *TimerEngine
+	tmrEgn   *TimerEngine
 }
 
 func Start() error {
 	Mgr.buildEgn = StartBuildEngine()
 	Mgr.jobEgn = StartJobEngine()
-	Mgr.timerEgn = StartTimerEngine()
+	Mgr.tmrEgn = StartTimerEngine()
 
 	Mgr.brun = &baseRunner{}
 	Mgr.hrun = &HbtpRunner{}
@@ -65,7 +79,7 @@ func (c *Manager) HRun() *HbtpRunner {
 }
 
 func (c *Manager) TimerEng() *TimerEngine {
-	return c.timerEgn
+	return c.tmrEgn
 }
 
 func (c *Manager) Plugins() []string {

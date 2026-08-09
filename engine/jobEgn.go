@@ -44,6 +44,11 @@ type jobSync struct {
 	ended bool
 }
 
+// status updates the job status fields. The event parameter is variadic
+// for API compatibility with taskStage.status; when omitted, the event
+// field is left unchanged.
+//
+//nolint:unparam // event is variadic for API compatibility; callers may pass it in future.
 func (c *jobSync) status(stat, errs string, event ...string) {
 	c.Lock()
 	defer c.Unlock()
