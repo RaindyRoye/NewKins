@@ -1,6 +1,7 @@
 package comm
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -39,6 +40,9 @@ func TestConfig_Validate_EmptyDriver(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty driver")
 	}
+	if !errors.Is(err, ErrDatasourceDriverRequired) {
+		t.Errorf("expected ErrDatasourceDriverRequired, got: %v", err)
+	}
 	if !strings.Contains(err.Error(), "datasource.driver is required") {
 		t.Errorf("unexpected error message: %v", err)
 	}
@@ -52,8 +56,8 @@ func TestConfig_Validate_UnsupportedDriver(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unsupported driver")
 	}
-	if !strings.Contains(err.Error(), "unsupported datasource driver") {
-		t.Errorf("unexpected error message: %v", err)
+	if !errors.Is(err, ErrUnsupportedDatasourceDriver) {
+		t.Errorf("expected ErrUnsupportedDatasourceDriver, got: %v", err)
 	}
 	if !strings.Contains(err.Error(), "oracle") {
 		t.Errorf("error should mention the invalid driver name: %v", err)
@@ -67,8 +71,8 @@ func TestConfig_Validate_EmptyURL(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty URL")
 	}
-	if !strings.Contains(err.Error(), "datasource.url is required") {
-		t.Errorf("unexpected error message: %v", err)
+	if !errors.Is(err, ErrDatasourceURLRequired) {
+		t.Errorf("expected ErrDatasourceURLRequired, got: %v", err)
 	}
 }
 
@@ -81,8 +85,8 @@ func TestConfig_Validate_NegativeRunLimit(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for negative runLimit")
 	}
-	if !strings.Contains(err.Error(), "server.runLimit must be non-negative") {
-		t.Errorf("unexpected error message: %v", err)
+	if !errors.Is(err, ErrInvalidRunLimit) {
+		t.Errorf("expected ErrInvalidRunLimit, got: %v", err)
 	}
 }
 

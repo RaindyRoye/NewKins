@@ -95,7 +95,7 @@ func GetTokens(s string, key string) jwt.MapClaims {
 		// Validate the signing method to prevent algorithm confusion attacks.
 		// We only accept HMAC-based signing (HS512) since that's what CreateToken uses.
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("unexpected signing method: %q", token.Header["alg"])
 		}
 		return []byte(key), nil
 	})

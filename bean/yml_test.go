@@ -169,7 +169,7 @@ func TestPipelineCheck(t *testing.T) {
 				},
 			},
 			wantErr: true,
-			errMsg:  "duplicate stage name: build",
+			errMsg:  "duplicate stage name: \"build\"",
 		},
 		{
 			name: "step with empty plugin",
@@ -230,7 +230,7 @@ func TestPipelineCheck(t *testing.T) {
 				},
 			},
 			wantErr: true,
-			errMsg:  "duplicate step name: step1",
+			errMsg:  "duplicate step name: \"step1\"",
 		},
 		{
 			name: "same step name in different stages is OK",

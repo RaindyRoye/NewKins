@@ -1,6 +1,24 @@
 package comm
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+// Sentinel errors for configuration validation.
+var (
+	// ErrDatasourceDriverRequired is returned when the datasource driver is missing.
+	ErrDatasourceDriverRequired = errors.New("datasource.driver is required")
+
+	// ErrUnsupportedDatasourceDriver is returned when an unsupported driver is specified.
+	ErrUnsupportedDatasourceDriver = errors.New("unsupported datasource driver")
+
+	// ErrDatasourceURLRequired is returned when the datasource URL is missing.
+	ErrDatasourceURLRequired = errors.New("datasource.url is required")
+
+	// ErrInvalidRunLimit is returned when the run limit is negative.
+	ErrInvalidRunLimit = errors.New("server.runLimit must be non-negative")
+)
 
 // Config holds the application configuration loaded from app.yml / app.yaml.
 type Config struct {
@@ -24,19 +42,19 @@ type Config struct {
 // It returns an error describing the first problem found, or nil if valid.
 func (c *Config) Validate() error {
 	if c.Datasource.Driver == "" {
-		return fmt.Errorf("config validation: datasource.driver is required")
+		return fmt.Errorf("config validation: %w", ErrDatasourceDriverRequired)
 	}
 	switch c.Datasource.Driver {
 	case DatasourceDriverMySQL, DatasourceDriverPostgres, DatasourceDriverSQLite:
 		// valid
 	default:
-		return fmt.Errorf("config validation: unsupported datasource driver %q (must be one of: mysql, postgres, sqlite)", c.Datasource.Driver)
+		return fmt.Errorf("config validation: %w: %q (must be one of: mysql, postgres, sqlite)", ErrUnsupportedDatasourceDriver, c.Datasource.Driver)
 	}
 	if c.Datasource.Url == "" {
-		return fmt.Errorf("config validation: datasource.url is required")
+		return fmt.Errorf("config validation: %w", ErrDatasourceURLRequired)
 	}
 	if c.Server.RunLimit < 0 {
-		return fmt.Errorf("config validation: server.runLimit must be non-negative, got %d", c.Server.RunLimit)
+		return fmt.Errorf("config validation: %w: got %d", ErrInvalidRunLimit, c.Server.RunLimit)
 	}
 	return nil
 }
