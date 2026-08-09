@@ -129,7 +129,7 @@ func PostResult(ul string, params *url.Values, result any, timeout time.Duration
 // PostResultCtx sends a POST request with context support and unmarshals the JSON response into result.
 func PostResultCtx(ctx context.Context, ul string, params *url.Values, result any, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
 	if result == nil {
-		return 0, nil, errors.New("result is nil")
+		return 0, nil, ErrResultNil
 	}
 	res, err := PostCtx(ctx, ul, params, timeout, hds...)
 	if err != nil {
@@ -158,7 +158,7 @@ func PostJSONResult(ul string, params any, result any, timeout time.Duration, hd
 // PostJSONResultCtx sends a POST request with a JSON body, context support, and unmarshals the response into result.
 func PostJSONResultCtx(ctx context.Context, ul string, params any, result any, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
 	if result == nil {
-		return 0, nil, errors.New("result is nil")
+		return 0, nil, ErrResultNil
 	}
 	res, err := PostJSONCtx(ctx, ul, params, timeout, hds...)
 	if err != nil {

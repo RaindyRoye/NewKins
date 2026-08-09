@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -226,8 +227,8 @@ func TestGetFile_EmptyPath(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty path, got nil")
 	}
-	if err.Error() != "getFile: path parameter is empty" {
-		t.Errorf("unexpected error message: %v", err)
+	if !errors.Is(err, ErrPathEmpty) {
+		t.Errorf("expected ErrPathEmpty, got: %v", err)
 	}
 }
 
@@ -247,8 +248,8 @@ func TestGetFile_PathTraversal(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected error for path traversal, got nil")
 			}
-			if err.Error() != "getFile: invalid path" {
-				t.Errorf("unexpected error message: %v", err)
+			if !errors.Is(err, ErrPathInvalid) {
+				t.Errorf("expected ErrPathInvalid, got: %v", err)
 			}
 		})
 	}
@@ -260,14 +261,20 @@ func TestGetFile_FileNotFound(t *testing.T) {
 	rderOnce = sync.Once{}
 	rderErr = nil
 
-	// With no StaticPkg set, getRdr will fail
+	// Set up a valid but empty zip archive
 	origStaticPkg := comm.StaticPkg
 	defer func() { comm.StaticPkg = origStaticPkg }()
-	comm.StaticPkg = ""
+	
+	// Create a minimal valid base64-encoded empty zip file
+	// This is an empty zip: PK\x05\x06 followed by 18 zero bytes
+	comm.StaticPkg = "UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA=="
 
 	_, err := getFile("nonexistent.html")
 	if err == nil {
-		t.Fatal("expected error when zip reader fails, got nil")
+		t.Fatal("expected error for nonexistent file, got nil")
+	}
+	if !errors.Is(err, ErrFileNotFound) {
+		t.Errorf("expected ErrFileNotFound, got: %v", err)
 	}
 }
 
