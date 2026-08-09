@@ -7,6 +7,15 @@ import (
 	"strings"
 )
 
+// Sentinel errors for pipeline YAML validation.
+var (
+	// ErrDuplicateStageName is returned when two stages share the same name.
+	ErrDuplicateStageName = errors.New("duplicate stage name")
+
+	// ErrDuplicateStepName is returned when two steps in the same stage share the same name.
+	ErrDuplicateStepName = errors.New("duplicate step name")
+)
+
 type Pipeline struct {
 	Version  string              `yaml:"version,omitempty" json:"version"`
 	Triggers map[string]*Trigger `yaml:"triggers,omitempty" json:"triggers"`
@@ -117,7 +126,7 @@ func (c *Pipeline) Check() error {
 			return errors.New("steps is empty")
 		}
 		if _, ok := stages[v.Name]; ok {
-			return fmt.Errorf("duplicate stage name: %s", v.Name)
+			return fmt.Errorf("%w: %q", ErrDuplicateStageName, v.Name)
 		}
 		m := map[string]*Step{}
 		stages[v.Name] = m
@@ -129,7 +138,7 @@ func (c *Pipeline) Check() error {
 				return errors.New("step name is empty")
 			}
 			if _, ok := m[e.Name]; ok {
-				return fmt.Errorf("duplicate step name: %s", e.Name)
+				return fmt.Errorf("%w: %q", ErrDuplicateStepName, e.Name)
 			}
 			m[e.Name] = e
 		}
