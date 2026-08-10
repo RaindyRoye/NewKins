@@ -67,15 +67,21 @@ func (s *RepositoryService) GetRepos(ctx context.Context, accessToken, username,
 		splits := strings.Split(lk, ", ")
 		for _, v := range splits {
 			if strings.Contains(v, `rel="last"`) {
-				replace := strings.ReplaceAll(strings.ReplaceAll(v, "<", ""), ">;", "")
-				p, errs := url.Parse(replace)
-				if errs != nil {
-					logrus.Errorf("Github Api GetRepos url Parse err : %v", errs)
-				}
-				get := p.Query().Get("page")
-				totalPages, err = strconv.ParseInt(get, 10, 64)
-				if err != nil {
-					return nil, fmt.Errorf("github GetRepos: parse total pages: %w", err)
+				// Extract URL from format: <https://...>; rel="last"
+				start := strings.Index(v, "<")
+				end := strings.Index(v, ">")
+				if start >= 0 && end > start {
+					urlStr := v[start+1 : end]
+					p, errs := url.Parse(urlStr)
+					if errs != nil {
+						logrus.Errorf("Github Api GetRepos url Parse err : %v", errs)
+					} else {
+						get := p.Query().Get("page")
+						totalPages, err = strconv.ParseInt(get, 10, 64)
+						if err != nil {
+							return nil, fmt.Errorf("github GetRepos: parse total pages: %w", err)
+						}
+					}
 				}
 			}
 		}
