@@ -41,7 +41,7 @@ func TestGitlabGetRepos(t *testing.T) {
 		if r.Header.Get("Authorization") == "" {
 			t.Error("Authorization header is empty")
 		}
-		
+
 		repos := []*thirdbean.ResultGitlabRepo{
 			{
 				Id:                1,
@@ -74,7 +74,7 @@ func TestGitlabGetRepos(t *testing.T) {
 				},
 			},
 		}
-		
+
 		w.Header().Set("X-Total-Pages", "1")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(repos)
@@ -111,7 +111,7 @@ func TestGitlabGetRepoBranches(t *testing.T) {
 		if r.Method != "GET" {
 			t.Errorf("Method = %v, want GET", r.Method)
 		}
-		
+
 		branches := []*thirdbean.ResultGitlabRepoBranch{
 			{
 				Name:      "main",
@@ -122,7 +122,7 @@ func TestGitlabGetRepoBranches(t *testing.T) {
 				Protected: false,
 			},
 		}
-		
+
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(branches)
 	})
@@ -152,14 +152,14 @@ func TestGitlabGetWebHooks(t *testing.T) {
 		if r.Method != "GET" {
 			t.Errorf("Method = %v, want GET", r.Method)
 		}
-		
+
 		hooks := []*thirdbean.ResultGetGitlabHook{
 			{
 				Id:  1,
 				Url: "https://example.com/hook",
 			},
 		}
-		
+
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(hooks)
 	})
@@ -192,12 +192,12 @@ func TestGitlabCreateWebHooks(t *testing.T) {
 		if r.Header.Get("Content-Type") != "application/json" {
 			t.Errorf("Content-Type = %v, want application/json", r.Header.Get("Content-Type"))
 		}
-		
+
 		hook := &thirdbean.ResultGetGitlabHook{
 			Id:  1,
 			Url: "https://example.com/hook",
 		}
-		
+
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(hook)
 	})

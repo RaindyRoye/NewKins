@@ -39,7 +39,7 @@ func TestGiteePremiumGetRepos(t *testing.T) {
 		if r.Method != "GET" {
 			t.Errorf("Method = %v, want GET", r.Method)
 		}
-		
+
 		repos := []*thirdbean.ResultGiteePremiumRepo{
 			{
 				Id:       1,
@@ -78,7 +78,7 @@ func TestGiteePremiumGetRepos(t *testing.T) {
 				},
 			},
 		}
-		
+
 		w.Header().Set("total_page", "1")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(repos)
@@ -115,7 +115,7 @@ func TestGiteePremiumGetRepoBranches(t *testing.T) {
 		if r.Method != "GET" {
 			t.Errorf("Method = %v, want GET", r.Method)
 		}
-		
+
 		branches := []*thirdbean.ResultGiteePremiumRepoBranch{
 			{
 				Name: "master",
@@ -124,7 +124,7 @@ func TestGiteePremiumGetRepoBranches(t *testing.T) {
 				Name: "develop",
 			},
 		}
-		
+
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(branches)
 	})
@@ -154,7 +154,7 @@ func TestGiteePremiumGetWebHooks(t *testing.T) {
 		if r.Method != "GET" {
 			t.Errorf("Method = %v, want GET", r.Method)
 		}
-		
+
 		hooks := []*thirdbean.ResultGetGiteePremiumHook{
 			{
 				Id:        1,
@@ -162,7 +162,7 @@ func TestGiteePremiumGetWebHooks(t *testing.T) {
 				CreatedAt: time.Now(),
 			},
 		}
-		
+
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(hooks)
 	})
@@ -195,13 +195,13 @@ func TestGiteePremiumCreateWebHooks(t *testing.T) {
 		if r.Header.Get("Content-Type") != "application/x-www-form-urlencoded" {
 			t.Errorf("Content-Type = %v, want application/x-www-form-urlencoded", r.Header.Get("Content-Type"))
 		}
-		
+
 		hook := &thirdbean.ResultGetGiteePremiumHook{
 			Id:        1,
 			Url:       "https://example.com/hook",
 			CreatedAt: time.Now(),
 		}
-		
+
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(hook)
 	})

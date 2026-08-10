@@ -67,7 +67,7 @@ func TestGetRepos_Success(t *testing.T) {
 			Id:       1,
 			Name:     "repo1",
 			FullName: "user/repo1",
-			Owner:    struct {
+			Owner: struct {
 				Login             string `json:"login"`
 				Id                int    `json:"id"`
 				NodeId            string `json:"node_id"`
@@ -252,8 +252,8 @@ func TestDeleteHooks_ServerError(t *testing.T) {
 
 func TestCreateWebHooks_Success(t *testing.T) {
 	respHook := &thirdbean.ResultGetGithubHook{
-		Id:   42,
-		Url:  "https://example.com/hook",
+		Id:  42,
+		Url: "https://example.com/hook",
 		Config: struct {
 			ContentType string `json:"content_type"`
 			InsecureSsl string `json:"insecure_ssl"`
