@@ -48,7 +48,7 @@ func setupTestRepo(t *testing.T) (cloneDir string, hashes []plumbing.Hash, clean
 	writeFile := func(name, body string) {
 		t.Helper()
 		p := filepath.Join(workDir, name)
-		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+		if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
 			t.Fatalf("write %s: %v", name, err)
 		}
 	}
@@ -92,16 +92,6 @@ func setupTestRepo(t *testing.T) (cloneDir string, hashes []plumbing.Hash, clean
 	_ = origin
 
 	return cloneDir, hashes, func() { /* TempDir auto-cleans */ }
-}
-
-func writeFileHelper(path, body string) error {
-	return writeFileBytes(path, []byte(body))
-}
-
-func writeFileBytes(path string, body []byte) error {
-	// Use os.WriteFile indirectly via a helper that lives outside util so we
-	// don't pollute the package. We inline it here to keep the test self-contained.
-	return writeFileOS(path, body, 0o644)
 }
 
 // TestCheckOutHash_Valid exercises the happy path of CheckOutHash against a
@@ -276,7 +266,7 @@ func TestCloneRepo_CancelledCtx(t *testing.T) {
 
 	_, err := CloneRepo(filepath.Join(t.TempDir(), "dead"), &git.CloneOptions{URL: "/nonexistent"}, ctx)
 	if err == nil {
-		t.Fatal("expected error for cancelled context")
+		t.Fatal("expected error for canceled context")
 	}
 	if !errors.Is(err, context.Canceled) {
 		// go-git wraps context errors, but they should still be unwrappable.
