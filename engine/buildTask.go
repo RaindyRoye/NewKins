@@ -189,7 +189,10 @@ func (c *BuildTask) runStage(stage *runtime.Stage) {
 			break
 		}
 		stg.wg.Add(1)
-		go c.runStep(stg, jb)
+		go func(s *taskStage, j *jobSync) {
+			defer util.RecoverLog("BuildTask.runStep.launch")
+			c.runStep(s, j)
+		}(stg, jb)
 	}
 	c.staglk.RUnlock()
 	stg.wg.Wait()
