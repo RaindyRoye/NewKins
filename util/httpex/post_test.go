@@ -15,8 +15,8 @@ func TestPostResult_NilResult(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostResult with nil result expected error, got nil")
 	}
-	if err.Error() != "result is nil" {
-		t.Fatalf("unexpected error: %v", err)
+	if !errors.Is(err, ErrNilResult) {
+		t.Fatalf("expected ErrNilResult, got: %v", err)
 	}
 }
 
@@ -68,6 +68,9 @@ func TestPostResult_Non200(t *testing.T) {
 	if string(body) != "internal error" {
 		t.Fatalf("expected body 'internal error', got %q", string(body))
 	}
+	if !errors.Is(err, ErrHTTPResponse) {
+		t.Fatalf("expected ErrHTTPResponse, got: %v", err)
+	}
 }
 
 func TestPostJSONResult_NilResult(t *testing.T) {
@@ -75,8 +78,8 @@ func TestPostJSONResult_NilResult(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostJSONResult with nil result expected error, got nil")
 	}
-	if err.Error() != "result is nil" {
-		t.Fatalf("unexpected error: %v", err)
+	if !errors.Is(err, ErrNilResult) {
+		t.Fatalf("expected ErrNilResult, got: %v", err)
 	}
 }
 
@@ -330,8 +333,32 @@ func TestPostResultCtx_NilResult(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostResultCtx with nil result expected error, got nil")
 	}
-	if err.Error() != "result is nil" {
-		t.Fatalf("unexpected error: %v", err)
+	if !errors.Is(err, ErrNilResult) {
+		t.Fatalf("expected ErrNilResult, got: %v", err)
+	}
+}
+
+func TestPostResultCtx_Non200(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("bad request"))
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+	var result map[string]string
+	code, body, err := PostResultCtx(ctx, server.URL, nil, &result, 5*time.Second)
+	if err == nil {
+		t.Fatal("PostResultCtx with non-200 expected error, got nil")
+	}
+	if code != 400 {
+		t.Fatalf("expected status 400, got %d", code)
+	}
+	if string(body) != "bad request" {
+		t.Fatalf("expected body 'bad request', got %q", string(body))
+	}
+	if !errors.Is(err, ErrHTTPResponse) {
+		t.Fatalf("expected ErrHTTPResponse, got: %v", err)
 	}
 }
 
@@ -340,7 +367,31 @@ func TestPostJSONResultCtx_NilResult(t *testing.T) {
 	if err == nil {
 		t.Fatal("PostJSONResultCtx with nil result expected error, got nil")
 	}
-	if err.Error() != "result is nil" {
-		t.Fatalf("unexpected error: %v", err)
+	if !errors.Is(err, ErrNilResult) {
+		t.Fatalf("expected ErrNilResult, got: %v", err)
+	}
+}
+
+func TestPostJSONResultCtx_Non200(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte("service down"))
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+	var result map[string]string
+	code, body, err := PostJSONResultCtx(ctx, server.URL, nil, &result, 5*time.Second)
+	if err == nil {
+		t.Fatal("PostJSONResultCtx with non-200 expected error, got nil")
+	}
+	if code != 503 {
+		t.Fatalf("expected status 503, got %d", code)
+	}
+	if string(body) != "service down" {
+		t.Fatalf("expected body 'service down', got %q", string(body))
+	}
+	if !errors.Is(err, ErrHTTPResponse) {
+		t.Fatalf("expected ErrHTTPResponse, got: %v", err)
 	}
 }
