@@ -45,8 +45,14 @@ func CheckUPermission(usr *model.TUser, perms string) bool {
 	}
 	return false
 }
+
+// CheckCurrPermission checks the current user's permission from a Gin context,
+// using the request's context for database operations.
 func CheckCurrPermission(c *gin.Context, perms string) bool {
-	usr, ok := CurrUserCache(c)
+	if c == nil || c.Request == nil {
+		return false
+	}
+	usr, ok := CurrUserCacheCtx(c.Request.Context(), c)
 	if !ok {
 		return false
 	}
