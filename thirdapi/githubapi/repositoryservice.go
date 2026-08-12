@@ -67,8 +67,14 @@ func (s *RepositoryService) GetRepos(ctx context.Context, accessToken, username,
 		splits := strings.Split(lk, ", ")
 		for _, v := range splits {
 			if strings.Contains(v, `rel="last"`) {
-				replace := strings.ReplaceAll(strings.ReplaceAll(v, "<", ""), ">;", "")
-				p, errs := url.Parse(replace)
+				// Extract URL from Link header format: <url>; rel="last"
+				parts := strings.Split(v, ";")
+				if len(parts) == 0 {
+					continue
+				}
+				urlPart := strings.TrimSpace(parts[0])
+				urlPart = strings.Trim(urlPart, "<>")
+				p, errs := url.Parse(urlPart)
 				if errs != nil {
 					logrus.Errorf("Github Api GetRepos url Parse err : %v", errs)
 				}

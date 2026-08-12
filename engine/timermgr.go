@@ -31,6 +31,7 @@ func StartTimerEngine() *TimerEngine {
 		tasks: make(map[string]*timerExec),
 	}
 	go func() {
+		defer util.RecoverLog("TimerEngine.main")
 		c.refresh()
 		for !hbtp.EndContext(comm.Ctx) {
 			c.run()
@@ -55,7 +56,10 @@ func (c *TimerEngine) execItem(v *timerExec) {
 		logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", v.tt.Name, v.typ, now.Format(common.TimeFmt), v.tick.Format(common.TimeFmt))
 		switch v.typ {
 		case 0:
-			go c.Delete(v.tt.Id)
+			go func(id string) {
+				defer util.RecoverLog("TimerEngine.delete")
+				c.Delete(id)
+			}(v.tt.Id)
 			time.Sleep(time.Millisecond * 10)
 		case 1:
 			v.tick = now.Add(time.Minute)

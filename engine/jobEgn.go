@@ -81,7 +81,10 @@ func (c *JobEngine) run() {
 		for k, v := range c.execs {
 			v.RLock()
 			if time.Since(v.tms).Minutes() > 2 {
-				go c.rmExec(k, v)
+				go func(key string, ex *executer) {
+					defer util.RecoverLog("JobEngine.rmExec.launch")
+					c.rmExec(key, ex)
+				}(k, v)
 			}
 			v.RUnlock()
 		}
