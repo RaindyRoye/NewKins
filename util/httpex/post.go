@@ -14,6 +14,20 @@ import (
 	"time"
 )
 
+// ErrNilResult is returned by PostResult/PostJSONResult (and their Ctx variants)
+// when the caller passes a nil result receiver.
+var ErrNilResult = errors.New("result is nil")
+
+// ErrHTTPResponse is returned (wrapped with %w) by PostResult/PostJSONResult
+// when the server responds with a non-2xx status code. The HTTP status code is
+// embedded in the error message, and the raw response body is returned alongside
+// the error so callers can inspect it.
+//
+// Usage:
+//
+//	if errors.Is(err, httpex.ErrHTTPResponse) { ... }
+var ErrHTTPResponse = errors.New("http response error")
+
 // defaultClient is a shared HTTP client with connection pooling enabled.
 // Creating a new http.Client per request disables keep-alive and connection
 // reuse, which hurts latency and throughput. This client uses the default
@@ -129,7 +143,7 @@ func PostResult(ul string, params *url.Values, result any, timeout time.Duration
 // PostResultCtx sends a POST request with context support and unmarshals the JSON response into result.
 func PostResultCtx(ctx context.Context, ul string, params *url.Values, result any, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
 	if result == nil {
-		return 0, nil, errors.New("result is nil")
+		return 0, nil, ErrNilResult
 	}
 	res, err := PostCtx(ctx, ul, params, timeout, hds...)
 	if err != nil {
@@ -140,8 +154,8 @@ func PostResultCtx(ctx context.Context, ul string, params *url.Values, result an
 	if err != nil {
 		return res.StatusCode, nil, fmt.Errorf("reading response body: %w", err)
 	}
-	if res.StatusCode != 200 {
-		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %w", res.StatusCode, errors.New(string(bts)))
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %s: %w", res.StatusCode, string(bts), ErrHTTPResponse)
 	}
 	if err := json.Unmarshal(bts, result); err != nil {
 		return res.StatusCode, bts, fmt.Errorf("unmarshaling response: %w", err)
@@ -158,7 +172,7 @@ func PostJSONResult(ul string, params any, result any, timeout time.Duration, hd
 // PostJSONResultCtx sends a POST request with a JSON body, context support, and unmarshals the response into result.
 func PostJSONResultCtx(ctx context.Context, ul string, params any, result any, timeout time.Duration, hds ...http.Header) (int, []byte, error) {
 	if result == nil {
-		return 0, nil, errors.New("result is nil")
+		return 0, nil, ErrNilResult
 	}
 	res, err := PostJSONCtx(ctx, ul, params, timeout, hds...)
 	if err != nil {
@@ -169,8 +183,8 @@ func PostJSONResultCtx(ctx context.Context, ul string, params any, result any, t
 	if err != nil {
 		return res.StatusCode, nil, fmt.Errorf("reading response body: %w", err)
 	}
-	if res.StatusCode != 200 {
-		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %w", res.StatusCode, errors.New(string(bts)))
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return res.StatusCode, bts, fmt.Errorf("response err(code:%d): %s: %w", res.StatusCode, string(bts), ErrHTTPResponse)
 	}
 	if err := json.Unmarshal(bts, result); err != nil {
 		return res.StatusCode, bts, fmt.Errorf("unmarshaling response: %w", err)

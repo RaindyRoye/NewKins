@@ -2,7 +2,6 @@ package bean
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -107,29 +106,29 @@ func (c *Pipeline) ConvertCmd() {
 func (c *Pipeline) Check() error {
 	stages := make(map[string]map[string]*Step)
 	if len(c.Stages) == 0 {
-		return errors.New("stages is empty")
+		return ErrStagesEmpty
 	}
 	for _, v := range c.Stages {
 		if v.Name == "" {
-			return errors.New("stage name is empty")
+			return ErrStageNameEmpty
 		}
 		if len(v.Steps) == 0 {
-			return errors.New("steps is empty")
+			return ErrStepsEmpty
 		}
 		if _, ok := stages[v.Name]; ok {
-			return fmt.Errorf("duplicate stage name: %s", v.Name)
+			return fmt.Errorf("%w: %s", ErrDuplicateStage, v.Name)
 		}
 		m := map[string]*Step{}
 		stages[v.Name] = m
 		for _, e := range v.Steps {
 			if strings.TrimSpace(e.Step) == "" {
-				return errors.New("step plugin is empty")
+				return ErrStepPluginEmpty
 			}
 			if e.Name == "" {
-				return errors.New("step name is empty")
+				return ErrStepNameEmpty
 			}
 			if _, ok := m[e.Name]; ok {
-				return fmt.Errorf("duplicate step name: %s", e.Name)
+				return fmt.Errorf("%w: %s", ErrDuplicateStep, e.Name)
 			}
 			m[e.Name] = e
 		}

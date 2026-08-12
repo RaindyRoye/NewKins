@@ -30,7 +30,7 @@ func TestTriggerParamCheck(t *testing.T) {
 				Params:     `{"hookType":"github"}`,
 			},
 			wantErr: true,
-			errMsg:  "pipeline ID is required",
+			errMsg:  "trigger field is required: pipelineId",
 		},
 		{
 			name: "empty types",
@@ -41,7 +41,7 @@ func TestTriggerParamCheck(t *testing.T) {
 				Params:     `{"hookType":"github"}`,
 			},
 			wantErr: true,
-			errMsg:  "trigger type is required",
+			errMsg:  "trigger field is required: types",
 		},
 		{
 			name: "empty name",
@@ -52,7 +52,7 @@ func TestTriggerParamCheck(t *testing.T) {
 				Params:     `{"hookType":"github"}`,
 			},
 			wantErr: true,
-			errMsg:  "trigger name is required",
+			errMsg:  "trigger field is required: name",
 		},
 		{
 			name: "empty params",
@@ -63,13 +63,13 @@ func TestTriggerParamCheck(t *testing.T) {
 				Params:     "",
 			},
 			wantErr: true,
-			errMsg:  "trigger params is required",
+			errMsg:  "trigger field is required: params",
 		},
 		{
 			name:    "all fields empty",
 			param:   TriggerParam{},
 			wantErr: true,
-			errMsg:  "pipeline ID is required",
+			errMsg:  "trigger field is required: pipelineId",
 		},
 	}
 	for _, tt := range tests {
