@@ -2,7 +2,6 @@ package comm
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -16,7 +15,7 @@ type SesFuncHandler = func(ses *xorm.Session)
 
 func findCount(cds builder.Cond, data any) (int64, error) {
 	if data == nil {
-		return 0, errors.New("findCount: data must be a non-nil pointer to a slice")
+		return 0, fmt.Errorf("%w: data must be a non-nil pointer to a slice", ErrInvalidDataType)
 	}
 	of := reflect.TypeOf(data)
 	if of.Kind() == reflect.Pointer {
@@ -34,7 +33,7 @@ func findCount(cds builder.Cond, data any) (int64, error) {
 		defer func() { _ = ses.Close() }()
 		return ses.Where(cds).Count(pv.Interface())
 	}
-	return 0, fmt.Errorf("findCount: expected pointer to slice, got %T", data)
+	return 0, fmt.Errorf("%w: expected pointer to slice, got %T", ErrInvalidDataType, data)
 }
 
 func FindPage(ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
@@ -89,7 +88,7 @@ func FindPagesCtx(ctx context.Context, gen *bean.PageGen, ls any, page int64, si
 	}
 	orderIdx := strings.LastIndex(gen.SQL, "\nORDER BY")
 	if orderIdx < 0 {
-		return nil, fmt.Errorf("FindPages: SQL must contain '\\nORDER BY' clause, got: %.80s", gen.SQL)
+		return nil, fmt.Errorf("%w: SQL must contain '\\nORDER BY' clause, got: %.80s", ErrPageGenMissingOrderBy, gen.SQL)
 	}
 	sqls := strings.Replace(gen.SQL[:orderIdx], "{{select}}", counts, 1)
 	sqls = strings.Replace(sqls, "{{limit}}", "", 1)

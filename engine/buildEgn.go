@@ -30,7 +30,7 @@ func StartBuildEngine() *BuildEngine {
 		tasks: make(map[string]*BuildTask),
 	}
 	go func() {
-		defer util.RecoverLog("BuildEngine.goroutine")
+		defer util.RecoverLog("BuildEngine.main")
 		c.init()
 		for !hbtp.EndContext(comm.Ctx) {
 			c.run()
@@ -97,7 +97,10 @@ func (c *BuildEngine) run() {
 		c.tskslk.Lock()
 		c.tasks[v.build.Id] = v
 		c.tskslk.Unlock()
-		go c.startBuild(v)
+		go func(bt *BuildTask) {
+			defer util.RecoverLog("BuildEngine.startBuild")
+			c.startBuild(bt)
+		}(v)
 	}
 }
 func (c *BuildEngine) startBuild(v *BuildTask) {
