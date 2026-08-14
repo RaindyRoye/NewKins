@@ -61,7 +61,7 @@ func Run() error {
 
 	regApi()
 	comm.MarkInstalled()
-	err = engine.Start()
+	err = engine.Start(comm.Ctx)
 	if err != nil {
 		return fmt.Errorf("engine.Start: %w", err)
 	}

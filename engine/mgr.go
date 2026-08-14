@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -22,10 +23,13 @@ type Manager struct {
 	timerEgn *TimerEngine
 }
 
-func Start() error {
-	Mgr.buildEgn = StartBuildEngine()
-	Mgr.jobEgn = StartJobEngine()
-	Mgr.timerEgn = StartTimerEngine()
+func Start(ctx context.Context) error {
+	if ctx == nil {
+		ctx = comm.Ctx
+	}
+	Mgr.buildEgn = StartBuildEngine(ctx)
+	Mgr.jobEgn = StartJobEngine(ctx)
+	Mgr.timerEgn = StartTimerEngine(ctx)
 
 	Mgr.brun = &baseRunner{}
 	Mgr.hrun = &HbtpRunner{}
@@ -38,7 +42,7 @@ func Start() error {
 	}, Mgr.brun)
 	go func() {
 		defer util.RecoverLog("shell runner goroutine")
-		err := Mgr.shellRun.Run(comm.Ctx)
+		err := Mgr.shellRun.Run(ctx)
 		if err != nil {
 			logrus.Errorf("runner err:%v", err)
 		}
@@ -48,7 +52,7 @@ func Start() error {
 		defer util.RecoverLog("shutdown goroutine")
 		_ = os.RemoveAll(filepath.Join(comm.WorkPath, common.PathTmp))
 		// Block until context is canceled instead of busy-waiting.
-		<-comm.Ctx.Done()
+		<-ctx.Done()
 		Mgr.buildEgn.Stop()
 		if Mgr.shellRun != nil {
 			Mgr.shellRun.Stop()

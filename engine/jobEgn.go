@@ -2,6 +2,7 @@ package engine
 
 import (
 	"container/list"
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -15,6 +16,7 @@ import (
 )
 
 type JobEngine struct {
+	ctx   context.Context
 	tmr   *utils.Timer
 	exelk sync.RWMutex
 	execs map[string]*executer
@@ -54,15 +56,19 @@ func (c *jobSync) status(stat, errs string, event ...string) {
 	}
 }
 
-func StartJobEngine() *JobEngine {
+func StartJobEngine(ctx context.Context) *JobEngine {
+	if ctx == nil {
+		ctx = comm.Ctx
+	}
 	c := &JobEngine{
+		ctx:   ctx,
 		tmr:   utils.NewTimer(time.Second * 30),
 		execs: make(map[string]*executer),
 		jobs:  make(map[string]*jobSync),
 	}
 	go func() {
 		defer util.RecoverLog("JobEngine.goroutine")
-		for !hbtp.EndContext(comm.Ctx) {
+		for !hbtp.EndContext(c.ctx) {
 			c.run()
 			time.Sleep(time.Second)
 		}
