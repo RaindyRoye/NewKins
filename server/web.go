@@ -264,7 +264,7 @@ func getFile(pth string) (*zip.File, error) {
 	// println("getFile:" + pth)
 	r, err := getRdr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get zip reader: %w", err)
 	}
 	for _, f := range r.File {
 		nm := strings.ReplaceAll(f.Name, "\\", "/")
