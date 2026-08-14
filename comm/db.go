@@ -40,7 +40,7 @@ func findCount(cds builder.Cond, data any) (int64, error) {
 func FindPage(ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
 	count, err := findCount(ses.Conds(), ls)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("find count: %w", err)
 	}
 	return findPages(ses, ls, count, page, size...)
 }
