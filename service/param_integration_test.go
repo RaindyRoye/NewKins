@@ -431,14 +431,14 @@ func TestGetParam_GlobalContext_NotFound(t *testing.T) {
 	}
 }
 
-// --- Cancelled context ---
+// --- Canceled context ---
 
 func TestSetParamCtx_CancelledContext(t *testing.T) {
 	setupParamTestDB(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	// SQLite may still succeed with a cancelled context since it's in-memory,
+	// SQLite may still succeed with a canceled context since it's in-memory,
 	// but we at least verify no panic occurs
-	_ = SetParamCtx(ctx, "cancelled", []byte("data"))
+	_ = SetParamCtx(ctx, "canceled", []byte("data"))
 }
