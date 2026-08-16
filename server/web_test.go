@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -233,12 +234,13 @@ func TestGetFile_EmptyPath(t *testing.T) {
 
 func TestGetFile_PathTraversal(t *testing.T) {
 	tests := []struct {
-		name string
-		path string
+		name        string
+		path        string
+		wantContain string
 	}{
-		{"parent directory", "../etc/passwd"},
-		{"absolute path", "/etc/passwd"},
-		{"double dot in middle", "foo/../../bar"},
+		{"parent directory", "../etc/passwd", "getFile: invalid path"},
+		{"absolute path", "/etc/passwd", "getFile: invalid path"},
+		{"double dot in middle", "foo/../../bar", "getFile: invalid path"},
 	}
 
 	for _, tt := range tests {
@@ -247,8 +249,9 @@ func TestGetFile_PathTraversal(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected error for path traversal, got nil")
 			}
-			if err.Error() != "getFile: invalid path" {
-				t.Errorf("unexpected error message: %v", err)
+			// Error message now includes the cleaned path for better debugging
+			if !strings.Contains(err.Error(), tt.wantContain) {
+				t.Errorf("error message should contain %q, got: %v", tt.wantContain, err)
 			}
 		})
 	}

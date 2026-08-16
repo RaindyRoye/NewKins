@@ -259,12 +259,12 @@ func getFile(pth string) (*zip.File, error) {
 	// Prevent path traversal attacks
 	cleaned := filepath.Clean(pth)
 	if strings.Contains(cleaned, "..") || filepath.IsAbs(cleaned) {
-		return nil, errors.New("getFile: invalid path")
+		return nil, fmt.Errorf("getFile: invalid path %q", cleaned)
 	}
 	// println("getFile:" + pth)
 	r, err := getRdr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getFile: %w", err)
 	}
 	for _, f := range r.File {
 		nm := strings.ReplaceAll(f.Name, "\\", "/")
@@ -273,5 +273,5 @@ func getFile(pth string) (*zip.File, error) {
 			return f, nil
 		}
 	}
-	return nil, errors.New("file not found")
+	return nil, fmt.Errorf("file %q not found in archive", cleaned)
 }

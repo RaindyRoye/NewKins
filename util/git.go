@@ -53,5 +53,9 @@ func GetLogs(repository *git.Repository, option *git.LogOptions) (object.CommitI
 	if repository == nil {
 		return nil, fmt.Errorf("get logs: repository is nil")
 	}
-	return repository.Log(option)
+	iter, err := repository.Log(option)
+	if err != nil {
+		return nil, fmt.Errorf("get logs: %w", err)
+	}
+	return iter, nil
 }
