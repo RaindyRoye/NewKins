@@ -1,6 +1,7 @@
 package comm
 
 import (
+	"context"
 	"testing"
 
 	"github.com/gokins/gokins/bean"
@@ -59,7 +60,8 @@ func TestFindPage_BasicPagination(t *testing.T) {
 	defer func() { _ = ses.Close() }()
 
 	var items []testItem
-	page, err := FindPage(ses.OrderBy("id"), &items, 1, 10)
+	ctx := context.Background()
+	page, err := FindPageCtx(ctx, ses.OrderBy("id"), &items, 1, 10)
 	if err != nil {
 		t.Fatalf("FindPage failed: %v", err)
 	}
@@ -87,7 +89,8 @@ func TestFindPage_SecondPage(t *testing.T) {
 	defer func() { _ = ses.Close() }()
 
 	var items []testItem
-	page, err := FindPage(ses.OrderBy("id"), &items, 2, 10)
+	ctx := context.Background()
+	page, err := FindPageCtx(ctx, ses.OrderBy("id"), &items, 2, 10)
 	if err != nil {
 		t.Fatalf("FindPage failed: %v", err)
 	}
@@ -106,7 +109,8 @@ func TestFindPage_LastPage(t *testing.T) {
 	defer func() { _ = ses.Close() }()
 
 	var items []testItem
-	page, err := FindPage(ses.OrderBy("id"), &items, 3, 10)
+	ctx := context.Background()
+	page, err := FindPageCtx(ctx, ses.OrderBy("id"), &items, 3, 10)
 	if err != nil {
 		t.Fatalf("FindPage failed: %v", err)
 	}
@@ -125,7 +129,8 @@ func TestFindPage_DefaultPageSize(t *testing.T) {
 	defer func() { _ = ses.Close() }()
 
 	var items []testItem
-	page, err := FindPage(ses.OrderBy("id"), &items, 1)
+	ctx := context.Background()
+	page, err := FindPageCtx(ctx, ses.OrderBy("id"), &items, 1)
 	if err != nil {
 		t.Fatalf("FindPage failed: %v", err)
 	}
@@ -144,7 +149,8 @@ func TestFindPage_ZeroPageNumber(t *testing.T) {
 	defer func() { _ = ses.Close() }()
 
 	var items []testItem
-	page, err := FindPage(ses.OrderBy("id"), &items, 0, 10)
+	ctx := context.Background()
+	page, err := FindPageCtx(ctx, ses.OrderBy("id"), &items, 0, 10)
 	if err != nil {
 		t.Fatalf("FindPage failed: %v", err)
 	}
@@ -160,7 +166,8 @@ func TestFindPage_CustomSize(t *testing.T) {
 	defer func() { _ = ses.Close() }()
 
 	var items []testItem
-	page, err := FindPage(ses.OrderBy("id"), &items, 1, 5)
+	ctx := context.Background()
+	page, err := FindPageCtx(ctx, ses.OrderBy("id"), &items, 1, 5)
 	if err != nil {
 		t.Fatalf("FindPage failed: %v", err)
 	}
@@ -182,7 +189,8 @@ func TestFindPage_EmptyResult(t *testing.T) {
 	defer func() { _ = ses.Close() }()
 
 	var items []testItem
-	page, err := FindPage(ses.Where("value > ?", 100).OrderBy("id"), &items, 1, 10)
+	ctx := context.Background()
+	page, err := FindPageCtx(ctx, ses.Where("value > ?", 100).OrderBy("id"), &items, 1, 10)
 	if err != nil {
 		t.Fatalf("FindPage failed: %v", err)
 	}

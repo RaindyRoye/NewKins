@@ -15,6 +15,12 @@ import (
 type SesFuncHandler = func(ses *xorm.Session)
 
 func findCount(cds builder.Cond, data any) (int64, error) {
+	return findCountCtx(Ctx, cds, data)
+}
+
+// findCountCtx runs the count query with the given context so the count can be
+// canceled when the HTTP request times out or the client disconnects.
+func findCountCtx(ctx context.Context, cds builder.Cond, data any) (int64, error) {
 	if data == nil {
 		return 0, errors.New("findCount: data must be a non-nil pointer to a slice")
 	}
@@ -30,15 +36,28 @@ func findCount(cds builder.Cond, data any) (int64, error) {
 		}
 		pv := reflect.New(sty)
 
-		ses := Db.NewSession()
+		ses := Db.Context(ctx)
 		defer func() { _ = ses.Close() }()
-		return ses.Where(cds).Count(pv.Interface())
+		cnt, err := ses.Where(cds).Count(pv.Interface())
+		if err != nil {
+			return 0, fmt.Errorf("findCount: %w", err)
+		}
+		return cnt, nil
 	}
 	return 0, fmt.Errorf("findCount: expected pointer to slice, got %T", data)
 }
 
+// FindPage paginates a query using the global context.
+// Prefer FindPageCtx when a request context is available.
 func FindPage(ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
-	count, err := findCount(ses.Conds(), ls)
+	return FindPageCtx(Ctx, ses, ls, page, size...)
+}
+
+// FindPageCtx paginates a query with the provided context for cancellation/timeout.
+// The context is used for the internal count query, which previously ran without
+// cancellation support and could block indefinitely.
+func FindPageCtx(ctx context.Context, ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
+	count, err := findCountCtx(ctx, ses.Conds(), ls)
 	if err != nil {
 		return nil, err
 	}
