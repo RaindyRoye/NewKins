@@ -31,7 +31,7 @@ func TestBuildTaskClears_Clone(t *testing.T) {
 		t.Fatalf("mkdir: %v", err)
 	}
 	testFile := filepath.Join(repoPath, "test.txt")
-	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 
@@ -58,7 +58,7 @@ func TestBuildTaskClears_WithJobs(t *testing.T) {
 		t.Fatalf("mkdir: %v", err)
 	}
 	testFile := filepath.Join(artsPath, "artifact.tar.gz")
-	if err := os.WriteFile(testFile, []byte("data"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("data"), 0600); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 
@@ -142,7 +142,7 @@ func TestBuildTaskRun_PathCreationError(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(buildPath), 0750); err != nil {
 		t.Fatalf("mkdir parent: %v", err)
 	}
-	if err := os.WriteFile(buildPath, []byte("block"), 0644); err != nil {
+	if err := os.WriteFile(buildPath, []byte("block"), 0600); err != nil {
 		t.Fatalf("write blocker: %v", err)
 	}
 

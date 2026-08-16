@@ -33,7 +33,7 @@ func TestGetRepos_Success(t *testing.T) {
 			Name:     "test-repo",
 			Path:     "test-repo",
 			HtmlUrl:  "https://gitee.com/owner/test-repo",
-			Owner:    struct {
+			Owner: struct {
 				Id                int    `json:"id"`
 				Login             string `json:"login"`
 				Name              string `json:"name"`
@@ -175,7 +175,7 @@ func TestGetRepos_ContextCancelled(t *testing.T) {
 	c := newTestClient(t, srv.URL)
 	_, err := c.Repositories.GetRepos(ctx, "tok", "u", "all", "pushed", "desc", 1, 10)
 	if err == nil {
-		t.Fatal("expected error for cancelled context")
+		t.Fatal("expected error for canceled context")
 	}
 }
 
