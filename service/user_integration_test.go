@@ -84,14 +84,14 @@ func setupUserIntegDB(t *testing.T) {
 	comm.Db = db
 }
 
-func insertTestUser(t *testing.T, id, name, nick string, active int) *model.TUser {
+func insertTestUser(t *testing.T, id, name, nick string) {
 	t.Helper()
 	u := &model.TUser{
 		Id:        id,
 		Name:      name,
 		Nick:      nick,
 		Pass:      "hashed",
-		Active:    active,
+		Active:    1,
 		Created:   time.Now(),
 		LoginTime: time.Now(),
 	}
@@ -99,7 +99,6 @@ func insertTestUser(t *testing.T, id, name, nick string, active int) *model.TUse
 	if err != nil {
 		t.Fatalf("insert user: %v", err)
 	}
-	return u
 }
 
 // ---------------------------------------------------------------------------
@@ -108,7 +107,7 @@ func insertTestUser(t *testing.T, id, name, nick string, active int) *model.TUse
 
 func TestGetUserCtx_Found(t *testing.T) {
 	setupUserIntegDB(t)
-	insertTestUser(t, "u1", "alice", "Alice", 1)
+	insertTestUser(t, "u1", "alice", "Alice")
 
 	u, ok := GetUserCtx(context.Background(), "u1")
 	if !ok {
@@ -137,7 +136,7 @@ func TestGetUserCtx_EmptyUid(t *testing.T) {
 
 func TestGetUser_Found(t *testing.T) {
 	setupUserIntegDB(t)
-	insertTestUser(t, "u2", "bob", "Bob", 1)
+	insertTestUser(t, "u2", "bob", "Bob")
 
 	u, ok := GetUser("u2")
 	if !ok {
@@ -200,7 +199,7 @@ func TestGetUserInfoCtx_EmptyUid(t *testing.T) {
 
 func TestFindUserNameCtx_Found(t *testing.T) {
 	setupUserIntegDB(t)
-	insertTestUser(t, "u3", "charlie", "Charlie", 1)
+	insertTestUser(t, "u3", "charlie", "Charlie")
 
 	u, ok := FindUserNameCtx(context.Background(), "charlie")
 	if !ok {
@@ -221,7 +220,7 @@ func TestFindUserNameCtx_NotFound(t *testing.T) {
 
 func TestFindUserName_Found(t *testing.T) {
 	setupUserIntegDB(t)
-	insertTestUser(t, "u4", "dave", "Dave", 1)
+	insertTestUser(t, "u4", "dave", "Dave")
 
 	u, ok := FindUserName("dave")
 	if !ok {
@@ -529,7 +528,7 @@ func TestClearUserCache_NoPanic(t *testing.T) {
 
 func TestGetUserCacheCtx_WithoutCache(t *testing.T) {
 	setupUserIntegDB(t)
-	insertTestUser(t, "cache_u1", "cacheuser", "Cache User", 1)
+	insertTestUser(t, "cache_u1", "cacheuser", "Cache User")
 
 	// Without BCache initialized, GetUserCacheCtx should fall back to DB
 	u, ok := GetUserCacheCtx(context.Background(), "cache_u1")
@@ -543,7 +542,7 @@ func TestGetUserCacheCtx_WithoutCache(t *testing.T) {
 
 func TestGetUserCache_WithoutCache(t *testing.T) {
 	setupUserIntegDB(t)
-	insertTestUser(t, "cache_u2", "cacheuser2", "Cache User 2", 1)
+	insertTestUser(t, "cache_u2", "cacheuser2", "Cache User 2")
 
 	u, ok := GetUserCache("cache_u2")
 	if !ok {

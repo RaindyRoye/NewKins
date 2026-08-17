@@ -610,13 +610,13 @@ func TestOrgController_users_Success(t *testing.T) {
 	// Add a user to the org
 	otherUser := createOrgTestUser(t, "member1", "member1", "Member One")
 	_, err := comm.Db.InsertOne(&model.TUserOrg{
-		Uid:       otherUser.Id,
-		OrgId:     org.Id,
-		Created:   time.Now(),
-		PermAdm:   1,
-		PermRw:    1,
-		PermExec:  1,
-		PermDown:  0,
+		Uid:      otherUser.Id,
+		OrgId:    org.Id,
+		Created:  time.Now(),
+		PermAdm:  1,
+		PermRw:   1,
+		PermExec: 1,
+		PermDown: 0,
 	})
 	if err != nil {
 		t.Fatalf("insert user_org: %v", err)
