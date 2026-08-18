@@ -19,7 +19,7 @@ func CloneRepo(path string, option *git.CloneOptions, ctx context.Context) (*git
 
 func CheckOutHash(repository *git.Repository, hash string) error {
 	if !plumbing.IsHash(hash) {
-		return fmt.Errorf("checkout: %q is not a valid git hash", hash)
+		return fmt.Errorf("checkout: %q is not a valid git hash: %w", hash, ErrInvalidGitHash)
 	}
 	options := &git.CheckoutOptions{
 		Force: true,
@@ -30,7 +30,7 @@ func CheckOutHash(repository *git.Repository, hash string) error {
 
 func CheckOut(repository *git.Repository, option *git.CheckoutOptions) error {
 	if repository == nil {
-		return fmt.Errorf("checkout: repository is nil")
+		return fmt.Errorf("checkout: %w", ErrRepositoryNil)
 	}
 	worktree, err := repository.Worktree()
 	if err != nil {
@@ -51,7 +51,7 @@ func GetLogsHash(repository *git.Repository, hash string) (object.CommitIter, er
 
 func GetLogs(repository *git.Repository, option *git.LogOptions) (object.CommitIter, error) {
 	if repository == nil {
-		return nil, fmt.Errorf("get logs: repository is nil")
+		return nil, fmt.Errorf("get logs: %w", ErrRepositoryNil)
 	}
 	return repository.Log(option)
 }
