@@ -425,7 +425,7 @@ func initConfig(cmd *cobra.Command) error {
 	case comm.DatasourceDriverMySQL, comm.DatasourceDriverPostgres, comm.DatasourceDriverSQLite:
 		// valid
 	default:
-		return fmt.Errorf("unsupported driver %q (must be one of: sqlite, mysql, postgres)", initDriver)
+		return fmt.Errorf("unsupported driver %q (must be one of: sqlite, mysql, postgres): %w", initDriver, comm.ErrUnsupportedDriver)
 	}
 
 	// Ensure working directory exists
@@ -438,7 +438,7 @@ func initConfig(cmd *cobra.Command) error {
 	// Check if file already exists
 	if !initForce {
 		if _, err := os.Stat(configPath); err == nil {
-			return fmt.Errorf("configuration file already exists: %s (use --force to overwrite)", configPath)
+			return fmt.Errorf("configuration file already exists: %s (use --force to overwrite): %w", configPath, comm.ErrConfigAlreadyExists)
 		}
 	}
 

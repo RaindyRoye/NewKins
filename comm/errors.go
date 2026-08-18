@@ -20,4 +20,10 @@ var (
 
 	// ErrConfigNotFound is returned when a configuration file is not found.
 	ErrConfigNotFound = errors.New("configuration file not found")
+
+	// ErrConfigAlreadyExists is returned when attempting to create a configuration file that already exists.
+	ErrConfigAlreadyExists = errors.New("configuration file already exists")
+
+	// ErrUnsupportedDriver is returned when an unsupported database driver is specified.
+	ErrUnsupportedDriver = errors.New("unsupported database driver")
 )
