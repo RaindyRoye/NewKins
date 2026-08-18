@@ -251,7 +251,7 @@ func resolveConfigPath(args []string) (string, error) {
 			return pth, nil
 		}
 	}
-	return "", fmt.Errorf("no configuration file found in %s (tried app.yml, app.yaml)", wp)
+	return "", fmt.Errorf("no configuration file found in %s (tried app.yml, app.yaml): %w", wp, comm.ErrConfigNotFound)
 }
 
 // loadConfigFile reads and parses a config file, returning the parsed Config.

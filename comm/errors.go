@@ -17,4 +17,7 @@ var (
 
 	// ErrSQLMissingOrderBy is returned when SQL queries lack required ORDER BY clauses.
 	ErrSQLMissingOrderBy = errors.New("SQL missing ORDER BY clause")
+
+	// ErrConfigNotFound is returned when a configuration file is not found.
+	ErrConfigNotFound = errors.New("configuration file not found")
 )

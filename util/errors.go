@@ -11,4 +11,7 @@ var (
 
 	// ErrInvalidGitHash is returned when a string is not a valid git hash.
 	ErrInvalidGitHash = errors.New("invalid git hash")
+
+	// ErrInvalidSigningMethod is returned when a JWT token uses an unexpected signing algorithm.
+	ErrInvalidSigningMethod = errors.New("unexpected signing method")
 )
