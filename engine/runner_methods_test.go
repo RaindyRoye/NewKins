@@ -133,9 +133,9 @@ func TestReadDir_Success(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "file1.txt"), []byte("c1"), 0644))
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "file2.txt"), []byte("content2"), 0644))
-	require.NoError(t, os.Mkdir(filepath.Join(tmpDir, "subdir"), 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "file1.txt"), []byte("c1"), 0600))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "file2.txt"), []byte("content2"), 0600))
+	require.NoError(t, os.Mkdir(filepath.Join(tmpDir, "subdir"), 0750))
 
 	buildEgn := &BuildEngine{tasks: make(map[string]*BuildTask)}
 	buildEgn.tasks["b1"] = &BuildTask{
@@ -212,7 +212,7 @@ func TestReadFile_FileNotFound(t *testing.T) {
 func TestReadFile_Success_WithAndWithoutOffset(t *testing.T) {
 	tmpDir := t.TempDir()
 	content := "test file content\nwith multiple lines"
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "test.txt"), []byte(content), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "test.txt"), []byte(content), 0600))
 
 	buildEgn := &BuildEngine{tasks: make(map[string]*BuildTask)}
 	buildEgn.tasks["b1"] = &BuildTask{
@@ -231,15 +231,15 @@ func TestReadFile_Success_WithAndWithoutOffset(t *testing.T) {
 	n, err := reader.Read(buf)
 	require.NoError(t, err)
 	assert.Equal(t, content, string(buf[:n]))
-	reader.Close()
+	require.NoError(t, reader.Close())
 
 	// Read from offset 5 ("file content\nwith multiple lines")
-	_, reader, err = br.ReadFile(1, "b1", "test.txt", 5)
+	_, reader2, err := br.ReadFile(1, "b1", "test.txt", 5)
 	require.NoError(t, err)
-	n, err = reader.Read(buf)
+	n, err = reader2.Read(buf)
 	require.NoError(t, err)
 	assert.Equal(t, "file content\nwith multiple lines", string(buf[:n]))
-	reader.Close()
+	require.NoError(t, reader2.Close())
 }
 
 // TestGetEnv_Validation verifies GetEnv returns false for invalid inputs

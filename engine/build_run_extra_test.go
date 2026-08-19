@@ -151,8 +151,10 @@ func TestGetRepo_NotCloning(t *testing.T) {
 	}
 }
 
-// TestGetRepo_CloneWithEmptyRepoPath verifies getRepo() succeeds when isClone=true but repoPath is empty
-func TestGetRepo_CloneWithEmptyRepoPath(t *testing.T) {
+// TestGetRepo_EmptyRepoPath verifies getRepo() succeeds when isClone=true but repoPath is empty
+// (no clone needed) and fails when directory creation fails
+func TestGetRepo_EmptyRepoPath(t *testing.T) {
+	// Success case: empty repoPath, valid dir
 	bt := &BuildTask{
 		build:     &runtime.Build{Id: "empty-repo"},
 		isClone:   true,
@@ -162,16 +164,14 @@ func TestGetRepo_CloneWithEmptyRepoPath(t *testing.T) {
 	if err := bt.getRepo(); err != nil {
 		t.Errorf("getRepo() with empty repoPath should succeed, got: %v", err)
 	}
-}
 
-// TestGetRepo_CloneCreateDirFails verifies getRepo() returns error when directory creation fails
-func TestGetRepo_CloneCreateDirFails(t *testing.T) {
-	bt := &BuildTask{
+	// Failure case: impossible directory
+	bt2 := &BuildTask{
 		build:     &runtime.Build{Id: "mkdir-fail"},
 		isClone:   true,
 		repoPaths: "/dev/null/impossible/path",
 	}
-	if err := bt.getRepo(); err == nil {
+	if err := bt2.getRepo(); err == nil {
 		t.Error("getRepo() should fail when directory creation fails")
 	}
 }
