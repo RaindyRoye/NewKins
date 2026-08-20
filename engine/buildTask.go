@@ -174,8 +174,9 @@ func (c *BuildTask) runStage(stage *runtime.Stage) {
 	c.staglk.RLock()
 	stg, ok := c.stages[stage.Name]
 	c.staglk.RUnlock()
-	if !ok {
-		stg.status(common.BuildStatusError, fmt.Sprintf("not found stage?:%s", stage.Name))
+	if !ok || stg == nil {
+		stage.Status = common.BuildStatusError
+		stage.Error = fmt.Sprintf("not found stage?:%s", stage.Name)
 		return
 	}
 
@@ -184,8 +185,9 @@ func (c *BuildTask) runStage(stage *runtime.Stage) {
 		stg.RLock()
 		jb, ok := stg.jobs[v.Name]
 		stg.RUnlock()
-		if !ok {
-			jb.status(common.BuildStatusError, "")
+		if !ok || jb == nil {
+			v.Status = common.BuildStatusError
+			v.Error = fmt.Sprintf("not found job?:%s", v.Name)
 			break
 		}
 		stg.wg.Add(1)
