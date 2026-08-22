@@ -68,6 +68,36 @@ func TestEnsureIndexes_WithSQLite(t *testing.T) {
 		t.Fatalf("create artifact_package table: %v", err)
 	}
 
+	_, err = db.Exec(`CREATE TABLE t_pipeline (
+		id VARCHAR(64) PRIMARY KEY,
+		uid VARCHAR(64),
+		deleted INT
+	)`)
+	if err != nil {
+		t.Fatalf("create pipeline table: %v", err)
+	}
+
+	_, err = db.Exec(`CREATE TABLE t_pipeline_version (
+		id VARCHAR(64) PRIMARY KEY,
+		pipeline_id VARCHAR(64),
+		name VARCHAR(100),
+		deleted INT
+	)`)
+	if err != nil {
+		t.Fatalf("create pipeline_version table: %v", err)
+	}
+
+	_, err = db.Exec(`CREATE TABLE t_artifactory (
+		id VARCHAR(64) PRIMARY KEY,
+		uid VARCHAR(64),
+		org_id VARCHAR(64),
+		identifier VARCHAR(50),
+		deleted INT
+	)`)
+	if err != nil {
+		t.Fatalf("create artifactory table: %v", err)
+	}
+
 	// Run ensureIndexes — should not error or panic
 	ensureIndexes()
 
@@ -109,6 +139,29 @@ func TestEnsureIndexes_WithSQLite(t *testing.T) {
 	}
 	if buildStatusCount != 1 {
 		t.Errorf("expected index idx_build_status to exist, got count=%d", buildStatusCount)
+	}
+
+	// Verify new composite indexes
+	compositeTests := []struct {
+		name  string
+		table string
+	}{
+		{"idx_pipeline_uid_deleted", "t_pipeline"},
+		{"idx_pipever_pipeid_deleted", "t_pipeline_version"},
+		{"idx_pipever_pipeid_name", "t_pipeline_version"},
+		{"idx_artifactory_org_deleted", "t_artifactory"},
+		{"idx_artifactory_uid_deleted", "t_artifactory"},
+		{"idx_build_pipeid_status", "t_build"},
+	}
+	for _, tt := range compositeTests {
+		var cnt int
+		_, err = db.SQL("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name=?", tt.name).Get(&cnt)
+		if err != nil {
+			t.Fatalf("query index %s: %v", tt.name, err)
+		}
+		if cnt != 1 {
+			t.Errorf("expected index %s on %s to exist, got count=%d", tt.name, tt.table, cnt)
+		}
 	}
 
 	// Run ensureIndexes again — should be idempotent (no error)

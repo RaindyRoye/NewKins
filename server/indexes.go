@@ -85,6 +85,24 @@ func ensureIndexes() {
 
 		// t_build: batch status updates filter by status columns
 		{"t_build", "idx_build_status", "status"},
+
+		// t_pipeline: composite index for WHERE uid=? AND deleted!=1 listing
+		{"t_pipeline", "idx_pipeline_uid_deleted", "uid, deleted"},
+
+		// t_pipeline_version: listing queries filter by pipeline_id AND deleted!=1, ordered by id
+		{"t_pipeline_version", "idx_pipever_pipeid_deleted", "pipeline_id, deleted"},
+
+		// t_pipeline_version: uniqueness check on (pipeline_id, name)
+		{"t_pipeline_version", "idx_pipever_pipeid_name", "pipeline_id, name"},
+
+		// t_artifactory: listing by org_id with soft-delete filter
+		{"t_artifactory", "idx_artifactory_org_deleted", "org_id, deleted"},
+
+		// t_artifactory: user-owned artifactories
+		{"t_artifactory", "idx_artifactory_uid_deleted", "uid, deleted"},
+
+		// t_build: listing queries filter by pipeline_id AND status
+		{"t_build", "idx_build_pipeid_status", "pipeline_id, status"},
 	}
 
 	for _, idx := range indexes {
