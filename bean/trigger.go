@@ -1,6 +1,22 @@
 package bean
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
+
+// Sentinel errors for trigger validation.
+// Use errors.Is() to check for specific conditions.
+var (
+	// ErrTriggerPipelineIDRequired is returned when PipelineId is empty.
+	ErrTriggerPipelineIDRequired = errors.New("pipeline ID is required")
+	// ErrTriggerTypeRequired is returned when Types is empty.
+	ErrTriggerTypeRequired = errors.New("trigger type is required")
+	// ErrTriggerNameRequired is returned when Name is empty.
+	ErrTriggerNameRequired = errors.New("trigger name is required")
+	// ErrTriggerParamsRequired is returned when Params is empty.
+	ErrTriggerParamsRequired = errors.New("trigger params is required")
+)
 
 type TriggerParam struct {
 	Id         string `json:"id"`
@@ -14,16 +30,16 @@ type TriggerParam struct {
 
 func (c *TriggerParam) Check() error {
 	if c.PipelineId == "" {
-		return errors.New("pipeline ID is required")
+		return fmt.Errorf("trigger check: %w", ErrTriggerPipelineIDRequired)
 	}
 	if c.Types == "" {
-		return errors.New("trigger type is required")
+		return fmt.Errorf("trigger check: %w", ErrTriggerTypeRequired)
 	}
 	if c.Name == "" {
-		return errors.New("trigger name is required")
+		return fmt.Errorf("trigger check: %w", ErrTriggerNameRequired)
 	}
 	if c.Params == "" {
-		return errors.New("trigger params is required")
+		return fmt.Errorf("trigger check: %w", ErrTriggerParamsRequired)
 	}
 	return nil
 }

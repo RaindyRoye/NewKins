@@ -590,7 +590,7 @@ func (PipelineController) pipelineVersion(c *gin.Context, m *hbtp.Map) {
 	pipeShow := &bean.PipelineShow{}
 	err = utils.Struct2Struct(pipeShow, perm.Pipeline())
 	if err != nil {
-		c.String(http.StatusMethodNotAllowed, "conv err:%v", err)
+		util.RespInternalErr(c, "struct conversion pipeline show", err)
 		return
 	}
 	pinfo := &model.TPipelineConf{}

@@ -1,6 +1,22 @@
 package comm
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+// Sentinel errors for configuration validation.
+// Use errors.Is() to check for specific conditions.
+var (
+	// ErrConfigDriverRequired is returned when the datasource driver is not set.
+	ErrConfigDriverRequired = errors.New("config validation: datasource.driver is required")
+	// ErrConfigDriverUnsupported is returned when the datasource driver is not recognized.
+	ErrConfigDriverUnsupported = errors.New("config validation: unsupported datasource driver")
+	// ErrConfigURLRequired is returned when the datasource URL is not set.
+	ErrConfigURLRequired = errors.New("config validation: datasource.url is required")
+	// ErrConfigRunLimitInvalid is returned when server.runLimit is negative.
+	ErrConfigRunLimitInvalid = errors.New("config validation: server.runLimit must be non-negative")
+)
 
 // Config holds the application configuration loaded from app.yml / app.yaml.
 type Config struct {
@@ -24,19 +40,19 @@ type Config struct {
 // It returns an error describing the first problem found, or nil if valid.
 func (c *Config) Validate() error {
 	if c.Datasource.Driver == "" {
-		return fmt.Errorf("config validation: datasource.driver is required")
+		return fmt.Errorf("%w", ErrConfigDriverRequired)
 	}
 	switch c.Datasource.Driver {
 	case DatasourceDriverMySQL, DatasourceDriverPostgres, DatasourceDriverSQLite:
 		// valid
 	default:
-		return fmt.Errorf("config validation: unsupported datasource driver %q (must be one of: mysql, postgres, sqlite)", c.Datasource.Driver)
+		return fmt.Errorf("%w: %q (must be one of: mysql, postgres, sqlite)", ErrConfigDriverUnsupported, c.Datasource.Driver)
 	}
 	if c.Datasource.Url == "" {
-		return fmt.Errorf("config validation: datasource.url is required")
+		return fmt.Errorf("%w", ErrConfigURLRequired)
 	}
 	if c.Server.RunLimit < 0 {
-		return fmt.Errorf("config validation: server.runLimit must be non-negative, got %d", c.Server.RunLimit)
+		return fmt.Errorf("%w, got %d", ErrConfigRunLimitInvalid, c.Server.RunLimit)
 	}
 	return nil
 }

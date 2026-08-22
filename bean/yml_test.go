@@ -1,6 +1,7 @@
 package bean
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -79,8 +80,8 @@ func TestTriggerParamCheck(t *testing.T) {
 				t.Errorf("TriggerParam.Check() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if err != nil && tt.errMsg != "" && err.Error() != tt.errMsg {
-				t.Errorf("TriggerParam.Check() error message = %q, want %q", err.Error(), tt.errMsg)
+			if err != nil && tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
+				t.Errorf("TriggerParam.Check() error message = %q, want contains %q", err.Error(), tt.errMsg)
 			}
 		})
 	}
@@ -277,8 +278,8 @@ func TestPipelineCheck(t *testing.T) {
 				t.Errorf("Pipeline.Check() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if err != nil && tt.errMsg != "" && err.Error() != tt.errMsg {
-				t.Errorf("Pipeline.Check() error message = %q, want %q", err.Error(), tt.errMsg)
+			if err != nil && tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
+				t.Errorf("Pipeline.Check() error message = %q, want contains %q", err.Error(), tt.errMsg)
 			}
 		})
 	}
