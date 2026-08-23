@@ -67,9 +67,12 @@ func ensureIndexes() {
 
 		// t_trigger: scanned by enabled + types for timer scheduling
 		{"t_trigger", "idx_trigger_enabled_types", "enabled, types"},
+		{"t_trigger", "idx_trigger_pipeline_id", "pipeline_id"},
+		{"t_trigger", "idx_trigger_uid", "uid"},
 
 		// t_artifactory: queried by identifier + org_id
 		{"t_artifactory", "idx_artifactory_identifier", "identifier"},
+		{"t_artifactory", "idx_artifactory_org_id", "org_id"},
 
 		// t_org_pipe: used in subqueries filtered by pipe_id
 		{"t_org_pipe", "idx_orgpipe_pipe_id", "pipe_id"},
@@ -79,12 +82,27 @@ func ensureIndexes() {
 
 		// t_artifact_version: queried by package_id
 		{"t_artifact_version", "idx_artver_package_id", "package_id"},
+		{"t_artifact_version", "idx_artver_repo_id", "repo_id"},
 
 		// t_artifact_package: filtered by deleted + repo_id in artifact listing
 		{"t_artifact_package", "idx_artpkg_deleted_repo", "deleted, repo_id"},
+		{"t_artifact_package", "idx_artpkg_repo_id", "repo_id"},
 
 		// t_build: batch status updates filter by status columns
 		{"t_build", "idx_build_status", "status"},
+		{"t_build", "idx_build_created", "created"},
+
+		// t_user_org: queried by uid and org_id
+		{"t_user_org", "idx_userorg_uid", "uid"},
+		{"t_user_org", "idx_userorg_org_id", "org_id"},
+		{"t_user_org", "idx_userorg_uid_org", "uid, org_id"},
+
+		// t_trigger_run: queried by tid for trigger history
+		{"t_trigger_run", "idx_triggerrun_tid", "tid"},
+
+		// t_artifact_repo: queried by org_id and deleted flag
+		{"t_artifact_repo", "idx_artrepo_org_id", "org_id"},
+		{"t_artifact_repo", "idx_artrepo_deleted", "deleted"},
 	}
 
 	for _, idx := range indexes {
