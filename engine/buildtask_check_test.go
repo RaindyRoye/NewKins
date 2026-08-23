@@ -8,7 +8,8 @@ import (
 )
 
 // helper to create a minimal valid build for check() tests.
-func newValidBuild(id string) *runtime.Build {
+func newValidBuild() *runtime.Build {
+	const id = "b1"
 	return &runtime.Build{
 		Id: id,
 		Repo: &runtime.Repository{
@@ -21,11 +22,11 @@ func newValidBuild(id string) *runtime.Build {
 				Name:    "build",
 				Steps: []*runtime.Step{
 					{
-						Id:      "step-1",
-						BuildId: id,
-						StageId: "stage-1",
-						Step:    "shell",
-						Name:    "run",
+						Id:       "step-1",
+						BuildId:  id,
+						StageId:  "stage-1",
+						Step:     "shell",
+						Name:     "run",
 						Commands: "echo hello",
 					},
 				},
@@ -43,7 +44,7 @@ func newCheckTask(bd *runtime.Build) *BuildTask {
 }
 
 func TestCheck_StageBuildIdMismatch(t *testing.T) {
-	bd := newValidBuild("b1")
+	bd := newValidBuild()
 	bd.Stages[0].BuildId = "wrong-id"
 	task := newCheckTask(bd)
 	if task.check() {
@@ -55,7 +56,7 @@ func TestCheck_StageBuildIdMismatch(t *testing.T) {
 }
 
 func TestCheck_StageNameEmpty(t *testing.T) {
-	bd := newValidBuild("b1")
+	bd := newValidBuild()
 	bd.Stages[0].Name = ""
 	task := newCheckTask(bd)
 	if task.check() {
@@ -67,7 +68,7 @@ func TestCheck_StageNameEmpty(t *testing.T) {
 }
 
 func TestCheck_StageStepsEmpty(t *testing.T) {
-	bd := newValidBuild("b1")
+	bd := newValidBuild()
 	bd.Stages[0].Steps = []*runtime.Step{}
 	task := newCheckTask(bd)
 	if task.check() {
@@ -79,7 +80,7 @@ func TestCheck_StageStepsEmpty(t *testing.T) {
 }
 
 func TestCheck_DuplicateStageNames(t *testing.T) {
-	bd := newValidBuild("b1")
+	bd := newValidBuild()
 	// Add a second stage with the same name
 	bd.Stages = append(bd.Stages, &runtime.Stage{
 		Id:      "stage-2",
@@ -106,7 +107,7 @@ func TestCheck_DuplicateStageNames(t *testing.T) {
 }
 
 func TestCheck_StepBuildIdMismatch(t *testing.T) {
-	bd := newValidBuild("b1")
+	bd := newValidBuild()
 	bd.Stages[0].Steps[0].BuildId = "wrong-id"
 	task := newCheckTask(bd)
 	if task.check() {
@@ -118,7 +119,7 @@ func TestCheck_StepBuildIdMismatch(t *testing.T) {
 }
 
 func TestCheck_StepStageIdMismatch(t *testing.T) {
-	bd := newValidBuild("b1")
+	bd := newValidBuild()
 	bd.Stages[0].Steps[0].StageId = "wrong-stage-id"
 	task := newCheckTask(bd)
 	if task.check() {
@@ -130,7 +131,7 @@ func TestCheck_StepStageIdMismatch(t *testing.T) {
 }
 
 func TestCheck_StepPluginEmpty(t *testing.T) {
-	bd := newValidBuild("b1")
+	bd := newValidBuild()
 	bd.Stages[0].Steps[0].Step = ""
 	task := newCheckTask(bd)
 	if task.check() {
@@ -142,7 +143,7 @@ func TestCheck_StepPluginEmpty(t *testing.T) {
 }
 
 func TestCheck_StepNameEmpty(t *testing.T) {
-	bd := newValidBuild("b1")
+	bd := newValidBuild()
 	bd.Stages[0].Steps[0].Name = ""
 	task := newCheckTask(bd)
 	if task.check() {
@@ -154,7 +155,7 @@ func TestCheck_StepNameEmpty(t *testing.T) {
 }
 
 func TestCheck_DuplicateStepNames(t *testing.T) {
-	bd := newValidBuild("b1")
+	bd := newValidBuild()
 	bd.Stages[0].Steps = append(bd.Stages[0].Steps, &runtime.Step{
 		Id:       "step-2",
 		BuildId:  "b1",

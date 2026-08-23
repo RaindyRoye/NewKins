@@ -77,7 +77,7 @@ func TestBuildTask_StopAndCancel(t *testing.T) {
 	case <-ctx.Done():
 		// OK
 	default:
-		t.Error("expected context to be cancelled by stop()")
+		t.Error("expected context to be canceled by stop()")
 	}
 }
 
@@ -96,7 +96,7 @@ func TestBuildTask_CancelSetsCtrlEndTime(t *testing.T) {
 	select {
 	case <-ctx.Done():
 	default:
-		t.Error("expected context to be cancelled by Cancel()")
+		t.Error("expected context to be canceled by Cancel()")
 	}
 }
 

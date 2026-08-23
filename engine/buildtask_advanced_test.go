@@ -11,7 +11,7 @@ import (
 func TestGenRunjob_StringCommands(t *testing.T) {
 	task := &BuildTask{
 		build: &runtime.Build{
-			Id: "b1",
+			Id:   "b1",
 			Repo: &runtime.Repository{CloneURL: ""},
 		},
 	}
@@ -32,7 +32,7 @@ func TestGenRunjob_StringCommands(t *testing.T) {
 		},
 		cmdmp: make(map[string]*cmdSync),
 	}
-	
+
 	// genRunjob will panic when it tries to insert to DB, but we can test
 	// the command parsing by catching the panic
 	defer func() {
@@ -40,14 +40,14 @@ func TestGenRunjob_StringCommands(t *testing.T) {
 			t.Log("genRunjob completed without panic (DB was mocked or skipped)")
 		}
 	}()
-	
+
 	// This will fail at DB insert, but we verify the runjb structure was built
 	err := task.genRunjob(stage, job)
 	if err != nil {
 		// Expected: DB error
 		t.Logf("genRunjob error (expected): %v", err)
 	}
-	
+
 	// Verify runjb was created with correct fields
 	if job.runjb == nil {
 		t.Fatal("expected runjb to be created")
@@ -80,13 +80,13 @@ func TestGenRunjob_ArrayCommands(t *testing.T) {
 		},
 		cmdmp: make(map[string]*cmdSync),
 	}
-	
+
 	defer func() {
 		recover() // DB panic expected
 	}()
-	
+
 	_ = task.genRunjob(stage, job)
-	
+
 	if job.runjb == nil {
 		t.Fatal("expected runjb to be created")
 	}
@@ -104,22 +104,22 @@ func TestGenRunjob_AnyArrayCommands(t *testing.T) {
 	job := &jobSync{
 		task: task,
 		step: &runtime.Step{
-			Id:      "j1",
-			BuildId: "b1",
-			StageId: "s1",
-			Step:    "shell",
-			Name:    "test",
+			Id:       "j1",
+			BuildId:  "b1",
+			StageId:  "s1",
+			Step:     "shell",
+			Name:     "test",
 			Commands: []any{"echo x", "echo y"},
 		},
 		cmdmp: make(map[string]*cmdSync),
 	}
-	
+
 	defer func() {
 		recover()
 	}()
-	
+
 	_ = task.genRunjob(stage, job)
-	
+
 	if job.runjb == nil {
 		t.Fatal("expected runjb to be created")
 	}
@@ -130,7 +130,7 @@ func TestGenRunjob_AnyArrayCommands(t *testing.T) {
 
 func TestGenRunjob_GitPluginSpecialCase(t *testing.T) {
 	task := &BuildTask{
-		build: &runtime.Build{Id: "b1"},
+		build:     &runtime.Build{Id: "b1"},
 		repoPaths: "/tmp/repo",
 	}
 	stage := &runtime.Stage{Id: "s1", BuildId: "b1", Name: "s"}
@@ -146,13 +146,13 @@ func TestGenRunjob_GitPluginSpecialCase(t *testing.T) {
 		},
 		cmdmp: make(map[string]*cmdSync),
 	}
-	
+
 	defer func() {
 		recover()
 	}()
-	
+
 	_ = task.genRunjob(stage, job)
-	
+
 	if job.runjb == nil {
 		t.Fatal("expected runjb to be created")
 	}
@@ -169,10 +169,10 @@ func TestGenRunjob_GitPluginSpecialCase(t *testing.T) {
 // Test getRepo logic without actual git operations
 func TestGetRepo_NotClone(t *testing.T) {
 	task := &BuildTask{
-		build: &runtime.Build{Id: "b1"},
+		build:   &runtime.Build{Id: "b1"},
 		isClone: false, // Already set by check()
 	}
-	
+
 	err := task.getRepo()
 	if err != nil {
 		t.Errorf("expected no error when isClone=false, got %v", err)
@@ -182,14 +182,14 @@ func TestGetRepo_NotClone(t *testing.T) {
 func TestGetRepo_CloneWithEmptyPath(t *testing.T) {
 	task := &BuildTask{
 		build: &runtime.Build{
-			Id: "b1",
+			Id:   "b1",
 			Repo: &runtime.Repository{CloneURL: ""},
 		},
-		isClone: true,
+		isClone:   true,
 		repoPaths: "/tmp/test-repo-123",
-		repoPath: "", // Empty means no actual clone
+		repoPath:  "", // Empty means no actual clone
 	}
-	
+
 	err := task.getRepo()
 	// Should succeed: creates dir but skips git clone
 	if err != nil {
@@ -206,11 +206,11 @@ func TestGetRepo_CloneWithNonexistentDir(t *testing.T) {
 				Token:    "fake-token",
 			},
 		},
-		isClone: true,
+		isClone:   true,
 		repoPaths: "/tmp/nonexistent-test-dir-456",
-		repoPath: "https://example.com/repo.git",
+		repoPath:  "https://example.com/repo.git",
 	}
-	
+
 	// This will fail at git clone, but we test the path creation
 	err := task.getRepo()
 	if err == nil {
@@ -222,14 +222,14 @@ func TestGetRepo_CloneWithNonexistentDir(t *testing.T) {
 func TestGencmds_MapInterfaceInterface(t *testing.T) {
 	task := &BuildTask{build: &runtime.Build{Id: "b1"}}
 	runjb := &runners.RunJob{}
-	
+
 	cmds := []any{
 		map[any]any{
 			"key1": "echo from map",
 			"key2": []any{"echo nested1", "echo nested2"},
 		},
 	}
-	
+
 	err := task.gencmds(runjb, cmds)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -243,14 +243,14 @@ func TestGencmds_MapInterfaceInterface(t *testing.T) {
 func TestGencmds_DeeplyNestedArray(t *testing.T) {
 	task := &BuildTask{build: &runtime.Build{Id: "b1"}}
 	runjb := &runners.RunJob{}
-	
+
 	cmds := []any{
 		[]any{
 			[]any{"echo deep1", "echo deep2"},
 			"echo shallow",
 		},
 	}
-	
+
 	err := task.gencmds(runjb, cmds)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -264,13 +264,13 @@ func TestGencmds_DeeplyNestedArray(t *testing.T) {
 func TestGencmds_MapStringInterfaceWithNestedArray(t *testing.T) {
 	task := &BuildTask{build: &runtime.Build{Id: "b1"}}
 	runjb := &runners.RunJob{}
-	
+
 	cmds := []any{
 		map[string]any{
 			"scripts": []any{"echo a", "echo b", "echo c"},
 		},
 	}
-	
+
 	err := task.gencmds(runjb, cmds)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -283,13 +283,13 @@ func TestGencmds_MapStringInterfaceWithNestedArray(t *testing.T) {
 func TestGencmds_MapInterfaceInterfaceWithNestedArray(t *testing.T) {
 	task := &BuildTask{build: &runtime.Build{Id: "b1"}}
 	runjb := &runners.RunJob{}
-	
+
 	cmds := []any{
 		map[any]any{
 			"cmds": []any{"echo x", "echo y"},
 		},
 	}
-	
+
 	err := task.gencmds(runjb, cmds)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -302,12 +302,12 @@ func TestGencmds_MapInterfaceInterfaceWithNestedArray(t *testing.T) {
 func TestGencmds_EmptyMap(t *testing.T) {
 	task := &BuildTask{build: &runtime.Build{Id: "b1"}}
 	runjb := &runners.RunJob{}
-	
+
 	cmds := []any{
 		map[string]any{},
 		map[any]any{},
 	}
-	
+
 	err := task.gencmds(runjb, cmds)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -320,7 +320,7 @@ func TestGencmds_EmptyMap(t *testing.T) {
 func TestGencmds_MixedValidAndInvalidTypes(t *testing.T) {
 	task := &BuildTask{build: &runtime.Build{Id: "b1"}}
 	runjb := &runners.RunJob{}
-	
+
 	cmds := []any{
 		"echo valid",
 		42,              // Invalid
@@ -329,7 +329,7 @@ func TestGencmds_MixedValidAndInvalidTypes(t *testing.T) {
 		true,            // Invalid
 		"echo also valid",
 	}
-	
+
 	err := task.gencmds(runjb, cmds)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
