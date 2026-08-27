@@ -271,16 +271,16 @@ func loadConfigFile(pth string) (*comm.Config, error) {
 func validateConfig(cmd *cobra.Command, args []string) error {
 	pth, err := resolveConfigPath(args)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve config path: %w", err)
 	}
 	cfg, err := loadConfigFile(pth)
 	if err != nil {
-		return err
+		return fmt.Errorf("load config: %w", err)
 	}
 	if err := cfg.Validate(); err != nil {
 		cmd.Printf("❌ Configuration invalid: %v\n", err)
 		cmd.Printf("   File: %s\n", pth)
-		return err
+		return fmt.Errorf("validate config: %w", err)
 	}
 	cmd.Printf("✅ Configuration valid: %s\n", pth)
 	cmd.Printf("   Driver: %s\n", cfg.Datasource.Driver)
@@ -317,11 +317,11 @@ func redactURL(url string) string {
 func showConfig(cmd *cobra.Command, args []string) error {
 	pth, err := resolveConfigPath(args)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve config path: %w", err)
 	}
 	cfg, err := loadConfigFile(pth)
 	if err != nil {
-		return err
+		return fmt.Errorf("load config: %w", err)
 	}
 	cmd.Printf("Configuration: %s\n", pth)
 	cmd.Printf("───────────────────────────────────\n")
