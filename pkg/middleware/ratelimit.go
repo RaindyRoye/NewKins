@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 // rateLimitEntry tracks request count within a time window.
@@ -71,6 +72,12 @@ func (rl *RateLimiter) Allow(key string) bool {
 
 // cleanup periodically removes stale entries until the context is canceled.
 func (rl *RateLimiter) cleanup(ctx context.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Errorf("RateLimiter.cleanup panic: %v", r)
+		}
+	}()
+
 	ticker := time.NewTicker(rl.window * 2)
 	defer ticker.Stop()
 	for {
