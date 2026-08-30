@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/gokins/core/common"
@@ -23,10 +24,23 @@ func (c *BuildTask) taskCtx() context.Context {
 	return comm.Ctx
 }
 
-func (c *BuildTask) updateBuild(build *runtime.Build) {
-	defer util.RecoverLog("BuildTask.updateBuild")
+// errDbNotAvailable is returned by database update helpers when the global
+// database engine (comm.Db) has not been initialized. Previously such calls
+// would panic with a nil-pointer dereference and rely on recover() to swallow
+// the crash; returning a sentinel error lets callers log or react explicitly.
+var errDbNotAvailable = errors.New("database engine is not available")
 
+// safeUpdateBuild persists build and related entity state to the database,
+// returning any database error to the caller instead of swallowing it via a
+// panic-recovered deferred log. The function still logs errors internally for
+// backward compatibility with existing callers that ignore the return value.
+func (c *BuildTask) safeUpdateBuild(build *runtime.Build) error {
 	ctx := c.taskCtx()
+
+	if comm.Db == nil {
+		logrus.Errorf("BuildTask.updateBuild: %v", errDbNotAvailable)
+		return errDbNotAvailable
+	}
 
 	e := &model.TBuild{
 		Status:   build.Status,
@@ -40,48 +54,86 @@ func (c *BuildTask) updateBuild(build *runtime.Build) {
 		Where("id=?", build.Id).Update(e)
 	if err != nil {
 		logrus.Errorf("BuildTask.updateBuild db err:%v", err)
+		return err
 	}
 
 	if !common.BuildStatusEnded(e.Status) {
-		return
+		return nil
 	}
+
+	if err := c.cancelRelatedEntities(ctx, build.Id, "build_id"); err != nil {
+		return err
+	}
+	return nil
+}
+
+// cancelRelatedEntities marks child rows (stages, steps, cmd lines) of a
+// finished build as canceled when they did not reach a terminal state. Any
+// database error is logged and returned so callers can decide how to react
+// instead of silently swallowing the failure via recover().
+func (c *BuildTask) cancelRelatedEntities(ctx context.Context, id, fk string) error {
+	now := time.Now()
+	statusFilter := "build_id=? and `status`!=? and `status`!=? and `status`!=?"
+	switch fk {
+	case "stage_id":
+		statusFilter = "stage_id=? and `status`!=? and `status`!=? and `status`!=?"
+	case "step_id":
+		statusFilter = "step_id=? and `status`!=? and `status`!=? and `status`!=?"
+	}
+
 	stge := &model.TStage{
 		Status:   common.BuildStatusCancel,
-		Finished: time.Now(),
-		Updated:  time.Now(),
+		Finished: now,
+		Updated:  now,
 	}
-	_, err = comm.Db.Context(ctx).Cols("status", "finished", "updated").
-		Where("build_id=? and `status`!=? and `status`!=? and `status`!=?",
-			build.Id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).Update(stge)
-	if err != nil {
-		logrus.Errorf("BuildTask.updateBuild stage err:%v", err)
+	if fk == "build_id" {
+		if _, err := comm.Db.Context(ctx).Cols("status", "finished", "updated").
+			Where(statusFilter, id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).
+			Update(stge); err != nil {
+			logrus.Errorf("BuildTask.cancelRelatedEntities stage err:%v", err)
+			return err
+		}
 	}
+
 	stpe := &model.TStep{
 		Status:   common.BuildStatusCancel,
-		Finished: time.Now(),
-		Updated:  time.Now(),
+		Finished: now,
+		Updated:  now,
 	}
-	_, err = comm.Db.Context(ctx).Cols("status", "finished", "updated").
-		Where("build_id=? and `status`!=? and `status`!=? and `status`!=?",
-			build.Id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).Update(stpe)
-	if err != nil {
-		logrus.Errorf("BuildTask.updateBuild step err:%v", err)
+	if fk == "build_id" || fk == "stage_id" {
+		if _, err := comm.Db.Context(ctx).Cols("status", "finished", "updated").
+			Where(statusFilter, id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).
+			Update(stpe); err != nil {
+			logrus.Errorf("BuildTask.cancelRelatedEntities step err:%v", err)
+			return err
+		}
 	}
+
 	cmde := &model.TCmdLine{
 		Status:   common.BuildStatusCancel,
-		Finished: time.Now(),
+		Finished: now,
 	}
-	_, err = comm.Db.Context(ctx).Cols("status", "finished").
-		Where("build_id=? and `status`!=? and `status`!=? and `status`!=?",
-			build.Id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).Update(cmde)
-	if err != nil {
-		logrus.Errorf("BuildTask.updateBuild cmd err:%v", err)
+	if _, err := comm.Db.Context(ctx).Cols("status", "finished").
+		Where(statusFilter, id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).
+		Update(cmde); err != nil {
+		logrus.Errorf("BuildTask.cancelRelatedEntities cmd err:%v", err)
+		return err
 	}
+	return nil
+}
+
+func (c *BuildTask) updateBuild(build *runtime.Build) {
+	_ = c.safeUpdateBuild(build)
 }
 func (c *BuildTask) updateStage(stage *runtime.Stage) {
 	defer util.RecoverLog("BuildTask.updateStage")
 
 	ctx := c.taskCtx()
+
+	if comm.Db == nil {
+		logrus.Errorf("BuildTask.updateStage: %v", errDbNotAvailable)
+		return
+	}
 
 	e := &model.TStage{
 		Status:   stage.Status,
@@ -94,6 +146,7 @@ func (c *BuildTask) updateStage(stage *runtime.Stage) {
 		Where("id=?", stage.Id).Update(e)
 	if err != nil {
 		logrus.Errorf("BuildTask.updateStage db err:%v", err)
+		return
 	}
 
 	if !common.BuildStatusEnded(e.Status) {
@@ -116,6 +169,11 @@ func (c *BuildTask) updateStep(job *jobSync) {
 
 	ctx := c.taskCtx()
 
+	if comm.Db == nil {
+		logrus.Errorf("BuildTask.updateStep: %v", errDbNotAvailable)
+		return
+	}
+
 	job.RLock()
 	defer job.RUnlock()
 	e := &model.TStep{
@@ -131,6 +189,7 @@ func (c *BuildTask) updateStep(job *jobSync) {
 		Where("id=?", job.step.Id).Update(e)
 	if err != nil {
 		logrus.Errorf("BuildTask.updateStep db err:%v", err)
+		return
 	}
 
 	if !common.BuildStatusEnded(e.Status) {
@@ -151,6 +210,11 @@ func (c *BuildTask) updateStepCmd(cmd *cmdSync) {
 	defer util.RecoverLog("BuildTask.updateStepCmd")
 
 	ctx := c.taskCtx()
+
+	if comm.Db == nil {
+		logrus.Errorf("BuildTask.updateStepCmd: %v", errDbNotAvailable)
+		return
+	}
 
 	cmd.RLock()
 	defer cmd.RUnlock()

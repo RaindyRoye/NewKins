@@ -112,7 +112,9 @@ func (c *BuildTask) run() {
 	defer func() {
 		c.endtm = time.Now()
 		c.build.Finished = time.Now()
-		c.updateBuild(c.build)
+		if err := c.safeUpdateBuild(c.build); err != nil {
+			logrus.Errorf("BuildTask.run: deferred updateBuild failed: %v", err)
+		}
 		c.clears()
 	}()
 

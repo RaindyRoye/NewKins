@@ -1,9 +1,6 @@
 package engine
 
-import (
-	"errors"
-	"testing"
-)
+import "testing"
 
 func TestBaseRunner_ServerInfo(t *testing.T) {
 	r := &baseRunner{}
@@ -129,14 +126,5 @@ func TestBaseRunner_GenEnv_NilParams(t *testing.T) {
 	err := r.GenEnv("build", "", nil)
 	if err == nil {
 		t.Error("GenEnv() with empty jobId should error")
-	}
-}
-
-// Test that errors.Is works with wrapped errors
-func TestErrorWrapping(t *testing.T) {
-	baseErr := errors.New("base error")
-	wrapped := errors.Join(errors.New("context"), baseErr)
-	if !errors.Is(wrapped, baseErr) {
-		t.Error("errors.Is should find base error in chain")
 	}
 }
