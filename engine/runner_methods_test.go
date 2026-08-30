@@ -22,7 +22,7 @@ import (
 
 // setupTestBuildEngine creates a BuildEngine and registers a BuildTask in Mgr.
 // Returns a cleanup function to restore the original Mgr state.
-func setupTestBuildEngine(t *testing.T, buildID string, stages map[string]*taskStage, jobs map[string]*jobSync) (*BuildEngine, *BuildTask, func()) {
+func setupTestBuildEngine(t *testing.T, buildID string, stages map[string]*taskStage, jobs map[string]*jobSync) (*BuildTask, func()) {
 	t.Helper()
 	e := &BuildEngine{
 		taskw: list.New(),
@@ -55,13 +55,13 @@ func setupTestBuildEngine(t *testing.T, buildID string, stages map[string]*taskS
 		cancel()
 		Mgr.buildEgn = origBuildEgn
 	}
-	return e, bt, cleanup
+	return bt, cleanup
 }
 
 // --- baseRunner.CheckCancel ---
 
 func TestBaseRunner_CheckCancel_BuildNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -70,7 +70,7 @@ func TestBaseRunner_CheckCancel_BuildNotFound(t *testing.T) {
 }
 
 func TestBaseRunner_CheckCancel_ActiveBuild(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-active", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-active", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -86,23 +86,23 @@ func TestBaseRunner_CheckCancel_CancelledBuild(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // cancel immediately
 	bt := &BuildTask{
-		build: &runtime.Build{Id: "build-cancelled"},
+		build: &runtime.Build{Id: "build-canceled"},
 		ctx:   ctx,
 		cncl:  cancel,
 	}
-	e.tasks["build-cancelled"] = bt
+	e.tasks["build-canceled"] = bt
 	origBuildEgn := Mgr.buildEgn
 	Mgr.buildEgn = e
 	defer func() { Mgr.buildEgn = origBuildEgn }()
 
 	r := &baseRunner{}
-	assert.True(t, r.CheckCancel("build-cancelled"), "CheckCancel should return true for cancelled build")
+	assert.True(t, r.CheckCancel("build-canceled"), "CheckCancel should return true for canceled build")
 }
 
 // --- baseRunner.Update ---
 
 func TestBaseRunner_Update_BuildNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -112,7 +112,7 @@ func TestBaseRunner_Update_BuildNotFound(t *testing.T) {
 }
 
 func TestBaseRunner_Update_JobNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-u1",
+	_, cleanup := setupTestBuildEngine(t, "build-u1",
 		make(map[string]*taskStage),
 		make(map[string]*jobSync),
 	)
@@ -132,7 +132,7 @@ func TestBaseRunner_Update_Success(t *testing.T) {
 	stages := make(map[string]*taskStage)
 	jobs := map[string]*jobSync{"step-1": job}
 
-	_, _, cleanup := setupTestBuildEngine(t, "build-u2", stages, jobs)
+	_, cleanup := setupTestBuildEngine(t, "build-u2", stages, jobs)
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -150,7 +150,7 @@ func TestBaseRunner_Update_Success(t *testing.T) {
 // --- baseRunner.UpdateCmd ---
 
 func TestBaseRunner_UpdateCmd_BuildNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -160,7 +160,7 @@ func TestBaseRunner_UpdateCmd_BuildNotFound(t *testing.T) {
 }
 
 func TestBaseRunner_UpdateCmd_JobNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-uc1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-uc1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -176,7 +176,7 @@ func TestBaseRunner_UpdateCmd_CmdNotFound(t *testing.T) {
 	}
 	jobs := map[string]*jobSync{"step-uc": job}
 
-	_, _, cleanup := setupTestBuildEngine(t, "build-uc2", make(map[string]*taskStage), jobs)
+	_, cleanup := setupTestBuildEngine(t, "build-uc2", make(map[string]*taskStage), jobs)
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -196,7 +196,7 @@ func TestBaseRunner_UpdateCmd_Success_Running(t *testing.T) {
 	}
 	jobs := map[string]*jobSync{"step-uc3": job}
 
-	_, _, cleanup := setupTestBuildEngine(t, "build-uc3", make(map[string]*taskStage), jobs)
+	_, cleanup := setupTestBuildEngine(t, "build-uc3", make(map[string]*taskStage), jobs)
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -218,7 +218,7 @@ func TestBaseRunner_UpdateCmd_Success_OkWithCode(t *testing.T) {
 	}
 	jobs := map[string]*jobSync{"step-uc4": job}
 
-	_, _, cleanup := setupTestBuildEngine(t, "build-uc4", make(map[string]*taskStage), jobs)
+	_, cleanup := setupTestBuildEngine(t, "build-uc4", make(map[string]*taskStage), jobs)
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -240,7 +240,7 @@ func TestBaseRunner_UpdateCmd_ErrorWithExitCode(t *testing.T) {
 	}
 	jobs := map[string]*jobSync{"step-uc5": job}
 
-	_, _, cleanup := setupTestBuildEngine(t, "build-uc5", make(map[string]*taskStage), jobs)
+	_, cleanup := setupTestBuildEngine(t, "build-uc5", make(map[string]*taskStage), jobs)
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -262,7 +262,7 @@ func TestBaseRunner_UpdateCmd_Cancel(t *testing.T) {
 	}
 	jobs := map[string]*jobSync{"step-uc6": job}
 
-	_, _, cleanup := setupTestBuildEngine(t, "build-uc6", make(map[string]*taskStage), jobs)
+	_, cleanup := setupTestBuildEngine(t, "build-uc6", make(map[string]*taskStage), jobs)
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -283,7 +283,7 @@ func TestBaseRunner_UpdateCmd_ErrorStatus(t *testing.T) {
 	}
 	jobs := map[string]*jobSync{"step-uc7": job}
 
-	_, _, cleanup := setupTestBuildEngine(t, "build-uc7", make(map[string]*taskStage), jobs)
+	_, cleanup := setupTestBuildEngine(t, "build-uc7", make(map[string]*taskStage), jobs)
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -305,7 +305,7 @@ func TestBaseRunner_UpdateCmd_UnknownStatus(t *testing.T) {
 	}
 	jobs := map[string]*jobSync{"step-uc8": job}
 
-	_, _, cleanup := setupTestBuildEngine(t, "build-uc8", make(map[string]*taskStage), jobs)
+	_, cleanup := setupTestBuildEngine(t, "build-uc8", make(map[string]*taskStage), jobs)
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -319,7 +319,7 @@ func TestBaseRunner_UpdateCmd_UnknownStatus(t *testing.T) {
 // --- baseRunner.FindJobId ---
 
 func TestBaseRunner_FindJobId_BuildNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -330,7 +330,7 @@ func TestBaseRunner_FindJobId_BuildNotFound(t *testing.T) {
 
 func TestBaseRunner_FindJobId_StageNotFound(t *testing.T) {
 	stages := make(map[string]*taskStage)
-	_, _, cleanup := setupTestBuildEngine(t, "build-fj1", stages, make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-fj1", stages, make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -352,7 +352,7 @@ func TestBaseRunner_FindJobId_StepFound(t *testing.T) {
 		},
 	}
 
-	_, _, cleanup := setupTestBuildEngine(t, "build-fj2", stages, make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-fj2", stages, make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -371,7 +371,7 @@ func TestBaseRunner_FindJobId_StepNotFound(t *testing.T) {
 		},
 	}
 
-	_, _, cleanup := setupTestBuildEngine(t, "build-fj3", stages, make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-fj3", stages, make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -383,7 +383,7 @@ func TestBaseRunner_FindJobId_StepNotFound(t *testing.T) {
 // --- baseRunner.ReadDir ---
 
 func TestBaseRunner_ReadDir_BuildNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -409,14 +409,14 @@ func TestBaseRunner_ReadDir_EmptyPath(t *testing.T) {
 func TestBaseRunner_ReadDir_RepoPath_FsType1(t *testing.T) {
 	// Create actual files in the repo path
 	repoDir := t.TempDir()
-	_, _, cleanup := setupTestBuildEngine(t, "build-rd1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-rd1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 	// Override the build's repoPaths
 	Mgr.buildEgn.tasks["build-rd1"].repoPaths = repoDir
 
 	// Create test files
-	require.NoError(t, os.WriteFile(filepath.Join(repoDir, "file1.txt"), []byte("test"), 0644))
-	require.NoError(t, os.WriteFile(filepath.Join(repoDir, "file2.go"), []byte("code"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(repoDir, "file1.txt"), []byte("test"), 0600))
+	require.NoError(t, os.WriteFile(filepath.Join(repoDir, "file2.go"), []byte("code"), 0600))
 	subDir := filepath.Join(repoDir, "subdir")
 	require.NoError(t, os.MkdirAll(subDir, 0750))
 
@@ -439,7 +439,7 @@ func TestBaseRunner_ReadDir_RepoPath_FsType1(t *testing.T) {
 
 func TestBaseRunner_ReadDir_ArtifactsPath_FsType2(t *testing.T) {
 	artDir := t.TempDir()
-	_, _, cleanup := setupTestBuildEngine(t, "build-rd2", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-rd2", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	// Set comm.WorkPath and create artifact file
@@ -449,7 +449,7 @@ func TestBaseRunner_ReadDir_ArtifactsPath_FsType2(t *testing.T) {
 
 	artPath := filepath.Join(artDir, common.PathArtifacts)
 	require.NoError(t, os.MkdirAll(artPath, 0750))
-	require.NoError(t, os.WriteFile(filepath.Join(artPath, "artifact.jar"), []byte("binary"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(artPath, "artifact.jar"), []byte("binary"), 0600))
 
 	r := &baseRunner{}
 	entries, err := r.ReadDir(2, "build-rd2", ".")
@@ -459,13 +459,13 @@ func TestBaseRunner_ReadDir_ArtifactsPath_FsType2(t *testing.T) {
 }
 
 func TestBaseRunner_ReadDir_BuildJobsPath_FsType3(t *testing.T) {
-	_, bt, cleanup := setupTestBuildEngine(t, "build-rd3", make(map[string]*taskStage), make(map[string]*jobSync))
+	bt, cleanup := setupTestBuildEngine(t, "build-rd3", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	// Create jobs path under buildPath
 	jobsDir := filepath.Join(bt.buildPath, common.PathJobs)
 	require.NoError(t, os.MkdirAll(jobsDir, 0750))
-	require.NoError(t, os.WriteFile(filepath.Join(jobsDir, "log.txt"), []byte("logs"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(jobsDir, "log.txt"), []byte("logs"), 0600))
 
 	r := &baseRunner{}
 	entries, err := r.ReadDir(3, "build-rd3", ".")
@@ -475,7 +475,7 @@ func TestBaseRunner_ReadDir_BuildJobsPath_FsType3(t *testing.T) {
 }
 
 func TestBaseRunner_ReadDir_InvalidFsType(t *testing.T) {
-	_, bt, cleanup := setupTestBuildEngine(t, "build-rd4", make(map[string]*taskStage), make(map[string]*jobSync))
+	bt, cleanup := setupTestBuildEngine(t, "build-rd4", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	// fs=99 → pths remains empty, so os.ReadDir("") fails
@@ -487,7 +487,7 @@ func TestBaseRunner_ReadDir_InvalidFsType(t *testing.T) {
 }
 
 func TestBaseRunner_ReadDir_EmptyRepoPathNoError(t *testing.T) {
-	_, bt, cleanup := setupTestBuildEngine(t, "build-rd5", make(map[string]*taskStage), make(map[string]*jobSync))
+	bt, cleanup := setupTestBuildEngine(t, "build-rd5", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	// Set repoPath to empty so the function returns nil, nil
@@ -504,7 +504,7 @@ func TestBaseRunner_ReadDir_EmptyRepoPathNoError(t *testing.T) {
 // --- baseRunner.ReadFile ---
 
 func TestBaseRunner_ReadFile_BuildNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -514,7 +514,7 @@ func TestBaseRunner_ReadFile_BuildNotFound(t *testing.T) {
 }
 
 func TestBaseRunner_ReadFile_InvalidFsType(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-rf1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-rf1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -525,12 +525,12 @@ func TestBaseRunner_ReadFile_InvalidFsType(t *testing.T) {
 
 func TestBaseRunner_ReadFile_Success(t *testing.T) {
 	tmpDir := t.TempDir()
-	_, bt, cleanup := setupTestBuildEngine(t, "build-rf2", make(map[string]*taskStage), make(map[string]*jobSync))
+	bt, cleanup := setupTestBuildEngine(t, "build-rf2", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 	bt.repoPaths = tmpDir
 
 	content := "hello world content"
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "test.txt"), []byte(content), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "test.txt"), []byte(content), 0600))
 
 	r := &baseRunner{}
 	size, reader, err := r.ReadFile(1, "build-rf2", "test.txt", 0)
@@ -545,12 +545,12 @@ func TestBaseRunner_ReadFile_Success(t *testing.T) {
 
 func TestBaseRunner_ReadFile_WithStartOffset(t *testing.T) {
 	tmpDir := t.TempDir()
-	_, bt, cleanup := setupTestBuildEngine(t, "build-rf3", make(map[string]*taskStage), make(map[string]*jobSync))
+	bt, cleanup := setupTestBuildEngine(t, "build-rf3", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 	bt.repoPaths = tmpDir
 
 	content := "0123456789ABCDEF"
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "offset.txt"), []byte(content), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "offset.txt"), []byte(content), 0600))
 
 	r := &baseRunner{}
 	size, reader, err := r.ReadFile(1, "build-rf3", "offset.txt", 5)
@@ -565,7 +565,7 @@ func TestBaseRunner_ReadFile_WithStartOffset(t *testing.T) {
 
 func TestBaseRunner_ReadFile_FileNotFound(t *testing.T) {
 	tmpDir := t.TempDir()
-	_, bt, cleanup := setupTestBuildEngine(t, "build-rf4", make(map[string]*taskStage), make(map[string]*jobSync))
+	bt, cleanup := setupTestBuildEngine(t, "build-rf4", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 	bt.repoPaths = tmpDir
 
@@ -578,7 +578,7 @@ func TestBaseRunner_ReadFile_FileNotFound(t *testing.T) {
 // --- baseRunner.StatFile ---
 
 func TestBaseRunner_StatFile_BuildNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -588,7 +588,7 @@ func TestBaseRunner_StatFile_BuildNotFound(t *testing.T) {
 }
 
 func TestBaseRunner_StatFile_JobNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-sf1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-sf1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -604,7 +604,7 @@ func TestBaseRunner_StatFile_InvalidFsType(t *testing.T) {
 		task:  nil, // will be set below
 	}
 	jobs := map[string]*jobSync{"step-sf": job}
-	_, bt, cleanup := setupTestBuildEngine(t, "build-sf2", make(map[string]*taskStage), jobs)
+	bt, cleanup := setupTestBuildEngine(t, "build-sf2", make(map[string]*taskStage), jobs)
 	defer cleanup()
 	job.task = bt
 
@@ -622,7 +622,7 @@ func TestBaseRunner_StatFile_Success_FsType1(t *testing.T) {
 
 	artDir := filepath.Join(tmpDir, common.PathArtifacts, "mydir")
 	require.NoError(t, os.MkdirAll(artDir, 0750))
-	require.NoError(t, os.WriteFile(filepath.Join(artDir, "file.jar"), []byte("binary-content"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(artDir, "file.jar"), []byte("binary-content"), 0600))
 
 	job := &jobSync{
 		step:  &runtime.Step{Id: "step-sf3", Name: "test-step"},
@@ -630,7 +630,7 @@ func TestBaseRunner_StatFile_Success_FsType1(t *testing.T) {
 		task:  nil,
 	}
 	jobs := map[string]*jobSync{"step-sf3": job}
-	_, bt, cleanup := setupTestBuildEngine(t, "build-sf3", make(map[string]*taskStage), jobs)
+	bt, cleanup := setupTestBuildEngine(t, "build-sf3", make(map[string]*taskStage), jobs)
 	defer cleanup()
 	job.task = bt
 
@@ -658,7 +658,7 @@ func TestBaseRunner_StatFile_FileNotFound(t *testing.T) {
 		task:  nil,
 	}
 	jobs := map[string]*jobSync{"step-sf4": job}
-	_, bt, cleanup := setupTestBuildEngine(t, "build-sf4", make(map[string]*taskStage), jobs)
+	bt, cleanup := setupTestBuildEngine(t, "build-sf4", make(map[string]*taskStage), jobs)
 	defer cleanup()
 	job.task = bt
 
@@ -671,7 +671,7 @@ func TestBaseRunner_StatFile_FileNotFound(t *testing.T) {
 // --- baseRunner.UploadFile ---
 
 func TestBaseRunner_UploadFile_BuildNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -681,7 +681,7 @@ func TestBaseRunner_UploadFile_BuildNotFound(t *testing.T) {
 }
 
 func TestBaseRunner_UploadFile_JobNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-uf1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-uf1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -697,7 +697,7 @@ func TestBaseRunner_UploadFile_InvalidFsType(t *testing.T) {
 		task:  nil,
 	}
 	jobs := map[string]*jobSync{"step-uf": job}
-	_, bt, cleanup := setupTestBuildEngine(t, "build-uf2", make(map[string]*taskStage), jobs)
+	bt, cleanup := setupTestBuildEngine(t, "build-uf2", make(map[string]*taskStage), jobs)
 	defer cleanup()
 	job.task = bt
 
@@ -719,7 +719,7 @@ func TestBaseRunner_UploadFile_Success_FsType1(t *testing.T) {
 		task:  nil,
 	}
 	jobs := map[string]*jobSync{"step-uf3": job}
-	_, bt, cleanup := setupTestBuildEngine(t, "build-uf3", make(map[string]*taskStage), jobs)
+	bt, cleanup := setupTestBuildEngine(t, "build-uf3", make(map[string]*taskStage), jobs)
 	defer cleanup()
 	job.task = bt
 
@@ -733,7 +733,7 @@ func TestBaseRunner_UploadFile_Success_FsType1(t *testing.T) {
 	assert.Equal(t, 16, n)
 
 	// Verify file was created
-	data, err := os.ReadFile(filepath.Join(tmpDir, common.PathArtifacts, "updir", "uploaded.txt"))
+	data, err := os.ReadFile(filepath.Join(tmpDir, common.PathArtifacts, "updir", "uploaded.txt")) //nolint:gosec
 	require.NoError(t, err)
 	assert.Equal(t, "uploaded content", string(data))
 }
@@ -747,7 +747,7 @@ func TestBaseRunner_UploadFile_WithStartOffset(t *testing.T) {
 	// Pre-create the file with some content
 	artDir := filepath.Join(tmpDir, common.PathArtifacts, "updir2")
 	require.NoError(t, os.MkdirAll(artDir, 0750))
-	require.NoError(t, os.WriteFile(filepath.Join(artDir, "partial.txt"), []byte("AAAAABBBBB"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(artDir, "partial.txt"), []byte("AAAAABBBBB"), 0600))
 
 	job := &jobSync{
 		step:  &runtime.Step{Id: "step-uf4", Name: "test-step"},
@@ -755,7 +755,7 @@ func TestBaseRunner_UploadFile_WithStartOffset(t *testing.T) {
 		task:  nil,
 	}
 	jobs := map[string]*jobSync{"step-uf4": job}
-	_, bt, cleanup := setupTestBuildEngine(t, "build-uf4", make(map[string]*taskStage), jobs)
+	bt, cleanup := setupTestBuildEngine(t, "build-uf4", make(map[string]*taskStage), jobs)
 	defer cleanup()
 	job.task = bt
 
@@ -768,7 +768,7 @@ func TestBaseRunner_UploadFile_WithStartOffset(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the file: AAAAA + CCCCC
-	data, err := os.ReadFile(filepath.Join(artDir, "partial.txt"))
+	data, err := os.ReadFile(filepath.Join(artDir, "partial.txt")) //nolint:gosec
 	require.NoError(t, err)
 	assert.Equal(t, "AAAAACCCCC", string(data))
 }
@@ -776,7 +776,7 @@ func TestBaseRunner_UploadFile_WithStartOffset(t *testing.T) {
 // --- baseRunner.PushOutLine ---
 
 func TestBaseRunner_PushOutLine_BuildNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -786,7 +786,7 @@ func TestBaseRunner_PushOutLine_BuildNotFound(t *testing.T) {
 }
 
 func TestBaseRunner_PushOutLine_JobNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-po1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-po1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -806,7 +806,7 @@ func TestBaseRunner_PushOutLine_Success(t *testing.T) {
 		cmdmp: make(map[string]*cmdSync),
 	}
 	jobs := map[string]*jobSync{"step-po": job}
-	_, bt, cleanup := setupTestBuildEngine(t, "build-po2", make(map[string]*taskStage), jobs)
+	bt, cleanup := setupTestBuildEngine(t, "build-po2", make(map[string]*taskStage), jobs)
 	defer cleanup()
 	bt.buildPath = filepath.Join(tmpDir, "build", "build-po2")
 
@@ -816,7 +816,7 @@ func TestBaseRunner_PushOutLine_Success(t *testing.T) {
 
 	// Verify log file was created
 	logPath := filepath.Join(tmpDir, common.PathBuild, "build-po2", common.PathJobs, "step-po", "build.log")
-	data, err := os.ReadFile(logPath)
+	data, err := os.ReadFile(logPath) //nolint:gosec
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "hello log output")
 }
@@ -832,7 +832,7 @@ func TestBaseRunner_PushOutLine_ErrorFlag(t *testing.T) {
 		cmdmp: make(map[string]*cmdSync),
 	}
 	jobs := map[string]*jobSync{"step-po2": job}
-	_, bt, cleanup := setupTestBuildEngine(t, "build-po3", make(map[string]*taskStage), jobs)
+	bt, cleanup := setupTestBuildEngine(t, "build-po3", make(map[string]*taskStage), jobs)
 	defer cleanup()
 	bt.buildPath = filepath.Join(tmpDir, "build", "build-po3")
 
@@ -841,7 +841,7 @@ func TestBaseRunner_PushOutLine_ErrorFlag(t *testing.T) {
 	require.NoError(t, err)
 
 	logPath := filepath.Join(tmpDir, common.PathBuild, "build-po3", common.PathJobs, "step-po2", "build.log")
-	data, err := os.ReadFile(logPath)
+	data, err := os.ReadFile(logPath) //nolint:gosec
 	require.NoError(t, err)
 	// The JSON should have errs:true
 	assert.Contains(t, string(data), `"errs":true`)
@@ -858,7 +858,7 @@ func TestBaseRunner_PushOutLine_MultipleLines(t *testing.T) {
 		cmdmp: make(map[string]*cmdSync),
 	}
 	jobs := map[string]*jobSync{"step-po3": job}
-	_, bt, cleanup := setupTestBuildEngine(t, "build-po4", make(map[string]*taskStage), jobs)
+	bt, cleanup := setupTestBuildEngine(t, "build-po4", make(map[string]*taskStage), jobs)
 	defer cleanup()
 	bt.buildPath = filepath.Join(tmpDir, "build", "build-po4")
 
@@ -867,7 +867,7 @@ func TestBaseRunner_PushOutLine_MultipleLines(t *testing.T) {
 	require.NoError(t, r.PushOutLine("build-po4", "step-po3", "cmd-b", "line 2", false))
 
 	logPath := filepath.Join(tmpDir, common.PathBuild, "build-po4", common.PathJobs, "step-po3", "build.log")
-	data, err := os.ReadFile(logPath)
+	data, err := os.ReadFile(logPath) //nolint:gosec
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "line 1")
 	assert.Contains(t, string(data), "line 2")
@@ -876,7 +876,7 @@ func TestBaseRunner_PushOutLine_MultipleLines(t *testing.T) {
 // --- baseRunner.GetEnv ---
 
 func TestBaseRunner_GetEnv_BuildNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -886,7 +886,7 @@ func TestBaseRunner_GetEnv_BuildNotFound(t *testing.T) {
 }
 
 func TestBaseRunner_GetEnv_JobNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-ge1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-ge1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -906,7 +906,7 @@ func TestBaseRunner_GetEnv_NoEnvFile(t *testing.T) {
 		cmdmp: make(map[string]*cmdSync),
 	}
 	jobs := map[string]*jobSync{"step-ge": job}
-	_, _, cleanup := setupTestBuildEngine(t, "build-ge2", make(map[string]*taskStage), jobs)
+	_, cleanup := setupTestBuildEngine(t, "build-ge2", make(map[string]*taskStage), jobs)
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -927,7 +927,7 @@ func TestBaseRunner_GetEnv_Success(t *testing.T) {
 		cmdmp: make(map[string]*cmdSync),
 	}
 	jobs := map[string]*jobSync{"step-ge2": job}
-	_, _, cleanup := setupTestBuildEngine(t, "build-ge3", make(map[string]*taskStage), jobs)
+	_, cleanup := setupTestBuildEngine(t, "build-ge3", make(map[string]*taskStage), jobs)
 	defer cleanup()
 
 	// Create the env file manually
@@ -955,7 +955,7 @@ func TestBaseRunner_GetEnv_KeyNotFound(t *testing.T) {
 		cmdmp: make(map[string]*cmdSync),
 	}
 	jobs := map[string]*jobSync{"step-ge3": job}
-	_, _, cleanup := setupTestBuildEngine(t, "build-ge4", make(map[string]*taskStage), jobs)
+	_, cleanup := setupTestBuildEngine(t, "build-ge4", make(map[string]*taskStage), jobs)
 	defer cleanup()
 
 	// Create the env file
@@ -974,7 +974,7 @@ func TestBaseRunner_GetEnv_KeyNotFound(t *testing.T) {
 // --- baseRunner.GenEnv ---
 
 func TestBaseRunner_GenEnv_BuildNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -984,7 +984,7 @@ func TestBaseRunner_GenEnv_BuildNotFound(t *testing.T) {
 }
 
 func TestBaseRunner_GenEnv_JobNotFound(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-gen1", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-gen1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
@@ -1004,7 +1004,7 @@ func TestBaseRunner_GenEnv_Success(t *testing.T) {
 		cmdmp: make(map[string]*cmdSync),
 	}
 	jobs := map[string]*jobSync{"step-gen": job}
-	_, _, cleanup := setupTestBuildEngine(t, "build-gen2", make(map[string]*taskStage), jobs)
+	_, cleanup := setupTestBuildEngine(t, "build-gen2", make(map[string]*taskStage), jobs)
 	defer cleanup()
 
 	// Pre-create the directory that GenEnv expects
@@ -1021,7 +1021,7 @@ func TestBaseRunner_GenEnv_Success(t *testing.T) {
 
 	// Verify the env file was created
 	envPath := filepath.Join(dir, "build.env")
-	data, err := os.ReadFile(envPath)
+	data, err := os.ReadFile(envPath) //nolint:gosec
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "MY_VAR")
 	assert.Contains(t, string(data), "hello")
@@ -1053,10 +1053,10 @@ func TestBaseRunner_PullJob_Timeout(t *testing.T) {
 
 func TestBaseRunner_ConcurrentReadDir(t *testing.T) {
 	tmpDir := t.TempDir()
-	_, bt, cleanup := setupTestBuildEngine(t, "build-cc1", make(map[string]*taskStage), make(map[string]*jobSync))
+	bt, cleanup := setupTestBuildEngine(t, "build-cc1", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 	bt.repoPaths = tmpDir
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "f1.txt"), []byte("a"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "f1.txt"), []byte("a"), 0600))
 
 	r := &baseRunner{}
 	var wg sync.WaitGroup
@@ -1074,7 +1074,7 @@ func TestBaseRunner_ConcurrentReadDir(t *testing.T) {
 }
 
 func TestBaseRunner_ConcurrentCheckCancel(t *testing.T) {
-	_, _, cleanup := setupTestBuildEngine(t, "build-cc2", make(map[string]*taskStage), make(map[string]*jobSync))
+	_, cleanup := setupTestBuildEngine(t, "build-cc2", make(map[string]*taskStage), make(map[string]*jobSync))
 	defer cleanup()
 
 	r := &baseRunner{}
