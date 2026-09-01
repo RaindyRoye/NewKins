@@ -38,6 +38,10 @@ func runWeb() {
 	comm.WebEgn = gin.Default()
 	comm.WebEgn.Use(middleware.MidRequestID())
 	comm.WebEgn.Use(middleware.MidSecurityHeaders())
+	// Apply request timeout to prevent long-running requests from blocking resources.
+	// Default is 30 seconds, which is sufficient for most API operations.
+	// Database queries and file operations should respect this timeout via context.
+	comm.WebEgn.Use(middleware.MidTimeoutWithDefault())
 	comm.WebEgn.Use(midUiHandle)
 
 	srv := &http.Server{
