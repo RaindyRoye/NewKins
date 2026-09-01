@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gokins/gokins/bean"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
-	"github.com/gokins/gokins/bean"
 	"github.com/gokins/gokins/service"
 	_ "github.com/mattn/go-sqlite3"
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
@@ -458,7 +458,7 @@ func TestOrgVars_EmptyOrgId(t *testing.T) {
 func TestOrgVarSave_Success(t *testing.T) {
 	setupOrgTestDB(t)
 	ctrl := OrgController{}
-	
+
 	// Create var
 	pv := &bean.OrgVar{
 		OrgId: "org-1",
