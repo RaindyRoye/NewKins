@@ -1,6 +1,25 @@
 package comm
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+// Sentinel errors returned by Config validation.
+// Callers should use errors.Is to match these instead of comparing strings.
+var (
+	// ErrDriverRequired is returned when datasource.driver is empty.
+	ErrDriverRequired = errors.New("config validation: datasource.driver is required")
+
+	// ErrDriverUnsupported is returned when datasource.driver is not a known driver.
+	ErrDriverUnsupported = errors.New("config validation: unsupported datasource driver")
+
+	// ErrURLRequired is returned when datasource.url is empty.
+	ErrURLRequired = errors.New("config validation: datasource.url is required")
+
+	// ErrRunLimitInvalid is returned when server.runLimit is negative.
+	ErrRunLimitInvalid = errors.New("config validation: server.runLimit must be non-negative")
+)
 
 // Config holds the application configuration loaded from app.yml / app.yaml.
 type Config struct {
@@ -24,19 +43,19 @@ type Config struct {
 // It returns an error describing the first problem found, or nil if valid.
 func (c *Config) Validate() error {
 	if c.Datasource.Driver == "" {
-		return fmt.Errorf("config validation: datasource.driver is required")
+		return ErrDriverRequired
 	}
 	switch c.Datasource.Driver {
 	case DatasourceDriverMySQL, DatasourceDriverPostgres, DatasourceDriverSQLite:
 		// valid
 	default:
-		return fmt.Errorf("config validation: unsupported datasource driver %q (must be one of: mysql, postgres, sqlite)", c.Datasource.Driver)
+		return fmt.Errorf("%w: %q (must be one of: mysql, postgres, sqlite)", ErrDriverUnsupported, c.Datasource.Driver)
 	}
 	if c.Datasource.Url == "" {
-		return fmt.Errorf("config validation: datasource.url is required")
+		return ErrURLRequired
 	}
 	if c.Server.RunLimit < 0 {
-		return fmt.Errorf("config validation: server.runLimit must be non-negative, got %d", c.Server.RunLimit)
+		return fmt.Errorf("%w, got %d", ErrRunLimitInvalid, c.Server.RunLimit)
 	}
 	return nil
 }

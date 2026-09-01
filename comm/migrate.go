@@ -3,10 +3,17 @@ package comm
 import (
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 )
+
+// ErrAssetNotFound is returned when a requested embedded asset does not exist.
+var ErrAssetNotFound = errors.New("asset not found")
+
+// ErrDecompressionLimit is returned when a gzip asset exceeds the decompression size limit.
+var ErrDecompressionLimit = errors.New("decompressed size exceeds limit")
 
 func bindata_read(data []byte, name string) ([]byte, error) {
 	gz, err := gzip.NewReader(bytes.NewBuffer(data))
@@ -26,7 +33,7 @@ func bindata_read(data []byte, name string) ([]byte, error) {
 		return nil, fmt.Errorf("read %q: %w", name, err)
 	}
 	if int64(buf.Len()) > maxDecompressedSize {
-		return nil, fmt.Errorf("read %q: decompressed size exceeds %d bytes limit", name, maxDecompressedSize)
+		return nil, fmt.Errorf("read %q: %w (%d bytes)", name, ErrDecompressionLimit, maxDecompressedSize)
 	}
 
 	return buf.Bytes(), nil
@@ -112,7 +119,7 @@ func Asset(name string) ([]byte, error) {
 	if f, ok := _bindata[cannonicalName]; ok {
 		return f()
 	}
-	return nil, fmt.Errorf("Asset %s not found", name)
+	return nil, fmt.Errorf("%w: %s", ErrAssetNotFound, name)
 }
 
 // AssetNames returns the names of the assets.
@@ -159,12 +166,12 @@ func AssetDir(name string) ([]string, error) {
 		for _, p := range pathList {
 			node = node.Children[p]
 			if node == nil {
-				return nil, fmt.Errorf("Asset %s not found", name)
+				return nil, fmt.Errorf("%w: %s", ErrAssetNotFound, name)
 			}
 		}
 	}
 	if node.Func != nil {
-		return nil, fmt.Errorf("Asset %s not found", name)
+		return nil, fmt.Errorf("%w: %s", ErrAssetNotFound, name)
 	}
 	rv := make([]string, 0, len(node.Children))
 	for name := range node.Children {
