@@ -15,6 +15,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// timerTickInterval is the polling interval for the timer engine main loop.
+// 1 second provides sub-second latency for cron-like triggers while keeping
+// CPU usage negligible during idle periods.
+const timerTickInterval = time.Second
+
 type TimerEngine struct {
 	tasklk sync.RWMutex
 	tasks  map[string]*timerExec
@@ -35,50 +40,73 @@ func StartTimerEngine() *TimerEngine {
 		c.refresh()
 		for !hbtp.EndContext(comm.Ctx) {
 			c.run()
-			time.Sleep(time.Millisecond * 10)
+			select {
+			case <-comm.Ctx.Done():
+				return
+			case <-time.After(timerTickInterval):
+			}
 		}
 	}()
 	return c
 }
+
+// run collects all due timer items under a read-lock snapshot, then executes
+// them without holding the lock. This prevents lock contention with concurrent
+// Delete/Refresh/resetOne calls and allows service.TriggerTimer to run freely.
 func (c *TimerEngine) run() {
 	defer util.RecoverLog("TimerEngine.run")
 
-	c.tasklk.Lock()
-	defer c.tasklk.Unlock()
+	now := time.Now()
+	var due []*timerExec
+
+	c.tasklk.RLock()
 	for _, v := range c.tasks {
+		if now.After(v.tick) || now.Equal(v.tick) {
+			due = append(due, v)
+		}
+	}
+	c.tasklk.RUnlock()
+
+	for _, v := range due {
 		c.execItem(v)
 	}
 }
+
+// execItem fires a single due timer, advances its tick time (for recurring
+// timers), or removes it (for one-shot timers). All mutations are performed
+// under the write lock; the actual service call runs outside the lock.
 func (c *TimerEngine) execItem(v *timerExec) {
 	defer util.RecoverLog("TimerEngine.execItem")
-	if time.Since(v.tick) > 0 {
-		now := time.Now()
-		logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", v.tt.Name, v.typ, now.Format(common.TimeFmt), v.tick.Format(common.TimeFmt))
-		switch v.typ {
-		case 0:
-			go func(id string) {
-				defer util.RecoverLog("TimerEngine.delete")
-				c.Delete(id)
-			}(v.tt.Id)
-			time.Sleep(time.Millisecond * 10)
-		case 1:
-			v.tick = now.Add(time.Minute)
-		case 2:
-			v.tick = now.Add(time.Hour)
-		case 3:
-			v.tick = now.Add(time.Hour * 24)
-		case 4:
-			v.tick = now.Add(time.Hour * 24 * 7)
-		case 5:
-			v.tick = now.Add(time.Hour * 24 * 30)
-		}
+	now := time.Now()
+	if now.Before(v.tick) {
+		return
+	}
+	logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", v.tt.Name, v.typ, now.Format(common.TimeFmt), v.tick.Format(common.TimeFmt))
 
-		rb, err := service.TriggerTimer(comm.Ctx, v.tt)
-		if err != nil {
-			logrus.Errorf("TriggerTimer err:%v", err)
-		} else {
-			Mgr.BuildEgn().Put(rb)
-		}
+	c.tasklk.Lock()
+	switch v.typ {
+	case 0: // one-shot: remove from map
+		delete(c.tasks, v.tt.Id)
+	case 1:
+		v.tick = now.Add(time.Minute)
+	case 2:
+		v.tick = now.Add(time.Hour)
+	case 3:
+		v.tick = now.Add(time.Hour * 24)
+	case 4:
+		v.tick = now.Add(time.Hour * 24 * 7)
+	case 5:
+		v.tick = now.Add(time.Hour * 24 * 30)
+	}
+	// snapshot the trigger so we can call TriggerTimer without holding the lock
+	tt := v.tt
+	c.tasklk.Unlock()
+
+	rb, err := service.TriggerTimer(comm.Ctx, tt)
+	if err != nil {
+		logrus.Errorf("TriggerTimer err:%v", err)
+	} else {
+		Mgr.BuildEgn().Put(rb)
 	}
 }
 
@@ -194,4 +222,22 @@ func (c *TimerEngine) Delete(tmrid string) {
 	c.tasklk.Lock()
 	delete(c.tasks, tmrid)
 	c.tasklk.Unlock()
+}
+
+// TaskCount returns the number of active timers. Intended for testing and diagnostics.
+func (c *TimerEngine) TaskCount() int {
+	c.tasklk.RLock()
+	defer c.tasklk.RUnlock()
+	return len(c.tasks)
+}
+
+// TaskIDs returns the IDs of all active timers. Intended for testing and diagnostics.
+func (c *TimerEngine) TaskIDs() []string {
+	c.tasklk.RLock()
+	defer c.tasklk.RUnlock()
+	ids := make([]string, 0, len(c.tasks))
+	for id := range c.tasks {
+		ids = append(ids, id)
+	}
+	return ids
 }

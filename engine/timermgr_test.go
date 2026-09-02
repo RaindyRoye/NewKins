@@ -267,14 +267,13 @@ func TestTimerEngineConcurrentReadsAndWrites(t *testing.T) {
 		}(i)
 	}
 
-	// Readers: read tasks via RLock (simulated by accessing tasklk.RLock)
+	// Readers: read tasks via TaskCount/TaskIDs
 	for i := 0; i < 20; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			te.tasklk.RLock()
-			_ = len(te.tasks)
-			te.tasklk.RUnlock()
+			_ = te.TaskCount()
+			_ = te.TaskIDs()
 		}()
 	}
 
@@ -288,4 +287,194 @@ func TestTimerEngineConcurrentReadsAndWrites(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestTimerEngineTaskCount(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	if te.TaskCount() != 0 {
+		t.Fatalf("expected 0 tasks, got %d", te.TaskCount())
+	}
+
+	te.tasks["a"] = &timerExec{tt: &model.TTrigger{Id: "a"}}
+	te.tasks["b"] = &timerExec{tt: &model.TTrigger{Id: "b"}}
+	if te.TaskCount() != 2 {
+		t.Fatalf("expected 2 tasks, got %d", te.TaskCount())
+	}
+
+	te.Delete("a")
+	if te.TaskCount() != 1 {
+		t.Fatalf("expected 1 task, got %d", te.TaskCount())
+	}
+}
+
+func TestTimerEngineTaskIDs(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	ids := te.TaskIDs()
+	if len(ids) != 0 {
+		t.Fatalf("expected 0 IDs, got %d", len(ids))
+	}
+
+	te.tasks["x"] = &timerExec{tt: &model.TTrigger{Id: "x"}}
+	te.tasks["y"] = &timerExec{tt: &model.TTrigger{Id: "y"}}
+	ids = te.TaskIDs()
+	if len(ids) != 2 {
+		t.Fatalf("expected 2 IDs, got %d", len(ids))
+	}
+	found := map[string]bool{}
+	for _, id := range ids {
+		found[id] = true
+	}
+	if !found["x"] || !found["y"] {
+		t.Fatalf("expected IDs x and y, got %v", ids)
+	}
+}
+
+// TestTimerEngineRunSkipsFuture verifies that run() does not fire timers
+// whose tick time is in the future.
+func TestTimerEngineRunSkipsFuture(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	futureTick := time.Now().Add(time.Hour)
+	te.tasks["future"] = &timerExec{
+		tt:   &model.TTrigger{Id: "future", Name: "future-timer"},
+		typ:  1,
+		tick: futureTick,
+	}
+	// run should not panic and should not remove the task
+	te.run()
+	if te.TaskCount() != 1 {
+		t.Fatal("future timer should not be removed by run()")
+	}
+}
+
+// TestTimerEngineExecItemNotDue verifies that execItem does nothing
+// when the tick time has not yet arrived.
+func TestTimerEngineExecItemNotDue(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	futureTick := time.Now().Add(time.Hour)
+	item := &timerExec{
+		tt:   &model.TTrigger{Id: "notdue", Name: "not-due"},
+		typ:  1,
+		tick: futureTick,
+	}
+	te.tasks["notdue"] = item
+	te.execItem(item)
+	// Task should still be present and tick unchanged
+	if te.TaskCount() != 1 {
+		t.Fatal("not-due timer should remain")
+	}
+	if !item.tick.Equal(futureTick) {
+		t.Fatal("tick should not have changed for a not-due item")
+	}
+}
+
+// TestTimerEngineResetOneAllRecurringTypes verifies that all recurring timer
+// types (1-5) are registered correctly with ticks in the near future.
+func TestTimerEngineResetOneAllRecurringTypes(t *testing.T) {
+	types := []int64{1, 2, 3, 4, 5}
+	names := []string{"minute", "hour", "day", "week", "month"}
+	maxDurations := []time.Duration{
+		time.Minute + time.Second,
+		time.Hour + time.Second,
+		25 * time.Hour,
+		8 * 24 * time.Hour,
+		32 * 24 * time.Hour,
+	}
+
+	for i, typ := range types {
+		te := &TimerEngine{
+			tasks: make(map[string]*timerExec),
+		}
+		params := map[string]any{
+			"timerType": typ,
+			"dates":     time.Now().Format(time.RFC3339Nano),
+		}
+		paramBytes, _ := json.Marshal(params)
+		tmr := &model.TTrigger{
+			Id:     fmt.Sprintf("test-%s", names[i]),
+			Types:  "timer",
+			Name:   names[i],
+			Params: string(paramBytes),
+		}
+		err := te.resetOne(tmr)
+		if err != nil {
+			t.Fatalf("type %d (%s): unexpected error: %v", typ, names[i], err)
+		}
+		task, ok := te.tasks[tmr.Id]
+		if !ok {
+			t.Fatalf("type %d (%s): task not found", typ, names[i])
+		}
+		if task.typ != typ {
+			t.Fatalf("type %d (%s): expected typ=%d, got %d", typ, names[i], typ, task.typ)
+		}
+		until := time.Until(task.tick)
+		if until > maxDurations[i] {
+			t.Fatalf("type %d (%s): tick too far in future: %v (max %v)", typ, names[i], until, maxDurations[i])
+		}
+	}
+}
+
+// TestTimerEngineResetOnceTimerPast verifies that a one-shot timer whose
+// time has already passed is NOT added to the task map.
+func TestTimerEngineResetOnceTimerPast(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	pastTime := time.Now().Add(-time.Hour)
+	params := map[string]any{
+		"timerType": 0,
+		"dates":     pastTime.Format(time.RFC3339Nano),
+	}
+	paramBytes, _ := json.Marshal(params)
+	tmr := &model.TTrigger{
+		Id:     "past-once",
+		Types:  "timer",
+		Name:   "past-once",
+		Params: string(paramBytes),
+	}
+	err := te.resetOne(tmr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if te.TaskCount() != 0 {
+		t.Fatal("past one-shot timer should not be added")
+	}
+}
+
+// TestTimerEngineResetOneIdempotent verifies that calling resetOne twice
+// on the same timer ID updates the existing entry rather than creating a duplicate.
+func TestTimerEngineResetOneIdempotent(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	params := map[string]any{
+		"timerType": 1,
+		"dates":     time.Now().Format(time.RFC3339Nano),
+	}
+	paramBytes, _ := json.Marshal(params)
+	tmr := &model.TTrigger{
+		Id:     "idem",
+		Types:  "timer",
+		Name:   "idem",
+		Params: string(paramBytes),
+	}
+
+	err := te.resetOne(tmr)
+	if err != nil {
+		t.Fatalf("first resetOne failed: %v", err)
+	}
+	err = te.resetOne(tmr)
+	if err != nil {
+		t.Fatalf("second resetOne failed: %v", err)
+	}
+	if te.TaskCount() != 1 {
+		t.Fatalf("expected 1 task after idempotent reset, got %d", te.TaskCount())
+	}
 }
