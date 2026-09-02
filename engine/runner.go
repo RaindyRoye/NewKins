@@ -298,7 +298,7 @@ func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*
 		Name:  stat.Name(),
 		IsDir: stat.IsDir(),
 		Size:  stat.Size(),
-	}, err
+	}, nil
 }
 func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, start int64) (io.WriteCloser, error) {
 	if jobId == "" || pth == "" {
