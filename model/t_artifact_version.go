@@ -46,7 +46,7 @@ func (c *TArtifactVersion) readDir(pth string) ([]hbtp.Map, error) {
 		if v.IsDir() {
 			fls, err := c.readDir(filepath.Join(pth, v.Name()))
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("read subdirectory %q: %w", v.Name(), err)
 			}
 			var chd []hbtp.Map
 			chd = append(chd, fls...)

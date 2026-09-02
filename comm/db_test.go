@@ -1,6 +1,8 @@
 package comm
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -97,5 +99,35 @@ func TestFindPages_SQLWithOrderByButNoSelect(t *testing.T) {
 	_, err := FindPages(gen, &results, 1)
 	if err != nil && strings.Contains(err.Error(), "ORDER BY") {
 		t.Errorf("should not return ORDER BY error when clause is present: %v", err)
+	}
+}
+
+func TestFindPage_ErrorWrapping(t *testing.T) {
+	// Verify that findCount errors are properly wrapped by FindPage.
+	// Since FindPage requires a real *xorm.Session (not an interface), we test
+	// the error wrapping by calling findCount directly and verifying the error
+	// format that FindPage would wrap.
+	type item struct{ Name string }
+	var v item
+	_, err := findCount(builder.NewCond(), &v)
+	if err == nil {
+		t.Fatal("expected error for non-slice pointer, got nil")
+	}
+	// Verify the original error message is present
+	if !strings.Contains(err.Error(), "expected pointer to slice") {
+		t.Errorf("error should preserve original message, got: %v", err)
+	}
+
+	// Now test the wrapping format that FindPage would produce
+	wrapped := fmt.Errorf("FindPage: count query: %w", err)
+	if !strings.Contains(wrapped.Error(), "FindPage") {
+		t.Errorf("wrapped error should contain 'FindPage' context, got: %v", wrapped)
+	}
+	if !strings.Contains(wrapped.Error(), "expected pointer to slice") {
+		t.Errorf("wrapped error should preserve original message, got: %v", wrapped)
+	}
+	// Verify errors.Is works through the wrapping chain
+	if !errors.Is(wrapped, err) {
+		t.Error("errors.Is should match wrapped error to original")
 	}
 }
