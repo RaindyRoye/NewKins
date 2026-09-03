@@ -146,6 +146,11 @@ func (HbtpRunner) ReadFile(c *hbtp.Context) {
 	}
 	defer func() { _ = flr.Close() }()
 	_ = c.ResString(hbtp.ResStatusOk, fmt.Sprintf("%d", flsz))
+	// Set a deadline on the connection so the read loop terminates if the
+	// client stops consuming. This prevents the goroutine from blocking
+	// indefinitely on c.Conn().Write when the remote end has disconnected.
+	deadline := time.Now().Add(30 * time.Minute)
+	_ = c.Conn().SetWriteDeadline(deadline)
 	bts := make([]byte, 10240)
 	for !hbtp.EndContext(comm.Ctx) {
 		n, readErr := flr.Read(bts)
@@ -155,11 +160,13 @@ func (HbtpRunner) ReadFile(c *hbtp.Context) {
 		if readErr != nil {
 			break
 		}
-		_, err := c.Conn().Write(bts[:n])
-		if err != nil {
+		_, writeErr := c.Conn().Write(bts[:n])
+		if writeErr != nil {
 			break
 		}
 	}
+	// Clear the deadline so subsequent operations on this connection are unaffected.
+	_ = c.Conn().SetWriteDeadline(time.Time{})
 }
 func (HbtpRunner) GetEnv(c *hbtp.Context) {
 	buildID := c.ReqHeader().GetString("buildID")
@@ -218,6 +225,11 @@ func (HbtpRunner) UploadFile(c *hbtp.Context) {
 	defer func() { _ = flw.Close() }()
 	_ = c.ResString(hbtp.ResStatusOk, "ok")
 
+	// Set a deadline on the connection so the read loop terminates if the
+	// client stops sending data. This prevents the goroutine from blocking
+	// indefinitely on c.Conn().Read when the remote end has disconnected.
+	deadline := time.Now().Add(30 * time.Minute)
+	_ = c.Conn().SetReadDeadline(deadline)
 	bts := make([]byte, 10240)
 	for !hbtp.EndContext(comm.Ctx) {
 		n, readErr := c.Conn().Read(bts)
@@ -227,11 +239,13 @@ func (HbtpRunner) UploadFile(c *hbtp.Context) {
 		if readErr != nil {
 			break
 		}
-		_, err := flw.Write(bts[:n])
-		if err != nil {
+		_, writeErr := flw.Write(bts[:n])
+		if writeErr != nil {
 			break
 		}
 	}
+	// Clear the deadline so subsequent operations on this connection are unaffected.
+	_ = c.Conn().SetReadDeadline(time.Time{})
 }
 func (HbtpRunner) FindArtVersionId(c *hbtp.Context) {
 	buildID := c.ReqHeader().GetString("buildID")

@@ -125,8 +125,11 @@ func TestCheckOutHash_InvalidHash(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for invalid hash, got nil")
 	}
+	if !errors.Is(err, ErrInvalidHash) {
+		t.Fatalf("expected ErrInvalidHash, got %v", err)
+	}
 	if !strings.Contains(err.Error(), "not a valid git hash") {
-		t.Fatalf("expected 'not a valid git hash', got %q", err.Error())
+		t.Fatalf("expected 'not a valid git hash' in message, got %q", err.Error())
 	}
 }
 
@@ -136,8 +139,11 @@ func TestCheckOutHash_NilRepo(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil repo")
 	}
+	if !errors.Is(err, ErrNilRepository) {
+		t.Fatalf("expected ErrNilRepository, got %v", err)
+	}
 	if !strings.Contains(err.Error(), "repository is nil") {
-		t.Fatalf("expected 'repository is nil', got %q", err.Error())
+		t.Fatalf("expected 'repository is nil' in message, got %q", err.Error())
 	}
 }
 
@@ -171,8 +177,11 @@ func TestCheckOut_NilRepository(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil repository, got nil")
 	}
-	if err.Error() != "checkout: repository is nil" {
-		t.Fatalf("expected 'checkout: repository is nil', got %q", err.Error())
+	if !errors.Is(err, ErrNilRepository) {
+		t.Fatalf("expected ErrNilRepository, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "repository is nil") {
+		t.Fatalf("expected 'repository is nil' in message, got %q", err.Error())
 	}
 }
 
@@ -210,8 +219,11 @@ func TestGetLogs_NilRepository(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil repository, got nil")
 	}
-	if err.Error() != "get logs: repository is nil" {
-		t.Fatalf("expected 'get logs: repository is nil', got %q", err.Error())
+	if !errors.Is(err, ErrNilRepository) {
+		t.Fatalf("expected ErrNilRepository, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "repository is nil") {
+		t.Fatalf("expected 'repository is nil' in message, got %q", err.Error())
 	}
 }
 

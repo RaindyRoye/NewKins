@@ -11,6 +11,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// ErrInvalidSigningMethod is returned when the JWT token uses an unsupported signing algorithm.
+var ErrInvalidSigningMethod = fmt.Errorf("invalid signing method")
+
+// CreateToken generates a JWT token with the given claims and key.
 func CreateToken(claims jwt.MapClaims, key string, tmout time.Duration) (string, error) {
 	claims["times"] = time.Now()
 	if tmout > 0 {
@@ -93,9 +97,9 @@ func GetTokens(s string, key string) jwt.MapClaims {
 	}
 	token, err := jwt.Parse(s, func(token *jwt.Token) (any, error) {
 		// Validate the signing method to prevent algorithm confusion attacks.
-		// We only accept HMAC-based signing (HS512) since that's what CreateToken uses.
+		// Verify the signing method to prevent algorithm substitution attacks
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("%w: unexpected signing method: %v", ErrInvalidSigningMethod, token.Header["alg"])
 		}
 		return []byte(key), nil
 	})

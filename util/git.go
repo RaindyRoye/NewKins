@@ -17,9 +17,12 @@ func CloneRepo(path string, option *git.CloneOptions, ctx context.Context) (*git
 	)
 }
 
+// ErrInvalidHash is returned when the provided string is not a valid git hash.
+var ErrInvalidHash = fmt.Errorf("checkout: not a valid git hash")
+
 func CheckOutHash(repository *git.Repository, hash string) error {
 	if !plumbing.IsHash(hash) {
-		return fmt.Errorf("checkout: %q is not a valid git hash", hash)
+		return fmt.Errorf("%w: %q", ErrInvalidHash, hash)
 	}
 	options := &git.CheckoutOptions{
 		Force: true,
@@ -28,9 +31,12 @@ func CheckOutHash(repository *git.Repository, hash string) error {
 	return CheckOut(repository, options)
 }
 
+// ErrNilRepository is returned when a nil repository is passed to a git operation.
+var ErrNilRepository = fmt.Errorf("repository is nil")
+
 func CheckOut(repository *git.Repository, option *git.CheckoutOptions) error {
 	if repository == nil {
-		return fmt.Errorf("checkout: repository is nil")
+		return fmt.Errorf("checkout: %w", ErrNilRepository)
 	}
 	worktree, err := repository.Worktree()
 	if err != nil {
@@ -51,7 +57,7 @@ func GetLogsHash(repository *git.Repository, hash string) (object.CommitIter, er
 
 func GetLogs(repository *git.Repository, option *git.LogOptions) (object.CommitIter, error) {
 	if repository == nil {
-		return nil, fmt.Errorf("get logs: repository is nil")
+		return nil, fmt.Errorf("get logs: %w", ErrNilRepository)
 	}
 	return repository.Log(option)
 }
