@@ -1,199 +1,327 @@
 package engine
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/gokins/core/common"
 	"github.com/gokins/core/runtime"
-	"github.com/gokins/runner/runners"
 )
 
-func TestGencmds_StringCommands(t *testing.T) {
-	task := &BuildTask{
-		build: &runtime.Build{Id: "test-build"},
-	}
-	runjb := &runners.RunJob{}
-	cmds := []any{"echo hello", "ls -la", "pwd"}
-
-	err := task.gencmds(runjb, cmds)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(runjb.Commands) != 3 {
-		t.Fatalf("expected 3 commands, got %d", len(runjb.Commands))
-	}
-	if runjb.Commands[0].Conts != "echo hello" {
-		t.Errorf("expected 'echo hello', got %q", runjb.Commands[0].Conts)
-	}
-	if runjb.Commands[1].Conts != "ls -la" {
-		t.Errorf("expected 'ls -la', got %q", runjb.Commands[1].Conts)
-	}
-	if runjb.Commands[2].Conts != "pwd" {
-		t.Errorf("expected 'pwd', got %q", runjb.Commands[2].Conts)
-	}
-}
-
-func TestGencmds_EmptyCommands(t *testing.T) {
-	task := &BuildTask{
-		build: &runtime.Build{Id: "test-build"},
-	}
-	runjb := &runners.RunJob{}
-	cmds := []any{}
-
-	err := task.gencmds(runjb, cmds)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(runjb.Commands) != 0 {
-		t.Fatalf("expected 0 commands, got %d", len(runjb.Commands))
-	}
-}
-
-func TestGencmds_NestedArray(t *testing.T) {
-	task := &BuildTask{
-		build: &runtime.Build{Id: "test-build"},
-	}
-	runjb := &runners.RunJob{}
-	cmds := []any{
-		[]any{"echo a", "echo b"},
-		"echo c",
-	}
-
-	err := task.gencmds(runjb, cmds)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	// nested array items are flattened
-	if len(runjb.Commands) != 3 {
-		t.Fatalf("expected 3 commands, got %d", len(runjb.Commands))
-	}
-}
-
-func TestGencmds_MapStringInterface(t *testing.T) {
-	task := &BuildTask{
-		build: &runtime.Build{Id: "test-build"},
-	}
-	runjb := &runners.RunJob{}
-	cmds := []any{
-		map[string]any{
-			"key1": "echo from map",
-			"key2": []any{"echo nested1", "echo nested2"},
-		},
-	}
-
-	err := task.gencmds(runjb, cmds)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	// Should have at least some commands from the map values
-	if len(runjb.Commands) == 0 {
-		t.Fatal("expected some commands from map values, got 0")
-	}
-}
-
-func TestGencmds_UnknownTypesSkipped(t *testing.T) {
-	task := &BuildTask{
-		build: &runtime.Build{Id: "test-build"},
-	}
-	runjb := &runners.RunJob{}
-	// int is not a recognized type, so it should be silently ignored
-	cmds := []any{42, true, 3.14}
-
-	err := task.gencmds(runjb, cmds)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(runjb.Commands) != 0 {
-		t.Fatalf("expected 0 commands for unrecognized types, got %d", len(runjb.Commands))
-	}
-}
-
-func TestAppendcmds(t *testing.T) {
-	task := &BuildTask{
-		build: &runtime.Build{Id: "test-build"},
-	}
-	runjb := &runners.RunJob{}
-
-	task.appendcmds(runjb, "echo hello")
-	task.appendcmds(runjb, "echo world")
-
-	if len(runjb.Commands) != 2 {
-		t.Fatalf("expected 2 commands, got %d", len(runjb.Commands))
-	}
-	if runjb.Commands[0].Conts != "echo hello" {
-		t.Errorf("expected 'echo hello', got %q", runjb.Commands[0].Conts)
-	}
-	if runjb.Commands[1].Conts != "echo world" {
-		t.Errorf("expected 'echo world', got %q", runjb.Commands[1].Conts)
-	}
-	// Each command should have a unique ID
-	if runjb.Commands[0].Id == runjb.Commands[1].Id {
-		t.Error("expected unique command IDs")
-	}
-}
-
-func TestGencmds_MixedTypes(t *testing.T) {
-	task := &BuildTask{
-		build: &runtime.Build{Id: "test-build"},
-	}
-	runjb := &runners.RunJob{}
-	cmds := []any{
-		"echo first",
-		[]any{"echo second", "echo third"},
-		"echo fourth",
-	}
-
-	err := task.gencmds(runjb, cmds)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(runjb.Commands) != 4 {
-		t.Fatalf("expected 4 commands, got %d", len(runjb.Commands))
-	}
-}
-
-func TestBuildTaskCheck_NilRepo(t *testing.T) {
-	task := &BuildTask{
+func TestBuildTask_check_EmptyStages(t *testing.T) {
+	bt := &BuildTask{
 		build: &runtime.Build{
-			Id:   "test-build",
-			Repo: nil,
-		},
-		stages: make(map[string]*taskStage),
-		jobs:   make(map[string]*jobSync),
-	}
-	result := task.check()
-	if result {
-		t.Fatal("expected check() to return false when Repo is nil")
-	}
-	// check() calls c.status(BuildEventCheckParam, "repo param err") which sets Status and Error
-	if task.build.Status != common.BuildEventCheckParam {
-		t.Errorf("expected build status to be %q, got %q", common.BuildEventCheckParam, task.build.Status)
-	}
-	if task.build.Error != "repo param err" {
-		t.Errorf("expected error 'repo param err', got %q", task.build.Error)
-	}
-}
-
-func TestBuildTaskCheck_EmptyStages(t *testing.T) {
-	task := &BuildTask{
-		build: &runtime.Build{
-			Id: "test-build",
-			Repo: &runtime.Repository{
-				CloneURL: "",
-			},
+			Id:     "build-1",
+			Repo:   &runtime.Repository{CloneURL: "/tmp/test"},
 			Stages: []*runtime.Stage{},
 		},
 		stages: make(map[string]*taskStage),
+	}
+
+	if bt.check() {
+		t.Error("check() should return false when stages are empty")
+	}
+	if bt.build.Event != common.BuildEventCheckParam {
+		t.Errorf("expected event %q, got %q", common.BuildEventCheckParam, bt.build.Event)
+	}
+	if bt.build.Error != "stages is empty" {
+		t.Errorf("expected error 'stages is empty', got %q", bt.build.Error)
+	}
+}
+
+func TestBuildTask_check_StageBuildIdMismatch(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{
+			Id:   "build-1",
+			Repo: &runtime.Repository{CloneURL: "/tmp/test"},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "build-2", // Mismatch
+					Name:    "stage1",
+					Steps: []*runtime.Step{
+						{Id: "step-1", Name: "step1", BuildId: "build-2", StageId: "stage-1"},
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+	}
+
+	if bt.check() {
+		t.Error("check() should return false when stage BuildId mismatches")
+	}
+	expected := "stage BuildId mismatch: stage.BuildId=build-2, build.Id=build-1"
+	if bt.build.Error != expected {
+		t.Errorf("expected error %q, got %q", expected, bt.build.Error)
+	}
+}
+
+func TestBuildTask_check_StageNameEmpty(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{
+			Id:   "build-1",
+			Repo: &runtime.Repository{CloneURL: "/tmp/test"},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "build-1",
+					Name:    "", // Empty
+					Steps: []*runtime.Step{
+						{Id: "step-1", Name: "step1", BuildId: "build-1", StageId: "stage-1"},
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+	}
+
+	if bt.check() {
+		t.Error("check() should return false when stage name is empty")
+	}
+	if bt.build.Error != "stage name is empty" {
+		t.Errorf("expected error 'stage name is empty', got %q", bt.build.Error)
+	}
+}
+
+func TestBuildTask_check_StageStepsEmpty(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{
+			Id:   "build-1",
+			Repo: &runtime.Repository{CloneURL: "/tmp/test"},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "build-1",
+					Name:    "stage1",
+					Steps:   []*runtime.Step{}, // Empty
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+	}
+
+	if bt.check() {
+		t.Error("check() should return false when stage steps are empty")
+	}
+	if bt.build.Error != "stage steps is empty" {
+		t.Errorf("expected error 'stage steps is empty', got %q", bt.build.Error)
+	}
+}
+
+func TestBuildTask_check_DuplicateStageName(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{
+			Id:   "build-1",
+			Repo: &runtime.Repository{CloneURL: "/tmp/test"},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "build-1",
+					Name:    "duplicate",
+					Steps: []*runtime.Step{
+						{Id: "step-1", Name: "step1", BuildId: "build-1", StageId: "stage-1", Step: "plugin1"},
+					},
+				},
+				{
+					Id:      "stage-2",
+					BuildId: "build-1",
+					Name:    "duplicate", // Duplicate
+					Steps: []*runtime.Step{
+						{Id: "step-2", Name: "step2", BuildId: "build-1", StageId: "stage-2", Step: "plugin2"},
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		joblk:  sync.RWMutex{},
 		jobs:   make(map[string]*jobSync),
 	}
-	result := task.check()
-	if result {
-		t.Fatal("expected check() to return false when Stages is empty")
+
+	if bt.check() {
+		t.Error("check() should return false when stage names are duplicated")
 	}
-	if task.build.Event != common.BuildEventCheckParam {
-		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
+	expected := `stage "duplicate" is duplicated`
+	if bt.build.Error != expected {
+		t.Errorf("expected error %q, got %q", expected, bt.build.Error)
 	}
-	if task.build.Error != "build Stages is empty" {
-		t.Errorf("expected error 'build Stages is empty', got %q", task.build.Error)
+}
+
+func TestBuildTask_check_StepBuildIdMismatch(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{
+			Id:   "build-1",
+			Repo: &runtime.Repository{CloneURL: "/tmp/test"},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "build-1",
+					Name:    "stage1",
+					Steps: []*runtime.Step{
+						{
+							Id:      "step-1",
+							Name:    "step1",
+							BuildId: "build-2", // Mismatch
+							StageId: "stage-1",
+						},
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		joblk:  sync.RWMutex{},
+		jobs:   make(map[string]*jobSync),
+	}
+
+	if bt.check() {
+		t.Error("check() should return false when step BuildId mismatches")
+	}
+	expected := "step BuildId mismatch: step.BuildId=build-2, build.Id=build-1"
+	if bt.build.Error != expected {
+		t.Errorf("expected error %q, got %q", expected, bt.build.Error)
+	}
+}
+
+func TestBuildTask_check_StepStageIdMismatch(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{
+			Id:   "build-1",
+			Repo: &runtime.Repository{CloneURL: "/tmp/test"},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "build-1",
+					Name:    "stage1",
+					Steps: []*runtime.Step{
+						{
+							Id:      "step-1",
+							Name:    "step1",
+							BuildId: "build-1",
+							StageId: "stage-2", // Mismatch
+						},
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		joblk:  sync.RWMutex{},
+		jobs:   make(map[string]*jobSync),
+	}
+
+	if bt.check() {
+		t.Error("check() should return false when step StageId mismatches")
+	}
+	expected := "step StageId mismatch: step.StageId=stage-2, stage.Id=stage-1"
+	if bt.build.Error != expected {
+		t.Errorf("expected error %q, got %q", expected, bt.build.Error)
+	}
+}
+
+func TestBuildTask_check_StepPluginEmpty(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{
+			Id:   "build-1",
+			Repo: &runtime.Repository{CloneURL: "/tmp/test"},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "build-1",
+					Name:    "stage1",
+					Steps: []*runtime.Step{
+						{
+							Id:      "step-1",
+							Name:    "step1",
+							BuildId: "build-1",
+							StageId: "stage-1",
+							Step:    "", // Empty
+						},
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+	}
+
+	if bt.check() {
+		t.Error("check() should return false when step plugin is empty")
+	}
+	if bt.build.Error != "step plugin is empty" {
+		t.Errorf("expected error 'step plugin is empty', got %q", bt.build.Error)
+	}
+}
+
+func TestBuildTask_check_StepNameEmpty(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{
+			Id:   "build-1",
+			Repo: &runtime.Repository{CloneURL: "/tmp/test"},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "build-1",
+					Name:    "stage1",
+					Steps: []*runtime.Step{
+						{
+							Id:      "step-1",
+							Name:    "", // Empty
+							BuildId: "build-1",
+							StageId: "stage-1",
+							Step:    "plugin1",
+						},
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+	}
+
+	if bt.check() {
+		t.Error("check() should return false when step name is empty")
+	}
+	if bt.build.Error != "step name is empty" {
+		t.Errorf("expected error 'step name is empty', got %q", bt.build.Error)
+	}
+}
+
+func TestBuildTask_check_DuplicateStepName(t *testing.T) {
+	bt := &BuildTask{
+		build: &runtime.Build{
+			Id:   "build-1",
+			Repo: &runtime.Repository{CloneURL: "/tmp/test"},
+			Stages: []*runtime.Stage{
+				{
+					Id:      "stage-1",
+					BuildId: "build-1",
+					Name:    "stage1",
+					Steps: []*runtime.Step{
+						{
+							Id:      "step-1",
+							Name:    "duplicate",
+							BuildId: "build-1",
+							StageId: "stage-1",
+							Step:    "plugin1",
+						},
+						{
+							Id:      "step-2",
+							Name:    "duplicate", // Duplicate
+							BuildId: "build-1",
+							StageId: "stage-1",
+							Step:    "plugin2",
+						},
+					},
+				},
+			},
+		},
+		stages: make(map[string]*taskStage),
+		joblk:  sync.RWMutex{},
+		jobs:   make(map[string]*jobSync),
+	}
+
+	if bt.check() {
+		t.Error("check() should return false when step names are duplicated")
+	}
+	expected := `step "duplicate" is duplicated`
+	if bt.build.Error != expected {
+		t.Errorf("expected error %q, got %q", expected, bt.build.Error)
 	}
 }

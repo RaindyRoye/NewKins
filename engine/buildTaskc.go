@@ -41,29 +41,29 @@ func (c *BuildTask) check() bool {
 	}
 	if len(c.build.Stages) == 0 {
 		c.build.Event = common.BuildEventCheckParam
-		c.build.Error = "build Stages is empty"
+		c.build.Error = "stages is empty"
 		return false
 	}
 	stages := make(map[string]*taskStage)
 	for _, v := range c.build.Stages {
 		if v.BuildId != c.build.Id {
 			c.build.Event = common.BuildEventCheckParam
-			c.build.Error = fmt.Sprintf("Stage Build id err:%s/%s", v.BuildId, c.build.Id)
+			c.build.Error = fmt.Sprintf("stage BuildId mismatch: stage.BuildId=%s, build.Id=%s", v.BuildId, c.build.Id)
 			return false
 		}
 		if v.Name == "" {
 			c.build.Event = common.BuildEventCheckParam
-			c.build.Error = "build Stage name is empty"
+			c.build.Error = "stage name is empty"
 			return false
 		}
 		if len(v.Steps) == 0 {
 			c.build.Event = common.BuildEventCheckParam
-			c.build.Error = "build Stages is empty"
+			c.build.Error = "stage steps is empty"
 			return false
 		}
 		if _, ok := stages[v.Name]; ok {
 			c.build.Event = common.BuildEventCheckParam
-			c.build.Error = fmt.Sprintf("build Stages.%s is repeat", v.Name)
+			c.build.Error = fmt.Sprintf("stage %q is duplicated", v.Name)
 			return false
 		}
 		vs := &taskStage{
@@ -74,28 +74,28 @@ func (c *BuildTask) check() bool {
 		for _, e := range v.Steps {
 			if e.BuildId != c.build.Id {
 				c.build.Event = common.BuildEventCheckParam
-				c.build.Error = fmt.Sprintf("Job Build id err:%s/%s", v.BuildId, c.build.Id)
+				c.build.Error = fmt.Sprintf("step BuildId mismatch: step.BuildId=%s, build.Id=%s", e.BuildId, c.build.Id)
 				return false
 			}
 			if e.StageId != v.Id {
 				c.build.Event = common.BuildEventCheckParam
-				c.build.Error = fmt.Sprintf("Job Stage id err:%s/%s", v.BuildId, c.build.Id)
+				c.build.Error = fmt.Sprintf("step StageId mismatch: step.StageId=%s, stage.Id=%s", e.StageId, v.Id)
 				return false
 			}
 			e.Step = strings.TrimSpace(e.Step)
 			if e.Step == "" {
 				c.build.Event = common.BuildEventCheckParam
-				c.build.Error = "build Step Plugin is empty"
+				c.build.Error = "step plugin is empty"
 				return false
 			}
 			if e.Name == "" {
 				c.build.Event = common.BuildEventCheckParam
-				c.build.Error = "build Step name is empty"
+				c.build.Error = "step name is empty"
 				return false
 			}
 			if _, ok := vs.jobs[e.Name]; ok {
 				c.build.Event = common.BuildEventCheckParam
-				c.build.Error = fmt.Sprintf("build Job.%s is repeat", e.Name)
+				c.build.Error = fmt.Sprintf("step %q is duplicated", e.Name)
 				return false
 			}
 			job := &jobSync{
@@ -106,7 +106,7 @@ func (c *BuildTask) check() bool {
 			err := c.genRunjob(v, job)
 			if err != nil {
 				c.build.Event = common.BuildEventCheckParam
-				c.build.Error = fmt.Sprintf("build Job.%s Commands err:%v", e.Name, err)
+				c.build.Error = fmt.Sprintf("generate commands for step %q: %v", e.Name, err)
 				return false
 			}
 			vs.RLock()
@@ -122,7 +122,7 @@ func (c *BuildTask) check() bool {
 			err:=Mgr.jobEgn.Put(e)
 			if err!=nil{
 				c.build.Event = common.BuildEventPutJob
-				c.build.Error=err.Error()
+				c.build.Error = fmt.Sprintf("failed to put job: %v", err)
 				return false
 			}
 		}
