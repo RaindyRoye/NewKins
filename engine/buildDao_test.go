@@ -9,8 +9,8 @@ import (
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/gokins/runner/runners"
+	_ "github.com/mattn/go-sqlite3"
 	"xorm.io/xorm"
 )
 
@@ -293,7 +293,7 @@ func TestUpdateBuild_EndedStatusPreservesOkStages(t *testing.T) {
 		t.Fatalf("insert ok stage: %v", err)
 	}
 
-	// Insert a pending stage (should be cancelled)
+	// Insert a pending stage (should be canceled)
 	stagePending := &model.TStage{
 		Id:      "stage-dao-pending",
 		BuildId: "build-dao-3",
@@ -331,7 +331,7 @@ func TestUpdateBuild_EndedStatusPreservesOkStages(t *testing.T) {
 		t.Errorf("ok stage status = %q, want %q (should be preserved)", gotOk.Status, common.BuildStatusOk)
 	}
 
-	// Pending stage should be cancelled
+	// Pending stage should be canceled
 	gotPending := &model.TStage{}
 	ok, err = db.Where("id=?", "stage-dao-pending").Get(gotPending)
 	if err != nil {
@@ -437,7 +437,7 @@ func TestUpdateStage_EndedStatusCascadesToSteps(t *testing.T) {
 	}
 	bt.updateStage(rtStage)
 
-	// Pending step should be cancelled
+	// Pending step should be canceled
 	got := &model.TStep{}
 	ok, err := db.Where("id=?", "step-dao-e1").Get(got)
 	if err != nil {
