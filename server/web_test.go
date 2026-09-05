@@ -1,8 +1,12 @@
 package server
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -226,8 +230,8 @@ func TestGetFile_EmptyPath(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty path, got nil")
 	}
-	if err.Error() != "getFile: path parameter is empty" {
-		t.Errorf("unexpected error message: %v", err)
+	if !errors.Is(err, ErrEmptyPath) {
+		t.Errorf("expected ErrEmptyPath, got: %v", err)
 	}
 }
 
@@ -247,8 +251,8 @@ func TestGetFile_PathTraversal(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected error for path traversal, got nil")
 			}
-			if err.Error() != "getFile: invalid path" {
-				t.Errorf("unexpected error message: %v", err)
+			if !errors.Is(err, ErrInvalidPath) {
+				t.Errorf("expected ErrInvalidPath, got: %v", err)
 			}
 		})
 	}
@@ -268,6 +272,41 @@ func TestGetFile_FileNotFound(t *testing.T) {
 	_, err := getFile("nonexistent.html")
 	if err == nil {
 		t.Fatal("expected error when zip reader fails, got nil")
+	}
+}
+
+func TestGetFile_ErrFileNotFoundSentinel(t *testing.T) {
+	// Create a valid zip file to test the ErrFileNotFound sentinel
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origStaticPkg := comm.StaticPkg
+	defer func() { comm.StaticPkg = origStaticPkg }()
+
+	// Create a minimal zip file with one entry
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, err := w.Create("test.txt")
+	if err != nil {
+		t.Fatalf("failed to create zip entry: %v", err)
+	}
+	if _, err := f.Write([]byte("test content")); err != nil {
+		t.Fatalf("failed to write to zip entry: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+
+	comm.StaticPkg = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	// Try to get a file that doesn't exist in the zip
+	_, err = getFile("nonexistent.txt")
+	if err == nil {
+		t.Fatal("expected ErrFileNotFound, got nil")
+	}
+	if !errors.Is(err, ErrFileNotFound) {
+		t.Errorf("expected ErrFileNotFound, got: %v", err)
 	}
 }
 
