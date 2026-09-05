@@ -26,6 +26,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Sentinel errors for file operations
+var (
+	// ErrEmptyPath is returned when a file path parameter is empty.
+	ErrEmptyPath = errors.New("path parameter is empty")
+
+	// ErrInvalidPath is returned when a file path contains invalid characters or attempts directory traversal.
+	ErrInvalidPath = errors.New("invalid path")
+
+	// ErrFileNotFound is returned when a requested file does not exist.
+	ErrFileNotFound = errors.New("file not found")
+)
+
 // shutdownTimeout is the maximum time to wait for in-flight requests
 // to complete during graceful shutdown.
 const shutdownTimeout = 10 * time.Second
@@ -254,12 +266,12 @@ func getRdr() (*zip.Reader, error) {
 }
 func getFile(pth string) (*zip.File, error) {
 	if pth == "" {
-		return nil, errors.New("getFile: path parameter is empty")
+		return nil, fmt.Errorf("getFile: %w", ErrEmptyPath)
 	}
 	// Prevent path traversal attacks
 	cleaned := filepath.Clean(pth)
 	if strings.Contains(cleaned, "..") || filepath.IsAbs(cleaned) {
-		return nil, errors.New("getFile: invalid path")
+		return nil, fmt.Errorf("getFile: %w", ErrInvalidPath)
 	}
 	// println("getFile:" + pth)
 	r, err := getRdr()
@@ -273,5 +285,5 @@ func getFile(pth string) (*zip.File, error) {
 			return f, nil
 		}
 	}
-	return nil, errors.New("file not found")
+	return nil, fmt.Errorf("getFile: %w", ErrFileNotFound)
 }
