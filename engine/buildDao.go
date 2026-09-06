@@ -26,6 +26,11 @@ func (c *BuildTask) taskCtx() context.Context {
 func (c *BuildTask) updateBuild(build *runtime.Build) {
 	defer util.RecoverLog("BuildTask.updateBuild")
 
+	if comm.Db == nil {
+		logrus.Errorf("BuildTask.updateBuild: %v", ErrDbNil)
+		return
+	}
+
 	ctx := c.taskCtx()
 
 	e := &model.TBuild{
@@ -81,6 +86,11 @@ func (c *BuildTask) updateBuild(build *runtime.Build) {
 func (c *BuildTask) updateStage(stage *runtime.Stage) {
 	defer util.RecoverLog("BuildTask.updateStage")
 
+	if comm.Db == nil {
+		logrus.Errorf("BuildTask.updateStage: %v", ErrDbNil)
+		return
+	}
+
 	ctx := c.taskCtx()
 
 	e := &model.TStage{
@@ -113,6 +123,11 @@ func (c *BuildTask) updateStage(stage *runtime.Stage) {
 }
 func (c *BuildTask) updateStep(job *jobSync) {
 	defer util.RecoverLog("BuildTask.updateStep")
+
+	if comm.Db == nil {
+		logrus.Errorf("BuildTask.updateStep: %v", ErrDbNil)
+		return
+	}
 
 	ctx := c.taskCtx()
 
@@ -149,6 +164,11 @@ func (c *BuildTask) updateStep(job *jobSync) {
 }
 func (c *BuildTask) updateStepCmd(cmd *cmdSync) {
 	defer util.RecoverLog("BuildTask.updateStepCmd")
+
+	if comm.Db == nil {
+		logrus.Errorf("BuildTask.updateStepCmd: %v", ErrDbNil)
+		return
+	}
 
 	ctx := c.taskCtx()
 
