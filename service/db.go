@@ -78,9 +78,16 @@ func BatchOrgPipeCounts(ctx context.Context, orgIds []string) (map[string]int64,
 		Cnt   int64  `xorm:"cnt"`
 	}
 	var counts []orgCount
+
+	// Build IN clause with placeholders for SQLite compatibility
+	placeholders := make([]interface{}, len(orgIds))
+	for i, id := range orgIds {
+		placeholders[i] = id
+	}
+
 	err := comm.Db.Context(ctx).SQL(
 		"SELECT org_id, COUNT(*) as cnt FROM t_org_pipe WHERE org_id IN (?) GROUP BY org_id",
-		orgIds,
+		placeholders...,
 	).Find(&counts)
 	if err != nil {
 		return nil, fmt.Errorf("batch org pipe counts: %w", err)
@@ -103,9 +110,16 @@ func BatchOrgUserCounts(ctx context.Context, orgIds []string) (map[string]int64,
 		Cnt   int64  `xorm:"cnt"`
 	}
 	var counts []orgCount
+
+	// Build IN clause with placeholders for SQLite compatibility
+	placeholders := make([]interface{}, len(orgIds))
+	for i, id := range orgIds {
+		placeholders[i] = id
+	}
+
 	err := comm.Db.Context(ctx).SQL(
 		"SELECT org_id, COUNT(*) as cnt FROM t_user_org WHERE org_id IN (?) GROUP BY org_id",
-		orgIds,
+		placeholders...,
 	).Find(&counts)
 	if err != nil {
 		return nil, fmt.Errorf("batch org user counts: %w", err)
