@@ -117,7 +117,7 @@ func (c *Pipeline) Check() error {
 			return errors.New("steps is empty")
 		}
 		if _, ok := stages[v.Name]; ok {
-			return fmt.Errorf("duplicate stage name: %s", v.Name)
+			return fmt.Errorf("%w: %s", ErrDuplicateStage, v.Name)
 		}
 		m := map[string]*Step{}
 		stages[v.Name] = m
@@ -129,7 +129,7 @@ func (c *Pipeline) Check() error {
 				return errors.New("step name is empty")
 			}
 			if _, ok := m[e.Name]; ok {
-				return fmt.Errorf("duplicate step name: %s", e.Name)
+				return fmt.Errorf("%w: %s", ErrDuplicateStep, e.Name)
 			}
 			m[e.Name] = e
 		}
