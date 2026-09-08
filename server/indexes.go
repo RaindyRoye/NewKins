@@ -45,16 +45,19 @@ func ensureIndexes() {
 		// t_cmd_line: queried by build_id and step_id for log streaming
 		{"t_cmd_line", "idx_cmdline_build_id", "build_id"},
 		{"t_cmd_line", "idx_cmdline_step_id", "step_id"},
+		{"t_cmd_line", "idx_cmdline_build_step", "build_id, step_id"},
 
 		// t_pipeline: queried by uid and deleted flag
 		{"t_pipeline", "idx_pipeline_uid", "uid"},
 		{"t_pipeline", "idx_pipeline_deleted", "deleted"},
+		{"t_pipeline", "idx_pipeline_id_deleted", "id, deleted"},
 
 		// t_pipeline_conf: queried by pipeline_id
 		{"t_pipeline_conf", "idx_pipeconf_pipeline_id", "pipeline_id"},
 
 		// t_pipeline_version: queried by pipeline_id
 		{"t_pipeline_version", "idx_pipever_pipeline_id", "pipeline_id"},
+		{"t_pipeline_version", "idx_pipever_pipeline_deleted", "pipeline_id, deleted"},
 
 		// t_pipeline_var: queried by pipeline_id
 		{"t_pipeline_var", "idx_pipevar_pipeline_id", "pipeline_id"},
@@ -70,6 +73,7 @@ func ensureIndexes() {
 
 		// t_artifactory: queried by identifier + org_id
 		{"t_artifactory", "idx_artifactory_identifier", "identifier"},
+		{"t_artifactory", "idx_artifactory_identifier_org", "identifier, org_id"},
 
 		// t_org_pipe: used in subqueries filtered by pipe_id
 		{"t_org_pipe", "idx_orgpipe_pipe_id", "pipe_id"},
@@ -77,11 +81,15 @@ func ensureIndexes() {
 		// t_org_pipe: composite index for WHERE org_id=? AND pipe_id=? lookups
 		{"t_org_pipe", "idx_orgpipe_org_pipe", "org_id, pipe_id"},
 
+		// t_user_org: queried by uid and org_id for permission checks
+		{"t_user_org", "idx_userorg_uid_org", "uid, org_id"},
+
 		// t_artifact_version: queried by package_id
 		{"t_artifact_version", "idx_artver_package_id", "package_id"},
 
 		// t_artifact_package: filtered by deleted + repo_id in artifact listing
 		{"t_artifact_package", "idx_artpkg_deleted_repo", "deleted, repo_id"},
+		{"t_artifact_package", "idx_artpkg_deleted_repo_name", "deleted, repo_id, name"},
 
 		// t_build: batch status updates filter by status columns
 		{"t_build", "idx_build_status", "status"},

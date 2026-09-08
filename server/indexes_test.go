@@ -59,9 +59,54 @@ func TestEnsureIndexes_WithSQLite(t *testing.T) {
 		t.Fatalf("create org_pipe table: %v", err)
 	}
 
+	_, err = db.Exec(`CREATE TABLE t_cmd_line (
+		id VARCHAR(64) PRIMARY KEY,
+		build_id VARCHAR(64),
+		step_id VARCHAR(64)
+	)`)
+	if err != nil {
+		t.Fatalf("create cmd_line table: %v", err)
+	}
+
+	_, err = db.Exec(`CREATE TABLE t_pipeline (
+		id VARCHAR(64) PRIMARY KEY,
+		deleted INT
+	)`)
+	if err != nil {
+		t.Fatalf("create pipeline table: %v", err)
+	}
+
+	_, err = db.Exec(`CREATE TABLE t_pipeline_version (
+		id VARCHAR(64) PRIMARY KEY,
+		pipeline_id VARCHAR(64),
+		deleted INT
+	)`)
+	if err != nil {
+		t.Fatalf("create pipeline_version table: %v", err)
+	}
+
+	_, err = db.Exec(`CREATE TABLE t_artifactory (
+		id VARCHAR(64) PRIMARY KEY,
+		identifier VARCHAR(64),
+		org_id VARCHAR(64)
+	)`)
+	if err != nil {
+		t.Fatalf("create artifactory table: %v", err)
+	}
+
+	_, err = db.Exec(`CREATE TABLE t_user_org (
+		id VARCHAR(64) PRIMARY KEY,
+		uid VARCHAR(64),
+		org_id VARCHAR(64)
+	)`)
+	if err != nil {
+		t.Fatalf("create user_org table: %v", err)
+	}
+
 	_, err = db.Exec(`CREATE TABLE t_artifact_package (
 		id VARCHAR(64) PRIMARY KEY,
 		repo_id VARCHAR(64),
+		name VARCHAR(64),
 		deleted INT
 	)`)
 	if err != nil {
@@ -109,6 +154,66 @@ func TestEnsureIndexes_WithSQLite(t *testing.T) {
 	}
 	if buildStatusCount != 1 {
 		t.Errorf("expected index idx_build_status to exist, got count=%d", buildStatusCount)
+	}
+
+	// Verify composite index on t_cmd_line (build_id, step_id)
+	var cmdLineBuildStepCount int
+	_, err = db.SQL("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_cmdline_build_step'").Get(&cmdLineBuildStepCount)
+	if err != nil {
+		t.Fatalf("query cmd_line build_step index: %v", err)
+	}
+	if cmdLineBuildStepCount != 1 {
+		t.Errorf("expected index idx_cmdline_build_step to exist, got count=%d", cmdLineBuildStepCount)
+	}
+
+	// Verify composite index on t_pipeline (id, deleted)
+	var pipelineIdDeletedCount int
+	_, err = db.SQL("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_pipeline_id_deleted'").Get(&pipelineIdDeletedCount)
+	if err != nil {
+		t.Fatalf("query pipeline id_deleted index: %v", err)
+	}
+	if pipelineIdDeletedCount != 1 {
+		t.Errorf("expected index idx_pipeline_id_deleted to exist, got count=%d", pipelineIdDeletedCount)
+	}
+
+	// Verify composite index on t_pipeline_version (pipeline_id, deleted)
+	var pipeverPipelineDeletedCount int
+	_, err = db.SQL("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_pipever_pipeline_deleted'").Get(&pipeverPipelineDeletedCount)
+	if err != nil {
+		t.Fatalf("query pipeline_version pipeline_deleted index: %v", err)
+	}
+	if pipeverPipelineDeletedCount != 1 {
+		t.Errorf("expected index idx_pipever_pipeline_deleted to exist, got count=%d", pipeverPipelineDeletedCount)
+	}
+
+	// Verify composite index on t_artifactory (identifier, org_id)
+	var artifactoryIdentifierOrgCount int
+	_, err = db.SQL("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_artifactory_identifier_org'").Get(&artifactoryIdentifierOrgCount)
+	if err != nil {
+		t.Fatalf("query artifactory identifier_org index: %v", err)
+	}
+	if artifactoryIdentifierOrgCount != 1 {
+		t.Errorf("expected index idx_artifactory_identifier_org to exist, got count=%d", artifactoryIdentifierOrgCount)
+	}
+
+	// Verify composite index on t_user_org (uid, org_id)
+	var userorgUidOrgCount int
+	_, err = db.SQL("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_userorg_uid_org'").Get(&userorgUidOrgCount)
+	if err != nil {
+		t.Fatalf("query user_org uid_org index: %v", err)
+	}
+	if userorgUidOrgCount != 1 {
+		t.Errorf("expected index idx_userorg_uid_org to exist, got count=%d", userorgUidOrgCount)
+	}
+
+	// Verify composite index on t_artifact_package (deleted, repo_id, name)
+	var artpkgDeletedRepoNameCount int
+	_, err = db.SQL("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_artpkg_deleted_repo_name'").Get(&artpkgDeletedRepoNameCount)
+	if err != nil {
+		t.Fatalf("query artifact_package deleted_repo_name index: %v", err)
+	}
+	if artpkgDeletedRepoNameCount != 1 {
+		t.Errorf("expected index idx_artpkg_deleted_repo_name to exist, got count=%d", artpkgDeletedRepoNameCount)
 	}
 
 	// Run ensureIndexes again — should be idempotent (no error)
