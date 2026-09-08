@@ -263,7 +263,8 @@ func getOrgVars(ctx context.Context, pipelineId string) ([]*model.TOrgVar, error
 }
 
 func convertVar(ctx context.Context, pipelineId string, vm map[string]string) (map[string]*runtime.Variables, error) {
-	vms := make(map[string]*runtime.Variables, 0)
+	// Pre-allocate with estimated capacity: vm entries + typical org/pipeline vars
+	vms := make(map[string]*runtime.Variables, len(vm)+20)
 
 	oVars, err := getOrgVars(ctx, pipelineId)
 	if err != nil {
@@ -464,7 +465,8 @@ func BatchCountArtifactPackages(ctx context.Context, repoIds []string) (map[stri
 	if len(repoIds) == 0 {
 		return map[string]int64{}, nil
 	}
-	result := make(map[string]int64)
+	// Pre-allocate with input length as capacity hint
+	result := make(map[string]int64, len(repoIds))
 	type countRow struct {
 		RepoId string `xorm:"repo_id"`
 		Count  int64  `xorm:"cnt"`
@@ -490,7 +492,8 @@ func BatchCountArtifactVersions(ctx context.Context, packageIds []string) (map[s
 	if len(packageIds) == 0 {
 		return map[string]int64{}, nil
 	}
-	result := make(map[string]int64)
+	// Pre-allocate with input length as capacity hint
+	result := make(map[string]int64, len(packageIds))
 	type countRow struct {
 		PackageId string `xorm:"package_id"`
 		Count     int64  `xorm:"cnt"`

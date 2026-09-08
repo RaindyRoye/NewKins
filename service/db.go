@@ -85,7 +85,8 @@ func BatchOrgPipeCounts(ctx context.Context, orgIds []string) (map[string]int64,
 	if err != nil {
 		return nil, fmt.Errorf("batch org pipe counts: %w", err)
 	}
-	result := make(map[string]int64, len(counts))
+	// Pre-allocate with input length as capacity hint
+	result := make(map[string]int64, len(orgIds))
 	for _, c := range counts {
 		result[c.OrgId] = c.Cnt
 	}
@@ -110,7 +111,8 @@ func BatchOrgUserCounts(ctx context.Context, orgIds []string) (map[string]int64,
 	if err != nil {
 		return nil, fmt.Errorf("batch org user counts: %w", err)
 	}
-	result := make(map[string]int64, len(counts))
+	// Pre-allocate with input length as capacity hint
+	result := make(map[string]int64, len(orgIds))
 	for _, c := range counts {
 		result[c.OrgId] = c.Cnt
 	}
