@@ -112,7 +112,7 @@ func Asset(name string) ([]byte, error) {
 	if f, ok := _bindata[cannonicalName]; ok {
 		return f()
 	}
-	return nil, fmt.Errorf("Asset %s not found", name)
+	return nil, fmt.Errorf("Asset %s not found: %w", name, ErrAssetNotFound)
 }
 
 // AssetNames returns the names of the assets.
@@ -159,12 +159,12 @@ func AssetDir(name string) ([]string, error) {
 		for _, p := range pathList {
 			node = node.Children[p]
 			if node == nil {
-				return nil, fmt.Errorf("Asset %s not found", name)
+				return nil, fmt.Errorf("Asset %s not found: %w", name, ErrAssetNotFound)
 			}
 		}
 	}
 	if node.Func != nil {
-		return nil, fmt.Errorf("Asset %s not found", name)
+		return nil, fmt.Errorf("Asset %s not found: %w", name, ErrAssetNotFound)
 	}
 	rv := make([]string, 0, len(node.Children))
 	for name := range node.Children {

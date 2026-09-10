@@ -37,6 +37,19 @@ func TestAsset_NotFound(t *testing.T) {
 	}
 }
 
+func TestAsset_NotFound_WrapsSentinel(t *testing.T) {
+	_, err := Asset("nonexistent/file.sql")
+	if err == nil {
+		t.Fatal("Asset(\"nonexistent/file.sql\") expected error, got nil")
+	}
+	if !errors.Is(err, ErrAssetNotFound) {
+		t.Errorf("Asset not-found error should wrap ErrAssetNotFound, got: %v", err)
+	}
+	if err.Error() == "" {
+		t.Error("error message should not be empty")
+	}
+}
+
 func TestAsset_BackslashNormalization(t *testing.T) {
 	// Test that backslashes are normalized to forward slashes
 	data, err := Asset("mysql\\000001_gokins.down.sql")
@@ -108,6 +121,29 @@ func TestAssetDir_NotFound(t *testing.T) {
 	}
 }
 
+func TestAssetDir_NotFound_WrapsSentinel(t *testing.T) {
+	tests := []struct {
+		name  string
+		asset string
+	}{
+		{"nonexistent directory", "nonexistent"},
+		{"nonexistent file (leaf node)", "mysql/000001_gokins.up.sql"},
+		{"deep path nonexistent", "nonexistent/path"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := AssetDir(tt.asset)
+			if err == nil {
+				t.Fatalf("AssetDir(%q) expected error, got nil", tt.asset)
+			}
+			if !errors.Is(err, ErrAssetNotFound) {
+				t.Errorf("AssetDir error should wrap ErrAssetNotFound, got: %v", err)
+			}
+		})
+	}
+}
+
 func TestBindataRead_InvalidData(t *testing.T) {
 	// Test that bindata_read returns a wrapped error for invalid gzip data
 	_, err := bindata_read([]byte("not gzip data"), "test")
@@ -120,3 +156,14 @@ func TestBindataRead_InvalidData(t *testing.T) {
 		t.Fatal("bindata_read error should be wrapped to allow unwrapping")
 	}
 }
+
+func TestErrAssetNotFound_IsSentinel(t *testing.T) {
+	// Verify ErrAssetNotFound is a proper sentinel error
+	if ErrAssetNotFound == nil {
+		t.Fatal("ErrAssetNotFound should not be nil")
+	}
+	if ErrAssetNotFound.Error() == "" {
+		t.Error("ErrAssetNotFound message should not be empty")
+	}
+}
+
