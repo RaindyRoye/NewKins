@@ -253,3 +253,60 @@ func TestCtx_Cancellation(t *testing.T) {
 	err = Ctx.Err()
 	assert.ErrorIs(t, err, context.Canceled, "context should be canceled")
 }
+
+// --- Tests for new App helper methods ---
+
+func TestApp_DbContext_NilDb(t *testing.T) {
+	app := &App{Db: nil}
+	ctx := context.Background()
+	session := app.DbContext(ctx)
+	assert.Nil(t, session, "DbContext should return nil when Db is nil")
+}
+
+func TestApp_IsInstalled(t *testing.T) {
+	tests := []struct {
+		name      string
+		installed bool
+		want      bool
+	}{
+		{"installed", true, true},
+		{"not installed", false, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := &App{Installed: tt.installed}
+			assert.Equal(t, tt.want, app.IsInstalled())
+		})
+	}
+}
+
+func TestApp_IsReady(t *testing.T) {
+	// Test with nil Db - should not be ready even if installed
+	app := &App{Installed: true, Db: nil}
+	assert.False(t, app.IsReady(), "IsReady() with nil Db should be false")
+
+	// Test not installed with nil Db
+	app2 := &App{Installed: false, Db: nil}
+	assert.False(t, app2.IsReady(), "IsReady() when not installed should be false")
+}
+
+func TestApp_GetWebHost(t *testing.T) {
+	app := &App{WebHost: "http://test.com"}
+	assert.Equal(t, "http://test.com", app.GetWebHost())
+}
+
+func TestApp_GetWorkPath(t *testing.T) {
+	app := &App{WorkPath: "/var/lib/gokins"}
+	assert.Equal(t, "/var/lib/gokins", app.GetWorkPath())
+}
+
+func TestApp_GetConfig(t *testing.T) {
+	cfg := Config{}
+	cfg.Server.Host = "http://config.test.com"
+
+	app := &App{Cfg: cfg}
+
+	got := app.GetConfig()
+	assert.Equal(t, "http://config.test.com", got.Server.Host, "GetConfig() should return config")
+}
