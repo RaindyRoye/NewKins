@@ -137,3 +137,42 @@ func ResetCtx() {
 	}
 	Ctx, cncl = context.WithCancel(context.Background())
 }
+
+// --- Context-aware helper methods on App ---
+
+// DbContext returns a database session bound to the given context.
+// This is the preferred way to perform database operations in handlers
+// that receive a request context, ensuring proper timeout and cancellation.
+func (a *App) DbContext(ctx context.Context) *xorm.Session {
+	if a.Db == nil {
+		return nil
+	}
+	return a.Db.Context(ctx)
+}
+
+// IsInstalled checks whether the application has completed installation.
+// Thread-safe: reads the atomic Installed flag.
+func (a *App) IsInstalled() bool {
+	return a.Installed
+}
+
+// IsReady returns true when the application is both installed and the
+// database engine is available. Use this in readiness probes.
+func (a *App) IsReady() bool {
+	return a.Installed && a.Db != nil
+}
+
+// GetWebHost returns the configured web host URL.
+func (a *App) GetWebHost() string {
+	return a.WebHost
+}
+
+// GetWorkPath returns the configured working directory path.
+func (a *App) GetWorkPath() string {
+	return a.WorkPath
+}
+
+// GetConfig returns a copy of the application configuration.
+func (a *App) GetConfig() Config {
+	return a.Cfg
+}
