@@ -130,14 +130,14 @@ func TestCheckOutHash_InvalidHash(t *testing.T) {
 	}
 }
 
-// TestCheckOutHash_NilRepo verifies the nil guard.
+// TestCheckOutHash_NilRepo verifies the nil guard with %w wrapping.
 func TestCheckOutHash_NilRepo(t *testing.T) {
 	err := CheckOutHash(nil, "0123456789abcdef0123456789abcdef01234567")
 	if err == nil {
 		t.Fatal("expected error for nil repo")
 	}
-	if !strings.Contains(err.Error(), "repository is nil") {
-		t.Fatalf("expected 'repository is nil', got %q", err.Error())
+	if !errors.Is(err, ErrNilRepository) {
+		t.Fatalf("expected ErrNilRepository in chain, got %q", err.Error())
 	}
 }
 
@@ -165,14 +165,14 @@ func TestCheckOut_Valid(t *testing.T) {
 	}
 }
 
-// TestCheckOut_NilRepository verifies the nil guard.
+// TestCheckOut_NilRepository verifies the nil guard with %w wrapping.
 func TestCheckOut_NilRepository(t *testing.T) {
 	err := CheckOut(nil, nil)
 	if err == nil {
 		t.Fatal("expected error for nil repository, got nil")
 	}
-	if err.Error() != "checkout: repository is nil" {
-		t.Fatalf("expected 'checkout: repository is nil', got %q", err.Error())
+	if !errors.Is(err, ErrNilRepository) {
+		t.Fatalf("expected ErrNilRepository in chain, got %q", err.Error())
 	}
 }
 
@@ -204,14 +204,14 @@ func TestGetLogsHash(t *testing.T) {
 	}
 }
 
-// TestGetLogs_NilRepository verifies the nil guard.
+// TestGetLogs_NilRepository verifies the nil guard with %w wrapping.
 func TestGetLogs_NilRepository(t *testing.T) {
 	_, err := GetLogs(nil, nil)
 	if err == nil {
 		t.Fatal("expected error for nil repository, got nil")
 	}
-	if err.Error() != "get logs: repository is nil" {
-		t.Fatalf("expected 'get logs: repository is nil', got %q", err.Error())
+	if !errors.Is(err, ErrNilRepository) {
+		t.Fatalf("expected ErrNilRepository in chain, got %q", err.Error())
 	}
 }
 

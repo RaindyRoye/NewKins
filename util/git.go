@@ -2,12 +2,16 @@ package util
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
+
+// ErrNilRepository is returned when a nil repository is passed to checkout or log operations.
+var ErrNilRepository = errors.New("repository is nil")
 
 func CloneRepo(path string, option *git.CloneOptions, ctx context.Context) (*git.Repository, error) {
 	return git.PlainCloneContext(ctx,
@@ -30,7 +34,7 @@ func CheckOutHash(repository *git.Repository, hash string) error {
 
 func CheckOut(repository *git.Repository, option *git.CheckoutOptions) error {
 	if repository == nil {
-		return fmt.Errorf("checkout: repository is nil")
+		return fmt.Errorf("checkout: %w", ErrNilRepository)
 	}
 	worktree, err := repository.Worktree()
 	if err != nil {
@@ -51,7 +55,7 @@ func GetLogsHash(repository *git.Repository, hash string) (object.CommitIter, er
 
 func GetLogs(repository *git.Repository, option *git.LogOptions) (object.CommitIter, error) {
 	if repository == nil {
-		return nil, fmt.Errorf("get logs: repository is nil")
+		return nil, fmt.Errorf("get logs: %w", ErrNilRepository)
 	}
 	return repository.Log(option)
 }
