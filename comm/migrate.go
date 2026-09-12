@@ -3,10 +3,14 @@ package comm
 import (
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 )
+
+// ErrAssetNotFound is returned when a requested embedded asset does not exist.
+var ErrAssetNotFound = errors.New("asset not found")
 
 func bindata_read(data []byte, name string) ([]byte, error) {
 	gz, err := gzip.NewReader(bytes.NewBuffer(data))
@@ -112,7 +116,7 @@ func Asset(name string) ([]byte, error) {
 	if f, ok := _bindata[cannonicalName]; ok {
 		return f()
 	}
-	return nil, fmt.Errorf("Asset %s not found", name)
+	return nil, fmt.Errorf("%s: %w", name, ErrAssetNotFound)
 }
 
 // AssetNames returns the names of the assets.
@@ -159,12 +163,12 @@ func AssetDir(name string) ([]string, error) {
 		for _, p := range pathList {
 			node = node.Children[p]
 			if node == nil {
-				return nil, fmt.Errorf("Asset %s not found", name)
+				return nil, fmt.Errorf("%s: %w", name, ErrAssetNotFound)
 			}
 		}
 	}
 	if node.Func != nil {
-		return nil, fmt.Errorf("Asset %s not found", name)
+		return nil, fmt.Errorf("%s: %w", name, ErrAssetNotFound)
 	}
 	rv := make([]string, 0, len(node.Children))
 	for name := range node.Children {
