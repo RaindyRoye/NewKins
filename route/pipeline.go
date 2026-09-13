@@ -143,6 +143,10 @@ func (PipelineController) save(c *gin.Context, m *hbtp.Map) {
 	ctx := c.Request.Context()
 	usr := service.GetMidLgUser(c)
 	perm := service.NewPipePermCtx(ctx, usr, pipelineId)
+	if perm.Pipeline() == nil || perm.Pipeline().Deleted == 1 {
+		c.String(http.StatusNotFound, "未找到流水线信息")
+		return
+	}
 	if !perm.CanWrite() {
 		c.String(http.StatusMethodNotAllowed, "No Auth")
 		return
