@@ -231,3 +231,45 @@ func TestLogin_login_Success(t *testing.T) {
 		t.Errorf("expected name=validuser, got %s", resp.Name)
 	}
 }
+
+func TestLogin_login_MissingLoginKey(t *testing.T) {
+	setupLoginTestDB(t)
+	// Explicitly clear the login key to simulate misconfiguration
+	comm.Cfg.Server.LoginKey = ""
+	createLoginTestUser(t, "keyuser", "Key User", "pass123", 1)
+	ctrl := LoginController{}
+
+	c, w := makeLoginGinCtx(t, &bean.LoginReq{Name: "keyuser", Pass: "pass123"})
+	ctrl.login(c, &bean.LoginReq{Name: "keyuser", Pass: "pass123"})
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("status code = %d, want %d, body: %s", w.Code, http.StatusInternalServerError, w.Body.String())
+	}
+	if w.Body.String() != "server configuration error: login key not set" {
+		t.Errorf("body = %q, want %q", w.Body.String(), "server configuration error: login key not set")
+	}
+}
+
+func TestLogin_login_WhitespaceName(t *testing.T) {
+	setupLoginTestDB(t)
+	ctrl := LoginController{}
+
+	c, w := makeLoginGinCtx(t, &bean.LoginReq{Name: "   ", Pass: "pass123"})
+	ctrl.login(c, &bean.LoginReq{Name: "   ", Pass: "pass123"})
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status code = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestLoginController_Routes(t *testing.T) {
+	setupLoginTestDB(t)
+	ctrl := LoginController{}
+	if ctrl.GetPath() != "/api/lg" {
+		t.Errorf("GetPath() = %q, want %q", ctrl.GetPath(), "/api/lg")
+	}
+	// Verify Routes can be called without panic
+	gin.SetMode(gin.TestMode)
+	e := gin.New()
+	ctrl.Routes(e)
+}

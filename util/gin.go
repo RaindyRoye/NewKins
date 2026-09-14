@@ -112,7 +112,7 @@ func RecoverResult(errp *error, label string) {
 	if e, ok := r.(error); ok {
 		*errp = fmt.Errorf("%s: panic: %w", label, e)
 	} else {
-		*errp = fmt.Errorf("%s: panic: %v", label, r)
+		*errp = fmt.Errorf("%s: panic: %w", label, fmt.Errorf("%v", r))
 	}
 }
 
