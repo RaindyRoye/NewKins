@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/service"
@@ -24,67 +25,60 @@ func setupUserTestDB(t *testing.T) {
 
 	db, err := xorm.NewEngine("sqlite3", ":memory:")
 	if err != nil {
-		t.Fatalf("failed to init test DB: %v", err)
+		t.Fatalf("open sqlite: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	// Create the t_user table
-	_, err = db.Exec(`CREATE TABLE t_user (
-		id VARCHAR(64) NOT NULL PRIMARY KEY,
-		aid BIGINT,
-		name VARCHAR(100),
-		pass VARCHAR(255),
-		nick VARCHAR(100),
-		avatar VARCHAR(500),
-		created DATETIME,
-		login_time DATETIME,
-		active INT DEFAULT 0
-	)`)
-	if err != nil {
-		t.Fatalf("failed to create t_user table: %v", err)
+	tables := []string{
+		`CREATE TABLE t_user (
+			id VARCHAR(64) NOT NULL PRIMARY KEY,
+			aid BIGINT,
+			name VARCHAR(100),
+			pass VARCHAR(255),
+			nick VARCHAR(100),
+			avatar VARCHAR(500),
+			created DATETIME,
+			login_time DATETIME,
+			active INT DEFAULT 0
+		)`,
+		`CREATE TABLE t_user_info (
+			id VARCHAR(64) NOT NULL PRIMARY KEY,
+			phone VARCHAR(100),
+			email VARCHAR(200),
+			birthday DATETIME,
+			remark TEXT,
+			perm_user INT DEFAULT 0,
+			perm_org INT DEFAULT 0,
+			perm_pipe INT DEFAULT 0
+		)`,
 	}
 
-	// Create the t_user_info table
-	_, err = db.Exec(`CREATE TABLE t_user_info (
-		id VARCHAR(64) NOT NULL PRIMARY KEY,
-		phone VARCHAR(100),
-		email VARCHAR(200),
-		birthday DATETIME,
-		remark TEXT,
-		perm_user INT,
-		perm_org INT,
-		perm_pipe INT
-	)`)
-	if err != nil {
-		t.Fatalf("failed to create t_user_info table: %v", err)
+	for _, sql := range tables {
+		if _, err := db.Exec(sql); err != nil {
+			t.Fatalf("exec %q: %v", sql[:40], err)
+		}
 	}
 
 	comm.Db = db
 }
 
-func generateTestID() string {
-	return time.Now().Format("20060102150405.000000")
-}
-
-func createUserForTest(t *testing.T, name, nick, pass string, active int) *model.TUser {
+func createUserTestUser(t *testing.T, name, nick string) *model.TUser {
 	t.Helper()
-	user := &model.TUser{
-		Id:        generateTestID(),
+	usr := &model.TUser{
+		Id:        utils.NewXid(),
 		Name:      name,
 		Nick:      nick,
-		Pass:      pass,
-		Active:    active,
+		Active:    1,
 		Created:   time.Now(),
 		LoginTime: time.Now(),
 	}
-	_, err := comm.Db.InsertOne(user)
-	if err != nil {
-		t.Fatalf("failed to create test user: %v", err)
+	if _, err := comm.Db.InsertOne(usr); err != nil {
+		t.Fatalf("create user: %v", err)
 	}
-	return user
+	return usr
 }
 
-func makeGinContext(t *testing.T, body interface{}, loggedInUser *model.TUser) (*gin.Context, *httptest.ResponseRecorder) {
+func makeUserGinCtx(t *testing.T, body interface{}, lgUser *model.TUser) (*gin.Context, *httptest.ResponseRecorder) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
@@ -92,269 +86,441 @@ func makeGinContext(t *testing.T, body interface{}, loggedInUser *model.TUser) (
 
 	var req *http.Request
 	if body != nil {
-		bodyBytes, _ := json.Marshal(body)
-		req = httptest.NewRequest("POST", "/test", bytes.NewReader(bodyBytes))
+		bts, _ := json.Marshal(body)
+		req = httptest.NewRequest("POST", "/test", bytes.NewReader(bts))
 	} else {
 		req = httptest.NewRequest("POST", "/test", nil)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	c.Request = req
 
-	if loggedInUser != nil {
-		c.Set(service.LgUserKey, loggedInUser)
+	if lgUser != nil {
+		c.Set(service.LgUserKey, lgUser)
 	}
 	return c, w
 }
 
-func TestUserController_page_EmptyDB(t *testing.T) {
+func TestUserController_page(t *testing.T) {
 	setupUserTestDB(t)
+	user1 := createUserTestUser(t, "alice", "Alice")
+	createUserTestUser(t, "bob", "Bob")
+	createUserTestUser(t, "charlie", "Charlie")
+
 	ctrl := UserController{}
 	m := &hbtp.Map{}
 	m.Set("q", "")
 	m.Set("page", int64(1))
-	c, w := makeGinContext(t, m, nil)
+
+	c, w := makeUserGinCtx(t, m, user1)
 	ctrl.page(c, m)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status code = %d, want %d, body: %s", w.Code, http.StatusOK, w.Body.String())
+		t.Fatalf("status = %d, body: %s", w.Code, w.Body.String())
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp["data"] == nil {
+		t.Fatal("expected data in response")
 	}
 }
 
-func TestUserController_page_WithUsers(t *testing.T) {
+func TestUserController_page_withQuery(t *testing.T) {
 	setupUserTestDB(t)
-	createUserForTest(t, "alice", "Alice", "hash1", 1)
-	createUserForTest(t, "bob", "Bob", "hash2", 1)
+	user1 := createUserTestUser(t, "alice", "Alice")
+	createUserTestUser(t, "bob", "Bob")
 
-	m := &hbtp.Map{}
-	m.Set("q", "")
-	m.Set("page", int64(1))
-	c, w := makeGinContext(t, m, nil)
 	ctrl := UserController{}
-	ctrl.page(c, m)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("status code = %d, want %d, body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
-}
-
-func TestUserController_page_WithSearch(t *testing.T) {
-	setupUserTestDB(t)
-	createUserForTest(t, "alice", "Alice Smith", "hash1", 1)
-	createUserForTest(t, "bob", "Bob Jones", "hash2", 1)
-
 	m := &hbtp.Map{}
 	m.Set("q", "alice")
 	m.Set("page", int64(1))
-	c, w := makeGinContext(t, m, nil)
-	ctrl := UserController{}
+
+	c, w := makeUserGinCtx(t, m, user1)
 	ctrl.page(c, m)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status code = %d, want %d", w.Code, http.StatusOK)
+		t.Fatalf("status = %d, body: %s", w.Code, w.Body.String())
 	}
 }
 
-func TestUserController_info_MissingID(t *testing.T) {
+func TestUserController_new_adminSuccess(t *testing.T) {
 	setupUserTestDB(t)
-	c, w := makeGinContext(t, hbtp.Map{"id": ""}, nil)
+	admin := createUserTestUser(t, "admin", "Admin")
+
+	// Create user info with perm_user = 1
+	uinfo := &model.TUserInfo{
+		Id:       admin.Id,
+		PermUser: 1,
+	}
+	if _, err := comm.Db.InsertOne(uinfo); err != nil {
+		t.Fatalf("insert user info: %v", err)
+	}
+
 	ctrl := UserController{}
-	ctrl.info(c, &hbtp.Map{"id": ""})
+	m := &hbtp.Map{}
+	m.Set("name", "newuser")
+	m.Set("nick", "New User")
+	m.Set("pass", "password123")
+
+	c, w := makeUserGinCtx(t, m, admin)
+	ctrl.new(c, m)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, body: %s", w.Code, w.Body.String())
+	}
+
+	// Verify user was created
+	var usr model.TUser
+	has, err := comm.Db.Where("name=?", "newuser").Get(&usr)
+	if err != nil {
+		t.Fatalf("query user: %v", err)
+	}
+	if !has {
+		t.Fatal("user not created")
+	}
+}
+
+func TestUserController_new_paramError(t *testing.T) {
+	setupUserTestDB(t)
+	admin := createUserTestUser(t, "admin", "Admin")
+
+	ctrl := UserController{}
+	m := &hbtp.Map{}
+	m.Set("name", "")
+	m.Set("nick", "New User")
+	m.Set("pass", "password123")
+
+	c, w := makeUserGinCtx(t, m, admin)
+	ctrl.new(c, m)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status code = %d, want %d", w.Code, http.StatusBadRequest)
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 }
 
-func TestUserController_info_UserNotFound(t *testing.T) {
+func TestUserController_new_duplicateUser(t *testing.T) {
 	setupUserTestDB(t)
-	c, w := makeGinContext(t, hbtp.Map{"id": "nonexistent"}, nil)
+	admin := createUserTestUser(t, "admin", "Admin")
+	createUserTestUser(t, "alice", "Alice")
+
+	uinfo := &model.TUserInfo{
+		Id:       admin.Id,
+		PermUser: 1,
+	}
+	if _, err := comm.Db.InsertOne(uinfo); err != nil {
+		t.Fatalf("insert user info: %v", err)
+	}
+
 	ctrl := UserController{}
-	ctrl.info(c, &hbtp.Map{"id": "nonexistent"})
+	m := &hbtp.Map{}
+	m.Set("name", "alice")
+	m.Set("nick", "New Alice")
+	m.Set("pass", "password123")
+
+	c, w := makeUserGinCtx(t, m, admin)
+	ctrl.new(c, m)
+
+	if w.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusConflict)
+	}
+}
+
+func TestUserController_new_noPermission(t *testing.T) {
+	setupUserTestDB(t)
+	user1 := createUserTestUser(t, "regular", "Regular")
+
+	ctrl := UserController{}
+	m := &hbtp.Map{}
+	m.Set("name", "newuser")
+	m.Set("nick", "New User")
+	m.Set("pass", "password123")
+
+	c, w := makeUserGinCtx(t, m, user1)
+	ctrl.new(c, m)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+func TestUserController_info(t *testing.T) {
+	setupUserTestDB(t)
+	user1 := createUserTestUser(t, "alice", "Alice")
+
+	ctrl := UserController{}
+	m := &hbtp.Map{}
+	m.Set("id", user1.Id)
+
+	c, w := makeUserGinCtx(t, m, user1)
+	ctrl.info(c, m)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestUserController_info_paramError(t *testing.T) {
+	setupUserTestDB(t)
+	user1 := createUserTestUser(t, "alice", "Alice")
+
+	ctrl := UserController{}
+	m := &hbtp.Map{}
+	m.Set("id", "")
+
+	c, w := makeUserGinCtx(t, m, user1)
+	ctrl.info(c, m)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestUserController_info_notFound(t *testing.T) {
+	setupUserTestDB(t)
+	user1 := createUserTestUser(t, "alice", "Alice")
+
+	ctrl := UserController{}
+	m := &hbtp.Map{}
+	m.Set("id", "nonexistent")
+
+	c, w := makeUserGinCtx(t, m, user1)
+	ctrl.info(c, m)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("status code = %d, want %d", w.Code, http.StatusNotFound)
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 }
 
-func TestUserController_info_Success(t *testing.T) {
+func TestUserController_upinfo_success(t *testing.T) {
 	setupUserTestDB(t)
-	user := createUserForTest(t, "testuser", "Test User", "hash", 1)
+	user1 := createUserTestUser(t, "alice", "Alice")
 
-	c, w := makeGinContext(t, hbtp.Map{"id": user.Id}, nil)
 	ctrl := UserController{}
-	ctrl.info(c, &hbtp.Map{"id": user.Id})
+	m := &hbtp.Map{}
+	m.Set("id", user1.Id)
+	m.Set("nick", "Alice Updated")
+	m.Set("phone", "1234567890")
+	m.Set("email", "alice@example.com")
+	m.Set("remark", "Test remark")
+
+	c, w := makeUserGinCtx(t, m, user1)
+	ctrl.upinfo(c, m)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status code = %d, want %d, body: %s", w.Code, http.StatusOK, w.Body.String())
+		t.Fatalf("status = %d, body: %s", w.Code, w.Body.String())
 	}
 }
 
-func TestUserController_upinfo_MissingParams(t *testing.T) {
+func TestUserController_upinfo_paramError(t *testing.T) {
 	setupUserTestDB(t)
-	c, w := makeGinContext(t, hbtp.Map{"id": "", "nick": "Updated"}, nil)
+	user1 := createUserTestUser(t, "alice", "Alice")
+
 	ctrl := UserController{}
-	ctrl.upinfo(c, &hbtp.Map{"id": "", "nick": "Updated"})
+	m := &hbtp.Map{}
+	m.Set("id", "")
+	m.Set("nick", "Alice Updated")
+
+	c, w := makeUserGinCtx(t, m, user1)
+	ctrl.upinfo(c, m)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("status code = %d, want %d", w.Code, http.StatusBadRequest)
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 }
 
-func TestUserController_upinfo_UserNotFound(t *testing.T) {
+func TestUserController_upinfo_notYou(t *testing.T) {
 	setupUserTestDB(t)
-	c, w := makeGinContext(t, hbtp.Map{
-		"id": "nonexistent", "nick": "Updated",
-		"phone": "123", "email": "test@example.com",
-	}, nil)
-	ctrl := UserController{}
-	ctrl.upinfo(c, &hbtp.Map{
-		"id": "nonexistent", "nick": "Updated",
-		"phone": "123", "email": "test@example.com",
-	})
+	user1 := createUserTestUser(t, "alice", "Alice")
+	user2 := createUserTestUser(t, "bob", "Bob")
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status code = %d, want %d", w.Code, http.StatusNotFound)
+	ctrl := UserController{}
+	m := &hbtp.Map{}
+	m.Set("id", user2.Id)
+	m.Set("nick", "Bob Updated")
+
+	c, w := makeUserGinCtx(t, m, user1)
+	ctrl.upinfo(c, m)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 
-func TestUserController_upass_MissingParams(t *testing.T) {
+func TestUserController_upass_selfSuccess(t *testing.T) {
 	setupUserTestDB(t)
-	c, w := makeGinContext(t, hbtp.Map{"id": "", "pass": ""}, nil)
-	ctrl := UserController{}
-	ctrl.upass(c, &hbtp.Map{"id": "", "pass": ""})
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status code = %d, want %d", w.Code, http.StatusBadRequest)
+	user1 := createUserTestUser(t, "alice", "Alice")
+	user1.Pass = utils.Md5String("oldpass")
+	if _, err := comm.Db.Where("id=?", user1.Id).Cols("pass").Update(user1); err != nil {
+		t.Fatalf("update pass: %v", err)
 	}
-}
 
-func TestUserController_active_MissingParams(t *testing.T) {
-	setupUserTestDB(t)
-	c, w := makeGinContext(t, hbtp.Map{"id": "", "act": ""}, nil)
 	ctrl := UserController{}
-	ctrl.active(c, &hbtp.Map{"id": "", "act": ""})
+	m := &hbtp.Map{}
+	m.Set("id", user1.Id)
+	m.Set("olds", "oldpass")
+	m.Set("pass", "newpass123")
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status code = %d, want %d", w.Code, http.StatusBadRequest)
-	}
-}
-
-func TestUserController_perm_MissingID(t *testing.T) {
-	setupUserTestDB(t)
-	c, w := makeGinContext(t, hbtp.Map{"id": ""}, nil)
-	ctrl := UserController{}
-	ctrl.perm(c, &hbtp.Map{"id": ""})
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("status code = %d, want %d", w.Code, http.StatusBadRequest)
-	}
-}
-
-func TestUserController_perm_UserNotFound(t *testing.T) {
-	setupUserTestDB(t)
-	adminUser := &model.TUser{Id: "admin", Name: "admin", Active: 1}
-	c, w := makeGinContext(t, hbtp.Map{"id": "nonexistent", "permUser": true}, adminUser)
-	ctrl := UserController{}
-	ctrl.perm(c, &hbtp.Map{"id": "nonexistent", "permUser": true})
-
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status code = %d, want %d", w.Code, http.StatusNotFound)
-	}
-}
-
-func TestUserController_active_Success(t *testing.T) {
-	setupUserTestDB(t)
-	user := createUserForTest(t, "actuser", "Active User", "hash", 0)
-	adminUser := &model.TUser{Id: "admin", Name: "admin", Active: 1}
-
-	c, w := makeGinContext(t, hbtp.Map{"id": user.Id, "act": "1"}, adminUser)
-	ctrl := UserController{}
-	ctrl.active(c, &hbtp.Map{"id": user.Id, "act": "1"})
+	c, w := makeUserGinCtx(t, m, user1)
+	ctrl.upass(c, m)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status code = %d, want %d, body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
-
-	// Verify the user is now active
-	updated := &model.TUser{}
-	ok, err := comm.Db.Where("id=?", user.Id).Get(updated)
-	if err != nil {
-		t.Fatalf("query updated user: %v", err)
-	}
-	if !ok {
-		t.Fatal("user not found after update")
-	}
-	if updated.Active != 1 {
-		t.Errorf("user active = %d, want 1", updated.Active)
+		t.Fatalf("status = %d, body: %s", w.Code, w.Body.String())
 	}
 }
 
-func TestUserController_perm_Success(t *testing.T) {
+func TestUserController_upass_wrongOldPass(t *testing.T) {
 	setupUserTestDB(t)
-	user := createUserForTest(t, "permuser", "Perm User", "hash", 1)
-	adminUser := &model.TUser{Id: "admin", Name: "admin", Active: 1}
+	user1 := createUserTestUser(t, "alice", "Alice")
+	user1.Pass = utils.Md5String("oldpass")
+	if _, err := comm.Db.Where("id=?", user1.Id).Cols("pass").Update(user1); err != nil {
+		t.Fatalf("update pass: %v", err)
+	}
 
-	c, w := makeGinContext(t, hbtp.Map{
-		"id": user.Id, "permUser": true, "permOrg": false, "permPipe": true,
-	}, adminUser)
 	ctrl := UserController{}
-	ctrl.perm(c, &hbtp.Map{
-		"id": user.Id, "permUser": true, "permOrg": false, "permPipe": true,
-	})
+	m := &hbtp.Map{}
+	m.Set("id", user1.Id)
+	m.Set("olds", "wrongpass")
+	m.Set("pass", "newpass123")
 
-	if w.Code != http.StatusOK {
-		t.Errorf("status code = %d, want %d, body: %s", w.Code, http.StatusOK, w.Body.String())
-	}
+	c, w := makeUserGinCtx(t, m, user1)
+	ctrl.upass(c, m)
 
-	// Verify user info was created with correct permissions
-	uinfo := &model.TUserInfo{}
-	ok, err := comm.Db.Where("id=?", user.Id).Get(uinfo)
-	if err != nil {
-		t.Fatalf("query user info: %v", err)
-	}
-	if !ok {
-		t.Fatal("user info not found after perm update")
-	}
-	if uinfo.PermUser != 1 {
-		t.Errorf("PermUser = %d, want 1", uinfo.PermUser)
-	}
-	if uinfo.PermOrg != 0 {
-		t.Errorf("PermOrg = %d, want 0", uinfo.PermOrg)
-	}
-	if uinfo.PermPipe != 1 {
-		t.Errorf("PermPipe = %d, want 1", uinfo.PermPipe)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusUnauthorized)
 	}
 }
 
-func TestUserController_upinfo_Success(t *testing.T) {
+func TestUserController_upass_paramError(t *testing.T) {
 	setupUserTestDB(t)
-	user := createUserForTest(t, "upuser", "Old Nick", "hash", 1)
-	loggedInUser := &model.TUser{Id: user.Id, Name: user.Name, Active: 1}
+	user1 := createUserTestUser(t, "alice", "Alice")
 
-	c, w := makeGinContext(t, hbtp.Map{
-		"id": user.Id, "nick": "New Nick",
-		"phone": "555-1234", "email": "test@example.com", "remark": "A remark",
-	}, loggedInUser)
 	ctrl := UserController{}
-	ctrl.upinfo(c, &hbtp.Map{
-		"id": user.Id, "nick": "New Nick",
-		"phone": "555-1234", "email": "test@example.com", "remark": "A remark",
-	})
+	m := &hbtp.Map{}
+	m.Set("id", "")
+	m.Set("pass", "newpass123")
+
+	c, w := makeUserGinCtx(t, m, user1)
+	ctrl.upass(c, m)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestUserController_active_success(t *testing.T) {
+	setupUserTestDB(t)
+	admin := &model.TUser{
+		Id:        "admin",
+		Name:      "admin",
+		Nick:      "Admin",
+		Active:    1,
+		Created:   time.Now(),
+		LoginTime: time.Now(),
+	}
+	if _, err := comm.Db.InsertOne(admin); err != nil {
+		t.Fatalf("insert admin: %v", err)
+	}
+	user1 := createUserTestUser(t, "alice", "Alice")
+
+	ctrl := UserController{}
+	m := &hbtp.Map{}
+	m.Set("id", user1.Id)
+	m.Set("act", "1")
+
+	c, w := makeUserGinCtx(t, m, admin)
+	ctrl.active(c, m)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("status code = %d, want %d, body: %s", w.Code, http.StatusOK, w.Body.String())
+		t.Fatalf("status = %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestUserController_active_noPermission(t *testing.T) {
+	setupUserTestDB(t)
+	user1 := createUserTestUser(t, "alice", "Alice")
+	user2 := createUserTestUser(t, "bob", "Bob")
+
+	ctrl := UserController{}
+	m := &hbtp.Map{}
+	m.Set("id", user2.Id)
+	m.Set("act", "1")
+
+	c, w := makeUserGinCtx(t, m, user1)
+	ctrl.active(c, m)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+func TestUserController_perm_success(t *testing.T) {
+	setupUserTestDB(t)
+	admin := createUserTestUser(t, "admin", "Admin")
+	user1 := createUserTestUser(t, "alice", "Alice")
+
+	uinfo := &model.TUserInfo{
+		Id:       admin.Id,
+		PermUser: 1,
+	}
+	if _, err := comm.Db.InsertOne(uinfo); err != nil {
+		t.Fatalf("insert user info: %v", err)
 	}
 
-	// Verify nick was updated
-	updated := &model.TUser{}
-	ok, err := comm.Db.Where("id=?", user.Id).Get(updated)
-	if err != nil {
-		t.Fatalf("query updated user: %v", err)
+	ctrl := UserController{}
+	m := &hbtp.Map{}
+	m.Set("id", user1.Id)
+	m.Set("permUser", true)
+	m.Set("permOrg", true)
+	m.Set("permPipe", true)
+
+	c, w := makeUserGinCtx(t, m, admin)
+	ctrl.perm(c, m)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, body: %s", w.Code, w.Body.String())
 	}
-	if !ok {
-		t.Fatal("user not found after update")
+}
+
+func TestUserController_perm_noPermission(t *testing.T) {
+	setupUserTestDB(t)
+	user1 := createUserTestUser(t, "alice", "Alice")
+	user2 := createUserTestUser(t, "bob", "Bob")
+
+	ctrl := UserController{}
+	m := &hbtp.Map{}
+	m.Set("id", user2.Id)
+	m.Set("permUser", true)
+
+	c, w := makeUserGinCtx(t, m, user1)
+	ctrl.perm(c, m)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
-	if updated.Nick != "New Nick" {
-		t.Errorf("user nick = %q, want %q", updated.Nick, "New Nick")
+}
+
+func TestUserController_perm_paramError(t *testing.T) {
+	setupUserTestDB(t)
+	admin := createUserTestUser(t, "admin", "Admin")
+
+	uinfo := &model.TUserInfo{
+		Id:       admin.Id,
+		PermUser: 1,
+	}
+	if _, err := comm.Db.InsertOne(uinfo); err != nil {
+		t.Fatalf("insert user info: %v", err)
+	}
+
+	ctrl := UserController{}
+	m := &hbtp.Map{}
+	m.Set("id", "")
+
+	c, w := makeUserGinCtx(t, m, admin)
+	ctrl.perm(c, m)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 }
