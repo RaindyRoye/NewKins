@@ -251,7 +251,7 @@ func resolveConfigPath(args []string) (string, error) {
 			return pth, nil
 		}
 	}
-	return "", fmt.Errorf("no configuration file found in %s (tried app.yml, app.yaml)", wp)
+	return "", fmt.Errorf("no configuration file found in %q (tried app.yml, app.yaml)", wp)
 }
 
 // loadConfigFile reads and parses a config file, returning the parsed Config.
@@ -438,7 +438,7 @@ func initConfig(cmd *cobra.Command) error {
 	// Check if file already exists
 	if !initForce {
 		if _, err := os.Stat(configPath); err == nil {
-			return fmt.Errorf("configuration file already exists: %s (use --force to overwrite)", configPath)
+			return fmt.Errorf("configuration file already exists: %q (use --force to overwrite)", configPath)
 		}
 	}
 

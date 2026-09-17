@@ -123,7 +123,7 @@ func makeOrgGinCtx(t *testing.T, body interface{}, lgUser *model.TUser) (*gin.Co
 	return c, w
 }
 
-func createOrgTestUser(t *testing.T, name, nick string, active int) *model.TUser {
+func createOrgTestUser(t *testing.T, name, nick string, active int) *model.TUser { //nolint:unparam // active always 1 in current tests but may vary in future
 	t.Helper()
 	usr := &model.TUser{
 		Id:        utils.NewXid(),
@@ -948,8 +948,12 @@ func TestOrgController_vars_WithSearch(t *testing.T) {
 
 	v1 := &model.TOrgVar{OrgId: org.Id, Name: "DB_HOST", Value: "localhost", Public: 0}
 	v2 := &model.TOrgVar{OrgId: org.Id, Name: "API_KEY", Value: "secret", Public: 0}
-	comm.Db.InsertOne(v1)
-	comm.Db.InsertOne(v2)
+	if _, err := comm.Db.InsertOne(v1); err != nil {
+		t.Fatalf("insert v1: %v", err)
+	}
+	if _, err := comm.Db.InsertOne(v2); err != nil {
+		t.Fatalf("insert v2: %v", err)
+	}
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
