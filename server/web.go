@@ -232,6 +232,13 @@ var (
 	rderErr  error
 )
 
+// Sentinel errors for file serving operations.
+var (
+	ErrPathEmpty    = errors.New("path parameter is empty")
+	ErrPathInvalid  = errors.New("invalid path: contains traversal or is absolute")
+	ErrFileNotFound = errors.New("file not found")
+)
+
 func getRdr() (*zip.Reader, error) {
 	rderOnce.Do(func() {
 		bts, err := base64.StdEncoding.DecodeString(comm.StaticPkg)
@@ -254,12 +261,12 @@ func getRdr() (*zip.Reader, error) {
 }
 func getFile(pth string) (*zip.File, error) {
 	if pth == "" {
-		return nil, errors.New("getFile: path parameter is empty")
+		return nil, ErrPathEmpty
 	}
 	// Prevent path traversal attacks
 	cleaned := filepath.Clean(pth)
 	if strings.Contains(cleaned, "..") || filepath.IsAbs(cleaned) {
-		return nil, errors.New("getFile: invalid path")
+		return nil, ErrPathInvalid
 	}
 	// println("getFile:" + pth)
 	r, err := getRdr()
@@ -273,5 +280,5 @@ func getFile(pth string) (*zip.File, error) {
 			return f, nil
 		}
 	}
-	return nil, errors.New("file not found")
+	return nil, ErrFileNotFound
 }
