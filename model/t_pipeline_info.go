@@ -14,7 +14,7 @@ type TPipelineInfo struct {
 	AccessToken  string    `xorm:"-" json:"accessToken"`
 	Url          string    `xorm:"-" json:"url"`
 	Username     string    `xorm:"-" json:"username"`
-	Created      time.Time `xorm:"DATETIME" json:"created"`
+	Created      time.Time `xorm:"'create_time' DATETIME" json:"created"`
 }
 
 func (TPipelineInfo) TableName() string {
