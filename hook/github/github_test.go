@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
+	"crypto/sha1" //nolint:gosec // G505: SHA1 required for testing GitHub webhook sha1 signature validation
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -20,6 +21,12 @@ func computeSignature(secret, body []byte) string {
 	mac := hmac.New(sha256.New, secret)
 	mac.Write(body)
 	return "sha256=" + hex.EncodeToString(mac.Sum(nil))
+}
+
+func computeSHA1Signature(secret, body []byte) string {
+	mac := hmac.New(sha1.New, secret) //nolint:gosec // G401: SHA1 required for GitHub webhook compatibility
+	mac.Write(body)
+	return "sha1=" + hex.EncodeToString(mac.Sum(nil))
 }
 
 func newGithubRequest(event string, body []byte, secret string) *http.Request {
@@ -289,5 +296,160 @@ func TestParsePRUnsupportedAction(t *testing.T) {
 	_, err := Parse(req, secret)
 	if err == nil {
 		t.Fatal("expected error for unsupported PR action 'closed'")
+	}
+}
+
+// Test SHA1 signature validation (GitHub legacy format)
+func TestValidateSHA1Signature(t *testing.T) {
+	message := []byte("test message")
+	key := []byte("secret")
+
+	mac := hmac.New(sha1.New, key) //nolint:gosec // G401: SHA1 required for GitHub webhook compatibility
+	mac.Write(message)
+	sig := hex.EncodeToString(mac.Sum(nil))
+
+	if !Validate(sha1.New, message, key, sig) {
+		t.Error("Validate should return true for valid HMAC-SHA1 signature")
+	}
+}
+
+// Test validatePrefix with SHA1 signature
+func TestValidatePrefixSHA1(t *testing.T) {
+	message := []byte("test body")
+	key := []byte("mysecret")
+
+	mac := hmac.New(sha1.New, key) //nolint:gosec // G401: SHA1 required for GitHub webhook compatibility
+	mac.Write(message)
+	sig1 := "sha1=" + hex.EncodeToString(mac.Sum(nil))
+
+	if !validatePrefix(message, key, sig1) {
+		t.Error("validatePrefix should accept valid sha1 signature")
+	}
+}
+
+// Test Parse with SHA1 signature
+func TestParseWithSHA1Signature(t *testing.T) {
+	payload := map[string]any{
+		"ref":    "refs/heads/main",
+		"before": "abc123",
+		"after":  "def456",
+		"commits": []map[string]any{
+			{
+				"id":      "def456",
+				"message": "test commit",
+				"url":     "https://github.com/user/test-repo/commit/def456",
+			},
+		},
+		"repository": map[string]any{
+			"id":         1,
+			"name":       "test-repo",
+			"full_name":  "user/test-repo",
+			"clone_url":  "https://github.com/user/test-repo.git",
+			"created_at": 1609459200,
+			"owner": map[string]any{
+				"login": "testuser",
+			},
+		},
+		"sender": map[string]any{
+			"login": "testuser",
+		},
+	}
+
+	body, _ := json.Marshal(payload)
+	secret := testSecret
+
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/webhook", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(hook.GithubEvent, hook.GithubEventPush)
+	sig := computeSHA1Signature([]byte(secret), body)
+	req.Header.Set("X-Hub-Signature", sig)
+
+	wh, err := Parse(req, secret)
+	if err != nil {
+		t.Fatalf("Parse with SHA1 signature failed: %v", err)
+	}
+
+	pushHook, ok := wh.(*hook.PushHook)
+	if !ok {
+		t.Fatal("expected *hook.PushHook type")
+	}
+
+	if pushHook.Ref != "refs/heads/main" {
+		t.Errorf("expected ref 'refs/heads/main', got '%s'", pushHook.Ref)
+	}
+}
+
+// Test PR synchronize action mapping
+func TestParsePullRequestSynchronizeAction(t *testing.T) {
+	payload := map[string]any{
+		"action": "synchronize",
+		"number": 42,
+		"pull_request": map[string]any{
+			"title": "Test PR",
+			"body":  "PR body",
+			"head": map[string]any{
+				"ref": "feature-branch",
+				"sha": "head123",
+				"repo": map[string]any{
+					"id":         2,
+					"name":       "test-repo-fork",
+					"full_name":  "forker/test-repo",
+					"clone_url":  "https://github.com/forker/test-repo.git",
+					"html_url":   "https://github.com/forker/test-repo",
+					"git_url":    "git://github.com/forker/test-repo.git",
+					"ssh_url":    "git@github.com:forker/test-repo.git",
+					"svn_url":    "https://github.com/forker/test-repo",
+					"created_at": "2021-01-01T00:00:00Z",
+					"owner": map[string]any{
+						"login": "forker",
+					},
+				},
+			},
+			"base": map[string]any{
+				"ref": "main",
+				"sha": "base123",
+				"repo": map[string]any{
+					"id":         1,
+					"name":       "test-repo",
+					"full_name":  "user/test-repo",
+					"clone_url":  "https://github.com/user/test-repo.git",
+					"html_url":   "https://github.com/user/test-repo",
+					"git_url":    "git://github.com/user/test-repo.git",
+					"ssh_url":    "git@github.com:user/test-repo.git",
+					"svn_url":    "https://github.com/user/test-repo",
+					"created_at": "2021-01-01T00:00:00Z",
+					"owner": map[string]any{
+						"login": "user",
+					},
+				},
+			},
+			"user": map[string]any{
+				"login": "prauthor",
+			},
+		},
+		"repository": map[string]any{
+			"id":        1,
+			"name":      "test-repo",
+			"full_name": "user/test-repo",
+		},
+	}
+
+	body, _ := json.Marshal(payload)
+	secret := testSecret
+	req := newGithubRequest(hook.GithubEventPR, body, secret)
+
+	wh, err := Parse(req, secret)
+	if err != nil {
+		t.Fatalf("Parse PR hook failed: %v", err)
+	}
+
+	prHook, ok := wh.(*hook.PullRequestHook)
+	if !ok {
+		t.Fatal("expected *hook.PullRequestHook type")
+	}
+
+	// "synchronize" should be mapped to "update"
+	if prHook.Action != hook.ActionUpdate {
+		t.Errorf("expected action '%s', got '%s'", hook.ActionUpdate, prHook.Action)
 	}
 }
