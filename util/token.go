@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -87,6 +88,11 @@ func getTokenAuth(c *gin.Context) string {
 	aths = strings.TrimPrefix(aths, "TOKEN ")
 	return aths
 }
+
+// ErrInvalidSigningMethod is returned when a token's signing algorithm
+// does not match the expected HMAC-based method, preventing algorithm confusion attacks.
+var ErrInvalidSigningMethod = errors.New("unexpected signing method")
+
 func GetTokens(s string, key string) jwt.MapClaims {
 	if s == "" {
 		return nil
@@ -95,7 +101,7 @@ func GetTokens(s string, key string) jwt.MapClaims {
 		// Validate the signing method to prevent algorithm confusion attacks.
 		// We only accept HMAC-based signing (HS512) since that's what CreateToken uses.
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("%w: %v", ErrInvalidSigningMethod, token.Header["alg"])
 		}
 		return []byte(key), nil
 	})
