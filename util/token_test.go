@@ -303,3 +303,57 @@ func TestGetToken_NoToken(t *testing.T) {
 		t.Error("GetToken should return nil when no token is present")
 	}
 }
+
+func TestErrInvalidSigningMethod_SentinelError(t *testing.T) {
+	// Verify the sentinel error is exported and has a meaningful message
+	if ErrInvalidSigningMethod == nil {
+		t.Fatal("ErrInvalidSigningMethod should not be nil")
+	}
+	if ErrInvalidSigningMethod.Error() != "unexpected signing method" {
+		t.Errorf("expected 'unexpected signing method', got %q", ErrInvalidSigningMethod.Error())
+	}
+}
+
+func TestGetTokens_RejectsNoneAlgorithm_ErrorsIs(t *testing.T) {
+	// Create a token signed with "none" algorithm (attack vector)
+	claims := jwt.MapClaims{"uid": "attacker"}
+	token := jwt.NewWithClaims(jwt.SigningMethodNone, claims)
+	tokenString, err := token.SignedString(jwt.UnsafeAllowNoneSignatureType)
+	if err != nil {
+		t.Fatalf("failed to create none-alg token: %v", err)
+	}
+
+	// GetTokens should return nil for rejected tokens
+	result := GetTokens(tokenString, "any-key")
+	if result != nil {
+		t.Error("GetTokens should return nil for alg:none tokens")
+	}
+}
+
+func TestCreateToken_EmptyKey(t *testing.T) {
+	claims := jwt.MapClaims{"uid": "user1"}
+	// Empty key should still create a token (no error), but it's insecure
+	token, err := CreateToken(claims, "", time.Hour)
+	if err != nil {
+		t.Fatalf("CreateToken with empty key should not error, got: %v", err)
+	}
+	if token == "" {
+		t.Error("CreateToken should return non-empty token even with empty key")
+	}
+}
+
+func TestCreateToken_LongTimeout(t *testing.T) {
+	claims := jwt.MapClaims{"uid": "user1"}
+	token, err := CreateToken(claims, "key", 365*24*time.Hour)
+	if err != nil {
+		t.Fatalf("CreateToken failed: %v", err)
+	}
+
+	parsed := GetTokens(token, "key")
+	if parsed == nil {
+		t.Fatal("should parse token with long timeout")
+	}
+	if _, ok := parsed["timeout"]; !ok {
+		t.Error("expected 'timeout' claim for long-duration token")
+	}
+}
