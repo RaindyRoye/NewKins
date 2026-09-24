@@ -271,11 +271,11 @@ func loadConfigFile(pth string) (*comm.Config, error) {
 func validateConfig(cmd *cobra.Command, args []string) error {
 	pth, err := resolveConfigPath(args)
 	if err != nil {
-		return err
+		return fmt.Errorf("validate: %w", err)
 	}
 	cfg, err := loadConfigFile(pth)
 	if err != nil {
-		return err
+		return fmt.Errorf("validate: %w", err)
 	}
 	if err := cfg.Validate(); err != nil {
 		cmd.Printf("❌ Configuration invalid: %v\n", err)
@@ -317,11 +317,11 @@ func redactURL(url string) string {
 func showConfig(cmd *cobra.Command, args []string) error {
 	pth, err := resolveConfigPath(args)
 	if err != nil {
-		return err
+		return fmt.Errorf("show config: %w", err)
 	}
 	cfg, err := loadConfigFile(pth)
 	if err != nil {
-		return err
+		return fmt.Errorf("show config: %w", err)
 	}
 	cmd.Printf("Configuration: %s\n", pth)
 	cmd.Printf("───────────────────────────────────\n")
