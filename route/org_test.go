@@ -123,13 +123,13 @@ func makeOrgGinCtx(t *testing.T, body interface{}, lgUser *model.TUser) (*gin.Co
 	return c, w
 }
 
-func createOrgTestUser(t *testing.T, name, nick string, active int) *model.TUser {
+func createOrgTestUser(t *testing.T, name, nick string) *model.TUser {
 	t.Helper()
 	usr := &model.TUser{
 		Id:        utils.NewXid(),
 		Name:      name,
 		Nick:      nick,
-		Active:    active,
+		Active:    1,
 		Created:   time.Now(),
 		LoginTime: time.Now(),
 	}
@@ -166,7 +166,7 @@ func b2i(b bool) int {
 
 func TestOrgController_list_Admin(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	createOrgTestOrg(t, admin, "org1", true)
 	createOrgTestOrg(t, admin, "org2", false)
 
@@ -191,8 +191,8 @@ func TestOrgController_list_Admin(t *testing.T) {
 
 func TestOrgController_list_NonAdmin_PublicOnly(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
-	user := createOrgTestUser(t, "regular", "Regular", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
+	user := createOrgTestUser(t, "regular", "Regular")
 	createOrgTestOrg(t, admin, "public-org", true)
 	createOrgTestOrg(t, admin, "private-org", false)
 
@@ -218,7 +218,7 @@ func TestOrgController_list_NonAdmin_PublicOnly(t *testing.T) {
 
 func TestOrgController_list_WithSearch(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	createOrgTestOrg(t, admin, "alpha-team", true)
 	createOrgTestOrg(t, admin, "beta-team", true)
 	createOrgTestOrg(t, admin, "gamma", true)
@@ -280,7 +280,7 @@ func TestOrgController_new_Admin(t *testing.T) {
 
 func TestOrgController_new_EmptyName(t *testing.T) {
 	setupOrgTestDB(t)
-	user := createOrgTestUser(t, "user1", "User", 1)
+	user := createOrgTestUser(t, "user1", "User")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -295,7 +295,7 @@ func TestOrgController_new_EmptyName(t *testing.T) {
 
 func TestOrgController_new_NoPermission(t *testing.T) {
 	setupOrgTestDB(t)
-	user := createOrgTestUser(t, "noperm", "NoPerm", 1)
+	user := createOrgTestUser(t, "noperm", "NoPerm")
 	// Create user_info with perm_org=0
 	ui := &model.TUserInfo{
 		Id:      user.Id,
@@ -320,7 +320,7 @@ func TestOrgController_new_NoPermission(t *testing.T) {
 
 func TestOrgController_new_WithPermission(t *testing.T) {
 	setupOrgTestDB(t)
-	user := createOrgTestUser(t, "hasperm", "HasPerm", 1)
+	user := createOrgTestUser(t, "hasperm", "HasPerm")
 	ui := &model.TUserInfo{
 		Id:      user.Id,
 		PermOrg: 1,
@@ -346,7 +346,7 @@ func TestOrgController_new_WithPermission(t *testing.T) {
 
 func TestOrgController_info_Found(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "my-org", true)
 
 	ctrl := OrgController{}
@@ -373,7 +373,7 @@ func TestOrgController_info_Found(t *testing.T) {
 
 func TestOrgController_info_EmptyId(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -388,7 +388,7 @@ func TestOrgController_info_EmptyId(t *testing.T) {
 
 func TestOrgController_info_NotFound(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -403,7 +403,7 @@ func TestOrgController_info_NotFound(t *testing.T) {
 
 func TestOrgController_info_DeletedOrg(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "deleted-org", true)
 	// Soft delete
 	_, err := comm.Db.Where("id=?", org.Id).Cols("deleted").Update(&model.TOrg{Deleted: 1})
@@ -426,7 +426,7 @@ func TestOrgController_info_DeletedOrg(t *testing.T) {
 
 func TestOrgController_users_Success(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "org-with-users", true)
 
 	// Add a member
@@ -460,7 +460,7 @@ func TestOrgController_users_Success(t *testing.T) {
 
 func TestOrgController_users_EmptyId(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -475,9 +475,9 @@ func TestOrgController_users_EmptyId(t *testing.T) {
 
 func TestOrgController_users_NoPermission(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "private-org", false) // not public
-	other := createOrgTestUser(t, "outsider", "Outsider", 1)
+	other := createOrgTestUser(t, "outsider", "Outsider")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -494,7 +494,7 @@ func TestOrgController_users_NoPermission(t *testing.T) {
 
 func TestOrgController_save_Success(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "save-org", false)
 
 	ctrl := OrgController{}
@@ -523,7 +523,7 @@ func TestOrgController_save_Success(t *testing.T) {
 
 func TestOrgController_save_EmptyName(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "save-org", false)
 
 	ctrl := OrgController{}
@@ -540,7 +540,7 @@ func TestOrgController_save_EmptyName(t *testing.T) {
 
 func TestOrgController_save_NotFound(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -556,9 +556,9 @@ func TestOrgController_save_NotFound(t *testing.T) {
 
 func TestOrgController_save_NoPermission(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "restricted-org", false)
-	other := createOrgTestUser(t, "other", "Other", 1)
+	other := createOrgTestUser(t, "other", "Other")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -576,7 +576,7 @@ func TestOrgController_save_NoPermission(t *testing.T) {
 
 func TestOrgController_rm_Success(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "rm-org", true)
 
 	ctrl := OrgController{}
@@ -601,7 +601,7 @@ func TestOrgController_rm_Success(t *testing.T) {
 
 func TestOrgController_rm_NotFound(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -616,9 +616,9 @@ func TestOrgController_rm_NotFound(t *testing.T) {
 
 func TestOrgController_rm_NoPermission(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "protected-org", false)
-	other := createOrgTestUser(t, "other", "Other", 1)
+	other := createOrgTestUser(t, "other", "Other")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -635,9 +635,9 @@ func TestOrgController_rm_NoPermission(t *testing.T) {
 
 func TestOrgController_userEdit_AddMember(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "edit-org", true)
-	member := createOrgTestUser(t, "member", "Member", 1)
+	member := createOrgTestUser(t, "member", "Member")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -668,7 +668,7 @@ func TestOrgController_userEdit_AddMember(t *testing.T) {
 
 func TestOrgController_userEdit_SelfEdit(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "self-edit-org", true)
 
 	ctrl := OrgController{}
@@ -686,7 +686,7 @@ func TestOrgController_userEdit_SelfEdit(t *testing.T) {
 
 func TestOrgController_userEdit_UserNotFound(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "edit-org", true)
 
 	ctrl := OrgController{}
@@ -704,7 +704,7 @@ func TestOrgController_userEdit_UserNotFound(t *testing.T) {
 
 func TestOrgController_userEdit_OrgNotFound(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -722,9 +722,9 @@ func TestOrgController_userEdit_OrgNotFound(t *testing.T) {
 
 func TestOrgController_userRm_Success(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "rm-user-org", true)
-	member := createOrgTestUser(t, "member", "Member", 1)
+	member := createOrgTestUser(t, "member", "Member")
 
 	// Add member first
 	uo := &model.TUserOrg{
@@ -751,7 +751,7 @@ func TestOrgController_userRm_Success(t *testing.T) {
 
 func TestOrgController_userRm_SelfRemove(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "self-rm-org", true)
 
 	// Add admin to the org first
@@ -779,9 +779,9 @@ func TestOrgController_userRm_SelfRemove(t *testing.T) {
 
 func TestOrgController_userRm_NotInOrg(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "rm-org", true)
-	outside := createOrgTestUser(t, "outside", "Outside", 1)
+	outside := createOrgTestUser(t, "outside", "Outside")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -799,7 +799,7 @@ func TestOrgController_userRm_NotInOrg(t *testing.T) {
 
 func TestOrgController_pipeAdd_Success(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "pipe-org", true)
 
 	ctrl := OrgController{}
@@ -823,7 +823,7 @@ func TestOrgController_pipeAdd_Success(t *testing.T) {
 
 func TestOrgController_pipeAdd_Duplicate(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "pipe-dup-org", true)
 
 	// Add first time
@@ -846,9 +846,9 @@ func TestOrgController_pipeAdd_Duplicate(t *testing.T) {
 
 func TestOrgController_pipeAdd_NoPermission(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "pipe-noperm-org", false)
-	other := createOrgTestUser(t, "other", "Other", 1)
+	other := createOrgTestUser(t, "other", "Other")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -866,7 +866,7 @@ func TestOrgController_pipeAdd_NoPermission(t *testing.T) {
 
 func TestOrgController_pipeRm_Success(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "rm-pipe-org", true)
 	op := &model.TOrgPipe{OrgId: org.Id, PipeId: "pipe-to-rm", Created: time.Now()}
 	if _, err := comm.Db.InsertOne(op); err != nil {
@@ -889,7 +889,7 @@ func TestOrgController_pipeRm_Success(t *testing.T) {
 
 func TestOrgController_vars_Success(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "vars-org", true)
 
 	// Insert some vars
@@ -927,7 +927,7 @@ func TestOrgController_vars_Success(t *testing.T) {
 
 func TestOrgController_vars_EmptyOrgId(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -943,13 +943,17 @@ func TestOrgController_vars_EmptyOrgId(t *testing.T) {
 
 func TestOrgController_vars_WithSearch(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "search-vars-org", true)
 
 	v1 := &model.TOrgVar{OrgId: org.Id, Name: "DB_HOST", Value: "localhost", Public: 0}
 	v2 := &model.TOrgVar{OrgId: org.Id, Name: "API_KEY", Value: "secret", Public: 0}
-	comm.Db.InsertOne(v1)
-	comm.Db.InsertOne(v2)
+	if _, err := comm.Db.InsertOne(v1); err != nil {
+		t.Fatalf("insert v1: %v", err)
+	}
+	if _, err := comm.Db.InsertOne(v2); err != nil {
+		t.Fatalf("insert v2: %v", err)
+	}
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -975,7 +979,7 @@ func TestOrgController_vars_WithSearch(t *testing.T) {
 
 func TestOrgController_varSave_CreateNew(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "varsave-org", true)
 
 	ctrl := OrgController{}
@@ -1005,7 +1009,7 @@ func TestOrgController_varSave_CreateNew(t *testing.T) {
 
 func TestOrgController_varSave_Update(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "varupdate-org", true)
 
 	// Insert with explicit aid so we can reference it for update
@@ -1041,7 +1045,7 @@ func TestOrgController_varSave_Update(t *testing.T) {
 
 func TestOrgController_varSave_DuplicateName(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "dup-var-org", true)
 
 	ev := &model.TOrgVar{OrgId: org.Id, Name: "DUP_VAR", Value: "first", Public: 0}
@@ -1065,7 +1069,7 @@ func TestOrgController_varSave_DuplicateName(t *testing.T) {
 
 func TestOrgController_varSave_EmptyFields(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 
 	ctrl := OrgController{}
 	pv := &bean.OrgVar{
@@ -1083,9 +1087,9 @@ func TestOrgController_varSave_EmptyFields(t *testing.T) {
 
 func TestOrgController_varSave_NoPermission(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "noperm-var-org", false)
-	other := createOrgTestUser(t, "other", "Other", 1)
+	other := createOrgTestUser(t, "other", "Other")
 
 	ctrl := OrgController{}
 	pv := &bean.OrgVar{
@@ -1105,7 +1109,7 @@ func TestOrgController_varSave_NoPermission(t *testing.T) {
 
 func TestOrgController_varDel_Success(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 	org := createOrgTestOrg(t, admin, "vardel-org", true)
 
 	// Insert with explicit aid so we can reference it
@@ -1134,7 +1138,7 @@ func TestOrgController_varDel_Success(t *testing.T) {
 
 func TestOrgController_varDel_NotFound(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
@@ -1149,7 +1153,7 @@ func TestOrgController_varDel_NotFound(t *testing.T) {
 
 func TestOrgController_varDel_InvalidAid(t *testing.T) {
 	setupOrgTestDB(t)
-	admin := createOrgTestUser(t, "admin", "Admin", 1)
+	admin := createOrgTestUser(t, "admin", "Admin")
 
 	ctrl := OrgController{}
 	m := &hbtp.Map{}
