@@ -1,6 +1,7 @@
 package migrates
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -101,7 +102,7 @@ func TestMysqlConnectionStringFormat(t *testing.T) {
 }
 
 func TestUpMysqlMigrate_EmptyURL(t *testing.T) {
-	err := UpMysqlMigrate("")
+	err := UpMysqlMigrate(context.Background(), "")
 	if err == nil {
 		t.Error("expected error for empty URL, got nil")
 	}
@@ -111,7 +112,7 @@ func TestUpMysqlMigrate_EmptyURL(t *testing.T) {
 }
 
 func TestUpPostgresMigrate_EmptyURL(t *testing.T) {
-	err := UpPostgresMigrate("")
+	err := UpPostgresMigrate(context.Background(), "")
 	if err == nil {
 		t.Error("expected error for empty URL, got nil")
 	}
@@ -121,7 +122,7 @@ func TestUpPostgresMigrate_EmptyURL(t *testing.T) {
 }
 
 func TestUpSqliteMigrate_EmptyURL(t *testing.T) {
-	err := UpSqliteMigrate("")
+	err := UpSqliteMigrate(context.Background(), "")
 	if err == nil {
 		t.Error("expected error for empty URL, got nil")
 	}
@@ -131,7 +132,7 @@ func TestUpSqliteMigrate_EmptyURL(t *testing.T) {
 }
 
 func TestUpMysqlMigrate_InvalidURL(t *testing.T) {
-	err := UpMysqlMigrate("invalid:invalid@tcp(nonexistent:3306)/test")
+	err := UpMysqlMigrate(context.Background(), "invalid:invalid@tcp(nonexistent:3306)/test")
 	if err == nil {
 		t.Skip("skipping: database connection succeeded unexpectedly")
 	}
@@ -141,7 +142,7 @@ func TestUpMysqlMigrate_InvalidURL(t *testing.T) {
 }
 
 func TestUpPostgresMigrate_InvalidURL(t *testing.T) {
-	err := UpPostgresMigrate("postgres://invalid:invalid@nonexistent:5432/test")
+	err := UpPostgresMigrate(context.Background(), "postgres://invalid:invalid@nonexistent:5432/test")
 	if err == nil {
 		t.Skip("skipping: database connection succeeded unexpectedly")
 	}
@@ -151,7 +152,7 @@ func TestUpPostgresMigrate_InvalidURL(t *testing.T) {
 }
 
 func TestUpSqliteMigrate_InvalidPath(t *testing.T) {
-	err := UpSqliteMigrate("/nonexistent/path/to/db.sqlite")
+	err := UpSqliteMigrate(context.Background(), "/nonexistent/path/to/db.sqlite")
 	if err == nil {
 		t.Skip("skipping: database connection succeeded unexpectedly")
 	}
@@ -165,9 +166,9 @@ func TestMigrateErrorWrapping(t *testing.T) {
 		name string
 		fn   func() error
 	}{
-		{"UpMysqlMigrate empty", func() error { return UpMysqlMigrate("") }},
-		{"UpPostgresMigrate empty", func() error { return UpPostgresMigrate("") }},
-		{"UpSqliteMigrate empty", func() error { return UpSqliteMigrate("") }},
+		{"UpMysqlMigrate empty", func() error { return UpMysqlMigrate(context.Background(), "") }},
+		{"UpPostgresMigrate empty", func() error { return UpPostgresMigrate(context.Background(), "") }},
+		{"UpSqliteMigrate empty", func() error { return UpSqliteMigrate(context.Background(), "") }},
 	}
 
 	for _, tt := range tests {

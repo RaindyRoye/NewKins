@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,13 +24,14 @@ func initDb() error {
 	}
 	comm.IsMySQL = dvs == comm.DatasourceDriverMySQL
 	if !comm.Installed {
+		ctx := context.Background()
 		switch dvs {
 		case comm.DatasourceDriverMySQL:
-			err = migrates.UpMysqlMigrate(ul)
+			err = migrates.UpMysqlMigrate(ctx, ul)
 		case comm.DatasourceDriverPostgres:
-			err = migrates.UpPostgresMigrate(ul)
+			err = migrates.UpPostgresMigrate(ctx, ul)
 		default:
-			err = migrates.UpSqliteMigrate(ul)
+			err = migrates.UpSqliteMigrate(ctx, ul)
 		}
 	}
 	if err != nil {

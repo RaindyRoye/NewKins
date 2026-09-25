@@ -1,6 +1,7 @@
 package migrates
 
 import (
+	"context"
 	"database/sql"
 	"os"
 	"path/filepath"
@@ -93,7 +94,7 @@ func TestUpSqliteMigrate_Success(t *testing.T) {
 	}
 
 	// Now run UpSqliteMigrate on the same database
-	err = UpSqliteMigrate(dbPath)
+	err = UpSqliteMigrate(context.Background(), dbPath)
 	if err != nil {
 		t.Errorf("UpSqliteMigrate() error = %v", err)
 	}
@@ -115,7 +116,7 @@ func TestSqliteMigrationIdempotency(t *testing.T) {
 	}
 
 	// Second migration should be idempotent (no change)
-	err = UpSqliteMigrate(dbPath)
+	err = UpSqliteMigrate(context.Background(), dbPath)
 	if err != nil {
 		t.Errorf("second UpSqliteMigrate() should be idempotent, error = %v", err)
 	}
@@ -200,12 +201,12 @@ func TestSqliteMigrationErrorWrapping(t *testing.T) {
 	}{
 		{
 			"UpSqliteMigrate empty",
-			func() error { return UpSqliteMigrate("") },
+			func() error { return UpSqliteMigrate(context.Background(), "") },
 			"database config not found",
 		},
 		{
 			"UpSqliteMigrate invalid path",
-			func() error { return UpSqliteMigrate("/nonexistent/sqlite/test.db") },
+			func() error { return UpSqliteMigrate(context.Background(), "/nonexistent/sqlite/test.db") },
 			"sqlite",
 		},
 	}
