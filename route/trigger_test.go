@@ -443,6 +443,163 @@ func TestRuns_Success(t *testing.T) {
 	}
 }
 
+func TestRuns_SuccessWithPipelineVersions(t *testing.T) {
+	db := setupTriggerTestDb(t)
+
+	// Also create t_pipeline_version and t_build tables for the batch query
+	_, err := db.Exec(`CREATE TABLE t_pipeline_version (
+		id VARCHAR(64) NOT NULL PRIMARY KEY,
+		uid VARCHAR(64),
+		number BIGINT,
+		events VARCHAR(100),
+		sha VARCHAR(255),
+		pipeline_name VARCHAR(255),
+		pipeline_display_name VARCHAR(255),
+		pipeline_id VARCHAR(64),
+		version VARCHAR(255),
+		content TEXT,
+		created DATETIME,
+		deleted INT DEFAULT 0,
+		pr_number BIGINT,
+		repo_clone_url VARCHAR(255)
+	)`)
+	if err != nil {
+		t.Fatalf("create pipeline_version table: %v", err)
+	}
+	_, err = db.Exec(`CREATE TABLE t_build (
+		id VARCHAR(64) NOT NULL PRIMARY KEY,
+		pipeline_version_id VARCHAR(64),
+		status VARCHAR(100)
+	)`)
+	if err != nil {
+		t.Fatalf("create build table: %v", err)
+	}
+
+	ctrl := TriggerController{}
+	user := &model.TUser{Id: "user-1", Name: "tester", Active: 1}
+
+	pipeline := &model.TPipeline{Id: "pipe-1", Name: "test-pipeline", Uid: "user-1"}
+	if _, err := db.Insert(pipeline); err != nil {
+		t.Fatalf("insert pipeline: %v", err)
+	}
+
+	trigger := &model.TTrigger{
+		Id: "trig-1", Aid: 1, PipelineId: "pipe-1", Types: "webhook",
+		Name: "test-trigger", Enabled: 1, Created: time.Now(), Updated: time.Now(), Uid: "user-1",
+	}
+	if _, err := db.Insert(trigger); err != nil {
+		t.Fatalf("insert trigger: %v", err)
+	}
+
+	// Create pipeline version and build
+	pv := &model.TPipelineVersion{
+		Id: "pv-1", Number: 42, PipelineName: "pipe-1",
+		PipelineDisplayName: "Test Pipeline", PipelineId: "pipe-1",
+		Created: time.Now(),
+	}
+	if _, err := db.Insert(pv); err != nil {
+		t.Fatalf("insert pv: %v", err)
+	}
+	if _, err := db.Exec(`INSERT INTO t_build (id, pipeline_version_id, status) VALUES (?, ?, ?)`,
+		"build-1", "pv-1", "success"); err != nil {
+		t.Fatalf("insert build: %v", err)
+	}
+
+	// Create trigger run linked to the pipeline version
+	run1 := &model.TTriggerRun{
+		Id: "run-1", Aid: 1, Tid: "trig-1",
+		PipeVersionId: "pv-1", Created: time.Now(),
+	}
+	if _, err := db.Insert(run1); err != nil {
+		t.Fatalf("insert trigger run: %v", err)
+	}
+
+	c, w := makeTriggerGinCtx(t, user)
+	m := &hbtp.Map{}
+	m.Set("id", "trig-1")
+	m.Set("page", int64(1))
+	ctrl.runs(c, m)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestRuns_WithTriggerRunErrors(t *testing.T) {
+	db := setupTriggerTestDb(t)
+
+	// Create t_pipeline_version and t_build tables
+	_, err := db.Exec(`CREATE TABLE t_pipeline_version (
+		id VARCHAR(64) NOT NULL PRIMARY KEY,
+		uid VARCHAR(64),
+		number BIGINT,
+		events VARCHAR(100),
+		sha VARCHAR(255),
+		pipeline_name VARCHAR(255),
+		pipeline_display_name VARCHAR(255),
+		pipeline_id VARCHAR(64),
+		version VARCHAR(255),
+		content TEXT,
+		created DATETIME,
+		deleted INT DEFAULT 0,
+		pr_number BIGINT,
+		repo_clone_url VARCHAR(255)
+	)`)
+	if err != nil {
+		t.Fatalf("create pipeline_version table: %v", err)
+	}
+	_, err = db.Exec(`CREATE TABLE t_build (
+		id VARCHAR(64) NOT NULL PRIMARY KEY,
+		pipeline_version_id VARCHAR(64),
+		status VARCHAR(100)
+	)`)
+	if err != nil {
+		t.Fatalf("create build table: %v", err)
+	}
+
+	ctrl := TriggerController{}
+	user := &model.TUser{Id: "user-1", Name: "tester", Active: 1}
+
+	pipeline := &model.TPipeline{Id: "pipe-1", Name: "test-pipeline", Uid: "user-1"}
+	if _, err := db.Insert(pipeline); err != nil {
+		t.Fatalf("insert pipeline: %v", err)
+	}
+
+	trigger := &model.TTrigger{
+		Id: "trig-1", Aid: 1, PipelineId: "pipe-1", Types: "webhook",
+		Name: "test-trigger", Enabled: 1, Created: time.Now(), Updated: time.Now(), Uid: "user-1",
+	}
+	if _, err := db.Insert(trigger); err != nil {
+		t.Fatalf("insert trigger: %v", err)
+	}
+
+	// Create runs - one with error (no PipeVersionId lookup), one without error but no PipeVersionId
+	run1 := &model.TTriggerRun{
+		Id: "run-1", Aid: 1, Tid: "trig-1",
+		Error: "some error", Created: time.Now(),
+	}
+	run2 := &model.TTriggerRun{
+		Id: "run-2", Aid: 2, Tid: "trig-1",
+		PipeVersionId: "", Created: time.Now(),
+	}
+	if _, err := db.Insert(run1); err != nil {
+		t.Fatalf("insert run1: %v", err)
+	}
+	if _, err := db.Insert(run2); err != nil {
+		t.Fatalf("insert run2: %v", err)
+	}
+
+	c, w := makeTriggerGinCtx(t, user)
+	m := &hbtp.Map{}
+	m.Set("id", "trig-1")
+	m.Set("page", int64(1))
+	ctrl.runs(c, m)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
 func TestBatchRunPipelineVersions_EmptyCtx(t *testing.T) {
 	result, err := batchRunPipelineVersions(context.TODO(), nil)
 	if err != nil {
@@ -460,5 +617,134 @@ func TestBatchRunPipelineVersions_NoIDs(t *testing.T) {
 	}
 	if len(result) != 0 {
 		t.Errorf("expected empty result for empty IDs, got %d entries", len(result))
+	}
+}
+
+func setupBatchPvTestDb(t *testing.T) *xorm.Engine {
+	t.Helper()
+	origDb := comm.Db
+	t.Cleanup(func() { comm.Db = origDb })
+
+	db, err := xorm.NewEngine("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatalf("create sqlite engine: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	comm.Db = db
+
+	_, err = db.Exec(`CREATE TABLE t_pipeline_version (
+		id VARCHAR(64) NOT NULL PRIMARY KEY,
+		uid VARCHAR(64),
+		number BIGINT,
+		events VARCHAR(100),
+		sha VARCHAR(255),
+		pipeline_name VARCHAR(255),
+		pipeline_display_name VARCHAR(255),
+		pipeline_id VARCHAR(64),
+		version VARCHAR(255),
+		content TEXT,
+		created DATETIME,
+		deleted INT DEFAULT 0,
+		pr_number BIGINT,
+		repo_clone_url VARCHAR(255)
+	)`)
+	if err != nil {
+		t.Fatalf("create pipeline_version table: %v", err)
+	}
+
+	_, err = db.Exec(`CREATE TABLE t_build (
+		id VARCHAR(64) NOT NULL PRIMARY KEY,
+		pipeline_version_id VARCHAR(64),
+		status VARCHAR(100)
+	)`)
+	if err != nil {
+		t.Fatalf("create build table: %v", err)
+	}
+
+	return db
+}
+
+func TestBatchRunPipelineVersions_WithData(t *testing.T) {
+	db := setupBatchPvTestDb(t)
+
+	// Insert pipeline versions
+	pv1 := &model.TPipelineVersion{
+		Id: "pv-1", Number: 1, PipelineName: "pipe-a",
+		PipelineDisplayName: "Pipeline A", PipelineId: "pid-1",
+		Created: time.Now(),
+	}
+	pv2 := &model.TPipelineVersion{
+		Id: "pv-2", Number: 2, PipelineName: "pipe-b",
+		PipelineDisplayName: "Pipeline B", PipelineId: "pid-2",
+		Created: time.Now(),
+	}
+	if _, err := db.Insert(pv1); err != nil {
+		t.Fatalf("insert pv1: %v", err)
+	}
+	if _, err := db.Insert(pv2); err != nil {
+		t.Fatalf("insert pv2: %v", err)
+	}
+
+	result, err := batchRunPipelineVersions(context.TODO(), []string{"pv-1", "pv-2"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 2 {
+		t.Fatalf("expected 2 results, got %d", len(result))
+	}
+	if result["pv-1"].Number != 1 {
+		t.Errorf("expected pv-1 number=1, got %d", result["pv-1"].Number)
+	}
+	if result["pv-1"].PipelineName != "pipe-a" {
+		t.Errorf("expected pv-1 pipelineName='pipe-a', got %q", result["pv-1"].PipelineName)
+	}
+	if result["pv-2"].Number != 2 {
+		t.Errorf("expected pv-2 number=2, got %d", result["pv-2"].Number)
+	}
+}
+
+func TestBatchRunPipelineVersions_NonexistentIDs(t *testing.T) {
+	setupBatchPvTestDb(t)
+
+	result, err := batchRunPipelineVersions(context.TODO(), []string{"nonexistent-1", "nonexistent-2"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("expected 0 results for nonexistent IDs, got %d", len(result))
+	}
+}
+
+func TestBatchRunPipelineVersions_WithBuildJoin(t *testing.T) {
+	db := setupBatchPvTestDb(t)
+
+	pv := &model.TPipelineVersion{
+		Id: "pv-1", Number: 5, PipelineName: "pipe-x",
+		PipelineDisplayName: "Pipeline X", PipelineId: "pid-x",
+		Created: time.Now(),
+	}
+	if _, err := db.Insert(pv); err != nil {
+		t.Fatalf("insert pv: %v", err)
+	}
+
+	// Insert a build record linked to the pipeline version
+	_, err := db.Exec(`INSERT INTO t_build (id, pipeline_version_id, status) VALUES (?, ?, ?)`,
+		"build-1", "pv-1", "success")
+	if err != nil {
+		t.Fatalf("insert build: %v", err)
+	}
+
+	result, err := batchRunPipelineVersions(context.TODO(), []string{"pv-1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(result))
+	}
+	if result["pv-1"].Status != "success" {
+		t.Errorf("expected status='success', got %q", result["pv-1"].Status)
+	}
+	if result["pv-1"].Number != 5 {
+		t.Errorf("expected number=5, got %d", result["pv-1"].Number)
 	}
 }
