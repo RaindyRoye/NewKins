@@ -18,7 +18,6 @@ import (
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
 	"github.com/gokins/runner/runners"
-	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 )
 
 type baseRunner struct{}
@@ -232,8 +231,11 @@ func (c *baseRunner) GetEnv(buildID, jobId, key string) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	mp := hbtp.NewMaps(bts)
-	v, ok := mp.Get(key)
+	mp := make(map[string]interface{})
+	if err := json.Unmarshal(bts, &mp); err != nil {
+		return "", false
+	}
+	v, ok := mp[key]
 	if !ok {
 		return "", false
 	}

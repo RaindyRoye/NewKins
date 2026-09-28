@@ -147,7 +147,7 @@ func (HbtpRunner) ReadFile(c *hbtp.Context) {
 	defer func() { _ = flr.Close() }()
 	_ = c.ResString(hbtp.ResStatusOk, fmt.Sprintf("%d", flsz))
 	bts := make([]byte, 10240)
-	for !hbtp.EndContext(comm.Ctx) {
+	for comm.Ctx.Err() == nil {
 		n, readErr := flr.Read(bts)
 		if n <= 0 {
 			break
@@ -219,7 +219,7 @@ func (HbtpRunner) UploadFile(c *hbtp.Context) {
 	_ = c.ResString(hbtp.ResStatusOk, "ok")
 
 	bts := make([]byte, 10240)
-	for !hbtp.EndContext(comm.Ctx) {
+	for comm.Ctx.Err() == nil {
 		n, readErr := c.Conn().Read(bts)
 		if n <= 0 {
 			break
