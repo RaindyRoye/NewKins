@@ -11,7 +11,6 @@ import (
 	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
-	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,9 +32,15 @@ func StartTimerEngine() *TimerEngine {
 	go func() {
 		defer util.RecoverLog("TimerEngine.main")
 		c.refresh()
-		for !hbtp.EndContext(comm.Ctx) {
-			c.run()
-			time.Sleep(time.Millisecond * 10)
+		ticker := time.NewTicker(time.Millisecond * 10)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-comm.Ctx.Done():
+				return
+			case <-ticker.C:
+				c.run()
+			}
 		}
 	}()
 	return c
@@ -102,16 +107,17 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 	if tmr.Types != "timer" {
 		return fmt.Errorf("%w: expected 'timer', got '%s'", ErrInvalidTriggerType, tmr.Types)
 	}
-	mp := hbtp.Map{}
+	var mp map[string]interface{}
 	err := json.Unmarshal([]byte(tmr.Params), &mp)
 	if err != nil {
 		return fmt.Errorf("unmarshal trigger params: %w", err)
 	}
-	typ, err := mp.GetInt("timerType")
-	if err != nil {
-		return fmt.Errorf("get timerType: %w", err)
+	typF, ok := mp["timerType"].(float64)
+	if !ok {
+		return fmt.Errorf("get timerType: %w", ErrEmptyParams)
 	}
-	dates := mp.GetString("dates")
+	typ := int64(typF)
+	dates, _ := mp["dates"].(string)
 	tms, err := time.ParseInLocation(time.RFC3339Nano, dates, time.Local)
 	if err != nil {
 		return fmt.Errorf("parse dates %q: %w", dates, err)

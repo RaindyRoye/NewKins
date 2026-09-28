@@ -17,7 +17,6 @@ import (
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/util"
-	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
 )
 
@@ -81,7 +80,7 @@ func (c *BuildTask) stopd() bool {
 	if c.ctx == nil {
 		return true
 	}
-	return hbtp.EndContext(c.ctx)
+	return c.ctx.Err() != nil
 }
 func (c *BuildTask) stop() {
 	c.ctrlendtm = time.Time{}
@@ -246,7 +245,7 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 		}
 		// Use the task's own context (which has a timeout) instead of the global
 		// comm.Ctx, so that step waits are properly bounded by the build deadline.
-		for !hbtp.EndContext(c.ctx) {
+		for c.ctx.Err() == nil {
 			time.Sleep(time.Millisecond * 100)
 			if c.stopd() {
 				job.status(common.BuildStatusCancel, "")
@@ -292,7 +291,7 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 	logrus.Debugf("BuildTask put step:%s", job.step.Name)
 	// Use the task's own context (with timeout) instead of the global comm.Ctx
 	// so that the polling loop respects the build deadline.
-	for !hbtp.EndContext(c.ctx) {
+	for c.ctx.Err() == nil {
 		job.Lock()
 		stats := job.step.Status
 		job.Unlock()
