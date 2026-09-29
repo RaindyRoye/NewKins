@@ -49,8 +49,8 @@ func initCache() error {
 	_ = os.Remove(pth)
 	db, err := bolt.Open(pth, 0640, nil)
 	if err != nil {
-		logrus.Errorf("InitCache err:%v", err)
-		return fmt.Errorf("open cache db at %s: %w", pth, err)
+		logrus.Errorf("Failed to open cache database at %s: %v", pth, err)
+		return fmt.Errorf("open cache database at %s: %w", pth, err)
 	}
 	comm.BCache = db
 	return nil

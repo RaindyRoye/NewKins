@@ -253,3 +253,23 @@ func TestCtx_Cancellation(t *testing.T) {
 	err = Ctx.Err()
 	assert.ErrorIs(t, err, context.Canceled, "context should be canceled")
 }
+
+func TestNewApp(t *testing.T) {
+	cfg := Config{}
+	cfg.Server.Host = "test-host"
+
+	app := NewApp(cfg, nil, nil, "/test/path", "localhost:8080")
+
+	assert.NotNil(t, app, "NewApp should return a non-nil App instance")
+	assert.Equal(t, "test-host", app.Cfg.Server.Host, "Config should be preserved")
+	assert.Equal(t, "/test/path", app.WorkPath, "WorkPath should be set")
+	assert.Equal(t, "localhost:8080", app.WebHost, "WebHost should be set")
+	assert.Nil(t, app.Db, "Db should be nil when not provided")
+	assert.Nil(t, app.BCache, "BCache should be nil when not provided")
+}
+
+func TestAppClose_NilResources(t *testing.T) {
+	app := &App{}
+	err := app.Close()
+	assert.NoError(t, err, "Close with nil resources should not error")
+}

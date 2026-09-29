@@ -2,6 +2,8 @@ package comm
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -82,6 +84,18 @@ var (
 // globals. It enables a gradual migration path to dependency injection.
 var defaultApp = &App{}
 
+// NewApp creates a fully-initialized App with explicit dependencies.
+// Use this constructor in new code to avoid relying on package-level globals.
+func NewApp(cfg Config, db *xorm.Engine, cache *bolt.DB, workPath, webHost string) *App {
+	return &App{
+		Cfg:      cfg,
+		Db:       db,
+		BCache:   cache,
+		WorkPath: workPath,
+		WebHost:  webHost,
+	}
+}
+
 // GetApp returns the default App instance. This is the entry point for code
 // that wants to use dependency injection instead of global variables.
 func GetApp() *App {
@@ -120,9 +134,29 @@ func SyncToGlobals() {
 	WebHost = defaultApp.WebHost
 }
 
+// Close releases resources owned by the App (database engine, bolt cache).
+// It collects all close errors and returns a combined error if any occurred.
+// Call this during graceful shutdown to ensure clean resource release.
+func (a *App) Close() error {
+	var errs []error
+	if a.Db != nil {
+		if err := a.Db.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close xorm db: %w", err))
+		}
+	}
+	if a.BCache != nil {
+		if err := a.BCache.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close bolt cache: %w", err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
 func init() {
 	Ctx, cncl = context.WithCancel(context.Background())
 }
+
+// Cancel cancels the global application context.
 func Cancel() {
 	if cncl != nil {
 		cncl()

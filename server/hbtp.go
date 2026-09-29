@@ -17,7 +17,7 @@ func runHbtp() {
 	comm.HbtpEgn.RegGrpcFun(10, engine.Mgr.HRun())
 	err := comm.HbtpEgn.Run(comm.Cfg.Server.HbtpHost)
 	if err != nil {
-		logrus.Errorf("Hbtp err:%v", err)
+		logrus.Errorf("Hbtp server error: %v", err)
 		comm.Cancel()
 	}
 }

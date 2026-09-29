@@ -70,7 +70,7 @@ func runWeb() {
 		}
 	case err := <-errCh:
 		if err != nil {
-			logrus.Errorf("Web err:%v", err)
+			logrus.Errorf("Web server error: %v", err)
 		}
 	}
 
