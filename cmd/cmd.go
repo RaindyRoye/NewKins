@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -19,6 +20,15 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
+
+// ErrConfigNotFound is returned when the configuration file cannot be found.
+var ErrConfigNotFound = errors.New("configuration file not found")
+
+// ErrUnsupportedDriver is returned when an unsupported database driver is specified.
+var ErrUnsupportedDriver = errors.New("unsupported database driver")
+
+// ErrConfigExists is returned when attempting to create a configuration file that already exists.
+var ErrConfigExists = errors.New("configuration file already exists")
 
 var (
 	webHost   string
@@ -251,7 +261,7 @@ func resolveConfigPath(args []string) (string, error) {
 			return pth, nil
 		}
 	}
-	return "", fmt.Errorf("no configuration file found in %s (tried app.yml, app.yaml)", wp)
+	return "", fmt.Errorf("%w: %s (tried app.yml, app.yaml)", ErrConfigNotFound, wp)
 }
 
 // loadConfigFile reads and parses a config file, returning the parsed Config.
@@ -425,7 +435,7 @@ func initConfig(cmd *cobra.Command) error {
 	case comm.DatasourceDriverMySQL, comm.DatasourceDriverPostgres, comm.DatasourceDriverSQLite:
 		// valid
 	default:
-		return fmt.Errorf("unsupported driver %q (must be one of: sqlite, mysql, postgres)", initDriver)
+		return fmt.Errorf("%w: %q (must be one of: sqlite, mysql, postgres)", ErrUnsupportedDriver, initDriver)
 	}
 
 	// Ensure working directory exists
@@ -438,7 +448,7 @@ func initConfig(cmd *cobra.Command) error {
 	// Check if file already exists
 	if !initForce {
 		if _, err := os.Stat(configPath); err == nil {
-			return fmt.Errorf("configuration file already exists: %s (use --force to overwrite)", configPath)
+			return fmt.Errorf("%w: %s (use --force to overwrite)", ErrConfigExists, configPath)
 		}
 	}
 

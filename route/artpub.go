@@ -15,7 +15,6 @@ import (
 	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
-	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"net/http"
 )
 
@@ -153,7 +152,7 @@ func (ArtPublicController) downFile(c *gin.Context, fls string) {
 	c.Header("Content-Disposition", fmt.Sprintf(`attachment;filename="%s"`, url.QueryEscape(nms)))
 	c.Status(http.StatusOK)
 	bts := make([]byte, 10240)
-	for !hbtp.EndContext(c) {
+	for c.Request.Context().Err() == nil {
 		n, err := rdr.Read(bts)
 		if n <= 0 {
 			break

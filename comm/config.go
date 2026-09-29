@@ -24,19 +24,19 @@ type Config struct {
 // It returns an error describing the first problem found, or nil if valid.
 func (c *Config) Validate() error {
 	if c.Datasource.Driver == "" {
-		return fmt.Errorf("config validation: datasource.driver is required")
+		return fmt.Errorf("config validation: %w", ErrMissingDriver)
 	}
 	switch c.Datasource.Driver {
-	case DatasourceDriverMySQL, DatasourceDriverPostgres, DatasourceDriverSQLite:
+	case "mysql", "postgres", "sqlite":
 		// valid
 	default:
-		return fmt.Errorf("config validation: unsupported datasource driver %q (must be one of: mysql, postgres, sqlite)", c.Datasource.Driver)
+		return fmt.Errorf("config validation: %w: %q (must be one of: mysql, postgres, sqlite)", ErrInvalidDriver, c.Datasource.Driver)
 	}
 	if c.Datasource.Url == "" {
-		return fmt.Errorf("config validation: datasource.url is required")
+		return fmt.Errorf("config validation: %w", ErrMissingURL)
 	}
 	if c.Server.RunLimit < 0 {
-		return fmt.Errorf("config validation: server.runLimit must be non-negative, got %d", c.Server.RunLimit)
+		return fmt.Errorf("config validation: %w, got %d", ErrInvalidRunLimit, c.Server.RunLimit)
 	}
 	return nil
 }

@@ -83,7 +83,7 @@ func TestResolveConfigPath_NoFileFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error when no config file exists")
 	}
-	if !strings.Contains(err.Error(), "no configuration file found") {
+	if !strings.Contains(err.Error(), "configuration file not found") {
 		t.Errorf("unexpected error: %v", err)
 	}
 }

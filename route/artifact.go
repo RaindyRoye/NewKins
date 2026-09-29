@@ -198,7 +198,7 @@ func (ArtifactController) edit(c *gin.Context, m *hbtp.Map) {
 
 		ln := 0
 		ne.Identifier = strings.ToLower(utils.RandomString(8))
-		for !hbtp.EndContext(c) {
+		for c.Request.Context().Err() == nil {
 			ln++
 			n, countErr := comm.Db.Context(ctx).Where("identifier=?", ne.Identifier).Count(ne)
 			if countErr != nil {

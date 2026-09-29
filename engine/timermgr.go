@@ -33,7 +33,7 @@ func StartTimerEngine() *TimerEngine {
 	go func() {
 		defer util.RecoverLog("TimerEngine.main")
 		c.refresh()
-		for !hbtp.EndContext(comm.Ctx) {
+		for comm.Ctx.Err() == nil {
 			c.run()
 			time.Sleep(time.Millisecond * 10)
 		}

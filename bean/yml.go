@@ -7,6 +7,24 @@ import (
 	"strings"
 )
 
+// Sentinel errors for YAML validation.
+var (
+	// ErrStagesEmpty is returned when no stages are defined in the pipeline.
+	ErrStagesEmpty = errors.New("stages is empty")
+	// ErrStageNameEmpty is returned when a stage has no name.
+	ErrStageNameEmpty = errors.New("stage name is empty")
+	// ErrStepsEmpty is returned when a stage has no steps.
+	ErrStepsEmpty = errors.New("steps is empty")
+	// ErrDuplicateStage is returned when multiple stages share the same name.
+	ErrDuplicateStage = errors.New("duplicate stage name")
+	// ErrStepPluginEmpty is returned when a step has no plugin specified.
+	ErrStepPluginEmpty = errors.New("step plugin is empty")
+	// ErrStepNameEmpty is returned when a step has no name.
+	ErrStepNameEmpty = errors.New("step name is empty")
+	// ErrDuplicateStep is returned when multiple steps in a stage share the same name.
+	ErrDuplicateStep = errors.New("duplicate step name")
+)
+
 type Pipeline struct {
 	Version  string              `yaml:"version,omitempty" json:"version"`
 	Triggers map[string]*Trigger `yaml:"triggers,omitempty" json:"triggers"`
@@ -105,31 +123,31 @@ func (c *Pipeline) ConvertCmd() {
 }
 
 func (c *Pipeline) Check() error {
-	stages := make(map[string]map[string]*Step)
 	if len(c.Stages) == 0 {
-		return errors.New("stages is empty")
+		return ErrStagesEmpty
 	}
+	stages := make(map[string]map[string]*Step)
 	for _, v := range c.Stages {
 		if v.Name == "" {
-			return errors.New("stage name is empty")
+			return ErrStageNameEmpty
 		}
 		if len(v.Steps) == 0 {
-			return errors.New("steps is empty")
+			return ErrStepsEmpty
 		}
 		if _, ok := stages[v.Name]; ok {
-			return fmt.Errorf("duplicate stage name: %s", v.Name)
+			return fmt.Errorf("%w: %s", ErrDuplicateStage, v.Name)
 		}
 		m := map[string]*Step{}
 		stages[v.Name] = m
 		for _, e := range v.Steps {
 			if strings.TrimSpace(e.Step) == "" {
-				return errors.New("step plugin is empty")
+				return ErrStepPluginEmpty
 			}
 			if e.Name == "" {
-				return errors.New("step name is empty")
+				return ErrStepNameEmpty
 			}
 			if _, ok := m[e.Name]; ok {
-				return fmt.Errorf("duplicate step name: %s", e.Name)
+				return fmt.Errorf("%w: %s", ErrDuplicateStep, e.Name)
 			}
 			m[e.Name] = e
 		}

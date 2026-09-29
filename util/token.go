@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,6 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
+
+// ErrUnexpectedSigningMethod is returned when a JWT token uses an unexpected signing method.
+var ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
 
 func CreateToken(claims jwt.MapClaims, key string, tmout time.Duration) (string, error) {
 	claims["times"] = time.Now()
@@ -95,7 +99,7 @@ func GetTokens(s string, key string) jwt.MapClaims {
 		// Validate the signing method to prevent algorithm confusion attacks.
 		// We only accept HMAC-based signing (HS512) since that's what CreateToken uses.
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("%w: %v", ErrUnexpectedSigningMethod, token.Header["alg"])
 		}
 		return []byte(key), nil
 	})

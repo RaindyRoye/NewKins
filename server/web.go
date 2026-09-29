@@ -22,7 +22,6 @@ import (
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/route"
 	"github.com/gokins/gokins/util"
-	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
 )
 
@@ -212,7 +211,7 @@ func midUiHandle(c *gin.Context) {
 	}
 	c.Status(200)
 	bts := make([]byte, 1024)
-	for !hbtp.EndContext(c) {
+	for c.Request.Context().Err() == nil {
 		n, err := rd.Read(bts)
 		if n <= 0 {
 			break
@@ -254,17 +253,17 @@ func getRdr() (*zip.Reader, error) {
 }
 func getFile(pth string) (*zip.File, error) {
 	if pth == "" {
-		return nil, errors.New("getFile: path parameter is empty")
+		return nil, fmt.Errorf("getFile: %w", ErrPathEmpty)
 	}
 	// Prevent path traversal attacks
 	cleaned := filepath.Clean(pth)
 	if strings.Contains(cleaned, "..") || filepath.IsAbs(cleaned) {
-		return nil, errors.New("getFile: invalid path")
+		return nil, fmt.Errorf("getFile: %w: %s", ErrInvalidPath, pth)
 	}
 	// println("getFile:" + pth)
 	r, err := getRdr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getFile: %w", err)
 	}
 	for _, f := range r.File {
 		nm := strings.ReplaceAll(f.Name, "\\", "/")
@@ -273,5 +272,5 @@ func getFile(pth string) (*zip.File, error) {
 			return f, nil
 		}
 	}
-	return nil, errors.New("file not found")
+	return nil, fmt.Errorf("getFile: %w: %s", ErrFileNotFound, pth)
 }

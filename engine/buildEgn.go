@@ -9,7 +9,6 @@ import (
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/util"
-	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,11 +29,11 @@ func StartBuildEngine() *BuildEngine {
 		tasks: make(map[string]*BuildTask),
 	}
 	go func() {
-		defer util.RecoverLog("BuildEngine.main")
+		defer util.RecoverLog("BuildEngine.goroutine")
 		c.init()
-		for !hbtp.EndContext(comm.Ctx) {
+		for comm.Ctx.Err() == nil {
 			c.run()
-			time.Sleep(time.Second)
+			time.Sleep(time.Millisecond * 100)
 		}
 	}()
 	return c

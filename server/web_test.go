@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -247,7 +248,7 @@ func TestGetFile_PathTraversal(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected error for path traversal, got nil")
 			}
-			if err.Error() != "getFile: invalid path" {
+			if !strings.Contains(err.Error(), "invalid path") {
 				t.Errorf("unexpected error message: %v", err)
 			}
 		})

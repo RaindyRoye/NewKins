@@ -205,7 +205,7 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 	ls := make([]*bean.LogOutJsonRes, 0)
 	bts := make([]byte, 1024*5)
 	linebuf := &bytes.Buffer{}
-	for !hbtp.EndContext(c) {
+	for c.Request.Context().Err() == nil {
 		rn, err := fl.Read(bts)
 		if rn <= 0 {
 			break
