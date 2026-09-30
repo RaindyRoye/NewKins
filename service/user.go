@@ -22,6 +22,9 @@ func GetUserCtx(ctx context.Context, uid string) (*model.TUser, bool) {
 	if uid == "" {
 		return nil, false
 	}
+	if comm.Db == nil {
+		return nil, false
+	}
 	e := &model.TUser{}
 	ok, err := comm.Db.Context(ctx).Where("id=?", uid).Get(e)
 	if err != nil {
