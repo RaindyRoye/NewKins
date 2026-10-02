@@ -33,7 +33,9 @@ func Run() error {
 	}
 	core.InitLog(comm.WorkPath)
 	go runWeb()
-	time.Sleep(time.Millisecond * 10)
+	// Wait for the web server to bind and signal readiness.
+	// This replaces the old time.Sleep(10ms) which was a race condition.
+	<-comm.WebReadyCh
 	err := parseConfig()
 	if err != nil {
 		logrus.Debugf("parseConfig err:%v", err)
