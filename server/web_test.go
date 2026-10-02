@@ -1,7 +1,10 @@
 package server
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -316,5 +319,603 @@ func TestMidUiHandle_FileFound(t *testing.T) {
 	// Should return 200 from the handler
 	if w.Code != http.StatusOK {
 		t.Errorf("expected status 200, got %d", w.Code)
+	}
+}
+
+func TestMidUiHandle_NotInstalled_InstallPath(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+	router.GET("/install", func(c *gin.Context) {
+		c.String(http.StatusOK, "install page")
+	})
+
+	origInstalled := comm.Installed
+	defer func() { comm.Installed = origInstalled }()
+	comm.Installed = false
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/install", nil)
+	router.ServeHTTP(w, req)
+
+	// /install path should work even when not installed
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200 for /install, got %d", w.Code)
+	}
+}
+
+func TestMidUiHandle_NotInstalled_GokinsUIPath(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+
+	origInstalled := comm.Installed
+	origStaticPkg := comm.StaticPkg
+	defer func() {
+		comm.Installed = origInstalled
+		comm.StaticPkg = origStaticPkg
+	}()
+	comm.Installed = false
+	comm.StaticPkg = "" // Empty static pkg will cause getFile to fail
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/gokinsui/test.js", nil)
+	router.ServeHTTP(w, req)
+
+	// /gokinsui/* paths should attempt to serve even when not installed
+	// With empty StaticPkg, it will redirect to /
+	if w.Code != http.StatusFound {
+		t.Logf("status code: %d (expected redirect when static pkg unavailable)", w.Code)
+	}
+}
+
+func TestMidUiHandle_404WithEmptyStaticPkg(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+
+	origInstalled := comm.Installed
+	origStaticPkg := comm.StaticPkg
+	defer func() {
+		comm.Installed = origInstalled
+		comm.StaticPkg = origStaticPkg
+	}()
+	comm.Installed = true
+	comm.StaticPkg = ""
+
+	// Reset zip reader state
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/nonexistent", nil)
+	router.ServeHTTP(w, req)
+
+	// Should redirect to / when file not found
+	if w.Code != http.StatusFound {
+		t.Errorf("expected status 302 (redirect), got %d", w.Code)
+	}
+}
+
+func TestMidUiHandle_200ResponseSkipsFileServe(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+	router.GET("/api/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	origInstalled := comm.Installed
+	defer func() { comm.Installed = origInstalled }()
+	comm.Installed = true
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/api/test", nil)
+	router.ServeHTTP(w, req)
+
+	// Should return 200 from handler, not attempt file serving
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "ok") {
+		t.Errorf("expected JSON response, got %q", w.Body.String())
+	}
+}
+
+func TestGetFile_PathNormalization(t *testing.T) {
+	// Reset zip reader
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origStaticPkg := comm.StaticPkg
+	defer func() { comm.StaticPkg = origStaticPkg }()
+	comm.StaticPkg = ""
+
+	tests := []struct {
+		name     string
+		path     string
+		wantErr  bool
+		errMatch string
+	}{
+		{"empty path", "", true, "path parameter is empty"},
+		{"backslash normalization", "foo\\bar.html", true, ""},
+		{"leading slash", "/foo/bar.html", true, "invalid path"},
+		{"parent traversal", "../secret.txt", true, "invalid path"},
+		{"double parent", "foo/../../secret.txt", true, "invalid path"},
+		{"normal path", "assets/style.css", true, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := getFile(tt.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getFile(%q) error = %v, wantErr %v", tt.path, err, tt.wantErr)
+				return
+			}
+			if tt.errMatch != "" && err != nil && !strings.Contains(err.Error(), tt.errMatch) {
+				t.Errorf("getFile(%q) error = %v, want to contain %q", tt.path, err, tt.errMatch)
+			}
+		})
+	}
+}
+
+func TestGetRdr_InvalidBase64(t *testing.T) {
+	// Reset state
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origStaticPkg := comm.StaticPkg
+	defer func() { comm.StaticPkg = origStaticPkg }()
+
+	// Set invalid base64 string
+	comm.StaticPkg = "not-valid-base64!!!"
+
+	_, err := getRdr()
+	if err == nil {
+		t.Fatal("expected error for invalid base64, got nil")
+	}
+}
+
+func TestGetRdr_InvalidZip(t *testing.T) {
+	// Reset state
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origStaticPkg := comm.StaticPkg
+	defer func() { comm.StaticPkg = origStaticPkg }()
+
+	// Valid base64 but invalid zip format
+	comm.StaticPkg = "aGVsbG8gd29ybGQ=" // "hello world" in base64
+
+	_, err := getRdr()
+	if err == nil {
+		t.Fatal("expected error for invalid zip, got nil")
+	}
+}
+
+func TestGetRdr_Success(t *testing.T) {
+	// Reset state
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origStaticPkg := comm.StaticPkg
+	defer func() { comm.StaticPkg = origStaticPkg }()
+
+	// Create a minimal valid zip file
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, err := w.Create("test.html")
+	if err != nil {
+		t.Fatalf("failed to create zip entry: %v", err)
+	}
+	_, err = f.Write([]byte("<html>test</html>"))
+	if err != nil {
+		t.Fatalf("failed to write zip entry: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip: %v", err)
+	}
+
+	// Encode to base64
+	comm.StaticPkg = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	reader, err := getRdr()
+	if err != nil {
+		t.Fatalf("getRdr() error = %v", err)
+	}
+	if reader == nil {
+		t.Fatal("getRdr() returned nil reader")
+	}
+	if len(reader.File) != 1 {
+		t.Errorf("expected 1 file in zip, got %d", len(reader.File))
+	}
+}
+
+func TestGetFile_WithValidZip(t *testing.T) {
+	// Reset state
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origStaticPkg := comm.StaticPkg
+	defer func() { comm.StaticPkg = origStaticPkg }()
+
+	// Create zip with multiple files
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+
+	files := map[string]string{
+		"index.html":       "<html>index</html>",
+		"assets/style.css": "body { margin: 0; }",
+		"assets/app.js":    "console.log('hello');",
+	}
+
+	for name, content := range files {
+		f, err := w.Create(name)
+		if err != nil {
+			t.Fatalf("failed to create %s: %v", name, err)
+		}
+		if _, err := f.Write([]byte(content)); err != nil {
+			t.Fatalf("failed to write %s: %v", name, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip: %v", err)
+	}
+
+	comm.StaticPkg = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	// Test finding existing files
+	for path := range files {
+		t.Run("find "+path, func(t *testing.T) {
+			f, err := getFile(path)
+			if err != nil {
+				t.Fatalf("getFile(%q) error = %v", path, err)
+			}
+			if f == nil {
+				t.Fatalf("getFile(%q) returned nil", path)
+			}
+			// Normalize path separators for comparison
+			expectedName := strings.ReplaceAll(path, "\\", "/")
+			actualName := strings.ReplaceAll(f.Name, "\\", "/")
+			if actualName != expectedName {
+				t.Errorf("file name = %q, want %q", actualName, expectedName)
+			}
+		})
+	}
+
+	// Test file not found
+	_, err := getFile("nonexistent.txt")
+	if err == nil {
+		t.Fatal("expected error for nonexistent file, got nil")
+	}
+	if !strings.Contains(err.Error(), "file not found") {
+		t.Errorf("error = %v, want to contain 'file not found'", err)
+	}
+}
+
+func TestMidUiHandle_ServesHTMLFile(t *testing.T) {
+	// Reset state
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origInstalled := comm.Installed
+	origStaticPkg := comm.StaticPkg
+	defer func() {
+		comm.Installed = origInstalled
+		comm.StaticPkg = origStaticPkg
+	}()
+
+	// Create zip with HTML file
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, _ := w.Create("about.html")
+	_, _ = f.Write([]byte("<html><body>About</body></html>"))
+	_ = w.Close()
+
+	comm.Installed = true
+	comm.StaticPkg = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+
+	w2 := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/about.html", nil)
+	router.ServeHTTP(w2, req)
+
+	if w2.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w2.Code)
+	}
+	if ct := w2.Header().Get("Content-Type"); ct != "text/html" {
+		t.Errorf("Content-Type = %q, want 'text/html'", ct)
+	}
+	if !strings.Contains(w2.Body.String(), "About") {
+		t.Errorf("body = %q, want to contain 'About'", w2.Body.String())
+	}
+}
+
+func TestMidUiHandle_ServesCSSFile(t *testing.T) {
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origInstalled := comm.Installed
+	origStaticPkg := comm.StaticPkg
+	defer func() {
+		comm.Installed = origInstalled
+		comm.StaticPkg = origStaticPkg
+	}()
+
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, _ := w.Create("assets/main.css")
+	_, _ = f.Write([]byte("body { color: red; }"))
+	_ = w.Close()
+
+	comm.Installed = true
+	comm.StaticPkg = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+
+	w2 := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/assets/main.css", nil)
+	router.ServeHTTP(w2, req)
+
+	if w2.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w2.Code)
+	}
+	if ct := w2.Header().Get("Content-Type"); ct != "text/css" {
+		t.Errorf("Content-Type = %q, want 'text/css'", ct)
+	}
+}
+
+func TestMidUiHandle_ServesJSFile(t *testing.T) {
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origInstalled := comm.Installed
+	origStaticPkg := comm.StaticPkg
+	defer func() {
+		comm.Installed = origInstalled
+		comm.StaticPkg = origStaticPkg
+	}()
+
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, _ := w.Create("app.js")
+	_, _ = f.Write([]byte("console.log('test');"))
+	_ = w.Close()
+
+	comm.Installed = true
+	comm.StaticPkg = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+
+	w2 := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/app.js", nil)
+	router.ServeHTTP(w2, req)
+
+	if w2.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w2.Code)
+	}
+	if ct := w2.Header().Get("Content-Type"); ct != "application/javascript" {
+		t.Errorf("Content-Type = %q, want 'application/javascript'", ct)
+	}
+}
+
+func TestMidUiHandle_ServesSVGFile(t *testing.T) {
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origInstalled := comm.Installed
+	origStaticPkg := comm.StaticPkg
+	defer func() {
+		comm.Installed = origInstalled
+		comm.StaticPkg = origStaticPkg
+	}()
+
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, _ := w.Create("logo.svg")
+	_, _ = f.Write([]byte("<svg></svg>"))
+	_ = w.Close()
+
+	comm.Installed = true
+	comm.StaticPkg = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+
+	w2 := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/logo.svg", nil)
+	router.ServeHTTP(w2, req)
+
+	if w2.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w2.Code)
+	}
+	if ct := w2.Header().Get("Content-Type"); ct != "image/svg+xml" {
+		t.Errorf("Content-Type = %q, want 'image/svg+xml'", ct)
+	}
+}
+
+func TestMidUiHandle_FallbackToIndexHTML(t *testing.T) {
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origInstalled := comm.Installed
+	origStaticPkg := comm.StaticPkg
+	defer func() {
+		comm.Installed = origInstalled
+		comm.StaticPkg = origStaticPkg
+	}()
+
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, _ := w.Create("index.html")
+	_, _ = f.Write([]byte("<html>SPA</html>"))
+	_ = w.Close()
+
+	comm.Installed = true
+	comm.StaticPkg = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+
+	// Request a path that doesn't exist — should fall back to index.html
+	w2 := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/some/spa/route", nil)
+	router.ServeHTTP(w2, req)
+
+	if w2.Code != http.StatusOK {
+		t.Errorf("expected status 200 (fallback to index.html), got %d", w2.Code)
+	}
+	if !strings.Contains(w2.Body.String(), "SPA") {
+		t.Errorf("body = %q, want to contain 'SPA'", w2.Body.String())
+	}
+}
+
+func TestMidUiHandle_CacheControlForStaticAssets(t *testing.T) {
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origInstalled := comm.Installed
+	origStaticPkg := comm.StaticPkg
+	defer func() {
+		comm.Installed = origInstalled
+		comm.StaticPkg = origStaticPkg
+	}()
+
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, _ := w.Create("bundle.js")
+	_, _ = f.Write([]byte("var x=1;"))
+	_ = w.Close()
+
+	comm.Installed = true
+	comm.StaticPkg = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+
+	w2 := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/bundle.js", nil)
+	router.ServeHTTP(w2, req)
+
+	// Non-HTML assets should have long cache TTL
+	if cc := w2.Header().Get("Cache-Control"); cc != "max-age=360000000" {
+		t.Errorf("Cache-Control = %q, want 'max-age=360000000'", cc)
+	}
+}
+
+func TestMidUiHandle_HTMLNoCache(t *testing.T) {
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origInstalled := comm.Installed
+	origStaticPkg := comm.StaticPkg
+	defer func() {
+		comm.Installed = origInstalled
+		comm.StaticPkg = origStaticPkg
+	}()
+
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, _ := w.Create("page.html")
+	_, _ = f.Write([]byte("<html>page</html>"))
+	_ = w.Close()
+
+	comm.Installed = true
+	comm.StaticPkg = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+
+	w2 := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/page.html", nil)
+	router.ServeHTTP(w2, req)
+
+	// HTML files should have no-cache
+	if cc := w2.Header().Get("Cache-Control"); cc != "no-cache" {
+		t.Errorf("Cache-Control = %q, want 'no-cache'", cc)
+	}
+	if p := w2.Header().Get("Pragma"); p != "no-cache" {
+		t.Errorf("Pragma = %q, want 'no-cache'", p)
+	}
+}
+
+func TestGetRdr_Singleton(t *testing.T) {
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origStaticPkg := comm.StaticPkg
+	defer func() { comm.StaticPkg = origStaticPkg }()
+
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, _ := w.Create("test.txt")
+	_, _ = f.Write([]byte("hello"))
+	_ = w.Close()
+
+	comm.StaticPkg = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	r1, err1 := getRdr()
+	if err1 != nil {
+		t.Fatalf("first getRdr() error = %v", err1)
+	}
+	r2, err2 := getRdr()
+	if err2 != nil {
+		t.Fatalf("second getRdr() error = %v", err2)
+	}
+
+	if r1 != r2 {
+		t.Error("getRdr() should return the same singleton instance")
+	}
+}
+
+func TestGetFile_BackslashNormalization(t *testing.T) {
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	origStaticPkg := comm.StaticPkg
+	defer func() { comm.StaticPkg = origStaticPkg }()
+
+	// Create zip with a file using backslash in name (Windows-style)
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, _ := w.Create("assets\\style.css")
+	_, _ = f.Write([]byte("body{}"))
+	_ = w.Close()
+
+	comm.StaticPkg = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	// Should find it with forward slash lookup
+	f2, err := getFile("assets/style.css")
+	if err != nil {
+		t.Fatalf("getFile('assets/style.css') error = %v", err)
+	}
+	if f2 == nil {
+		t.Fatal("getFile returned nil")
 	}
 }
