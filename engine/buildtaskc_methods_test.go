@@ -137,7 +137,7 @@ func TestBuildTask_Check_DuplicateStageName(t *testing.T) {
 	buildId := utils.NewXid()
 	stage1Id := utils.NewXid()
 	stage2Id := utils.NewXid()
-	
+
 	bt := NewBuildTask(nil, &runtime.Build{
 		Id:     buildId,
 		Status: common.BuildStatusPending,
@@ -370,7 +370,7 @@ func TestBuildTask_GenRunjob_StringCommands(t *testing.T) {
 	buildId := utils.NewXid()
 	stageId := utils.NewXid()
 	stepId := utils.NewXid()
-	
+
 	bt := NewBuildTask(nil, &runtime.Build{
 		Id:     buildId,
 		Status: common.BuildStatusPending,
@@ -410,7 +410,7 @@ func TestBuildTask_GenRunjob_SliceCommands(t *testing.T) {
 	buildId := utils.NewXid()
 	stageId := utils.NewXid()
 	stepId := utils.NewXid()
-	
+
 	bt := NewBuildTask(nil, &runtime.Build{
 		Id:     buildId,
 		Status: common.BuildStatusPending,
@@ -453,7 +453,7 @@ func TestBuildTask_GenRunjob_StringSliceCommands(t *testing.T) {
 	buildId := utils.NewXid()
 	stageId := utils.NewXid()
 	stepId := utils.NewXid()
-	
+
 	bt := NewBuildTask(nil, &runtime.Build{
 		Id:     buildId,
 		Status: common.BuildStatusPending,
@@ -493,7 +493,7 @@ func TestBuildTask_GenRunjob_GitStep(t *testing.T) {
 	buildId := utils.NewXid()
 	stageId := utils.NewXid()
 	stepId := utils.NewXid()
-	
+
 	bt := NewBuildTask(nil, &runtime.Build{
 		Id:     buildId,
 		Status: common.BuildStatusPending,
