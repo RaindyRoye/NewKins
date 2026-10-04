@@ -2,6 +2,7 @@ package route
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -446,7 +447,7 @@ func TestPipelineVersion_NonexistentId(t *testing.T) {
 
 func TestFillPipelineListBuildInfo_EmptyList(t *testing.T) {
 	setupPipelineTestDB(t)
-	err := fillPipelineListBuildInfo(nil, []*model.TPipeline{})
+	err := fillPipelineListBuildInfo(context.TODO(), []*model.TPipeline{})
 	if err != nil {
 		t.Errorf("unexpected error for empty list: %v", err)
 	}
