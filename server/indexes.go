@@ -85,6 +85,21 @@ func ensureIndexes() {
 
 		// t_build: batch status updates filter by status columns
 		{"t_build", "idx_build_status", "status"},
+
+		// t_user_org: queried by uid + org_id for permission checks
+		{"t_user_org", "idx_userorg_uid_org", "uid, org_id"},
+
+		// t_artifact_package: queried by repo_id + name for artifact lookups
+		{"t_artifact_package", "idx_artpkg_repo_name", "repo_id, name"},
+
+		// t_org: filtered by deleted flag
+		{"t_org", "idx_org_deleted", "deleted"},
+
+		// t_trigger_run: queried by tid (trigger_id)
+		{"t_trigger_run", "idx_trigrun_tid", "tid"},
+
+		// t_artifactory: filtered by deleted + org_id
+		{"t_artifactory", "idx_art_deleted_org", "deleted, org_id"},
 	}
 
 	for _, idx := range indexes {

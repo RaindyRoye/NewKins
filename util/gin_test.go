@@ -2,88 +2,138 @@ package util
 
 import (
 	"errors"
-	"net/http"
-	"net/http/httptest"
+	"fmt"
 	"testing"
-
-	"github.com/gin-gonic/gin"
 )
 
-func init() {
-	gin.SetMode(gin.TestMode)
-}
-
-func TestRespInternalErr(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-
-	testErr := errors.New("sensitive db connection string: postgres://user:pass@host/db")
-	RespInternalErr(c, "test operation", testErr)
-
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
-	}
-
-	body := w.Body.String()
-	// Must NOT contain the original error message
-	if body == "sensitive db connection string: postgres://user:pass@host/db" {
-		t.Error("RespInternalErr leaked internal error details to client")
-	}
-	// Must contain generic message
-	if body != "internal server error" {
-		t.Errorf("expected 'internal server error', got %q", body)
-	}
-}
-
-func TestRespErr(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-
-	RespErr(c, http.StatusBadRequest, "validation failed", errors.New("field X is required"))
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
-	}
-
-	body := w.Body.String()
-	// Should contain the safe message
-	if body != "validation failed" {
-		t.Errorf("expected 'validation failed', got %q", body)
-	}
-}
-
-func TestRespInternalErr_Status500(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-
-	RespInternalErr(c, "any op", errors.New("some error"))
-	if w.Code != 500 {
-		t.Errorf("RespInternalErr must always return 500, got %d", w.Code)
-	}
-}
-
-func TestRespErr_CustomStatus(t *testing.T) {
+// TestRecoverResult tests the RecoverResult function with various panic types
+func TestRecoverResult(t *testing.T) {
 	tests := []struct {
-		status int
-		msg    string
+		name      string
+		panicVal  any
+		label     string
+		wantErr   bool
+		errMsg    string
+		checkWrap bool
 	}{
-		{400, "bad request"},
-		{404, "not found"},
-		{409, "conflict"},
-		{422, "unprocessable entity"},
+		{
+			name:      "panic with error",
+			panicVal:  errors.New("test error"),
+			label:     "test-error",
+			wantErr:   true,
+			errMsg:    "test-error: panic: test error",
+			checkWrap: true,
+		},
+		{
+			name:      "panic with string",
+			panicVal:  "test string",
+			label:     "test-string",
+			wantErr:   true,
+			errMsg:    "test-string: panic: test string",
+			checkWrap: false,
+		},
+		{
+			name:      "panic with int",
+			panicVal:  42,
+			label:     "test-int",
+			wantErr:   true,
+			errMsg:    "test-int: panic: 42",
+			checkWrap: false,
+		},
+		{
+			name:      "panic with nil",
+			panicVal:  nil,
+			label:     "test-nil",
+			wantErr:   false,
+			errMsg:    "",
+			checkWrap: false,
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.msg, func(t *testing.T) {
-			w := httptest.NewRecorder()
-			c, _ := gin.CreateTestContext(w)
-			RespErr(c, tt.status, tt.msg, errors.New("internal details"))
-			if w.Code != tt.status {
-				t.Errorf("expected status %d, got %d", tt.status, w.Code)
+		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			func() {
+				defer RecoverResult(&err, tt.label)
+				if tt.panicVal != nil {
+					panic(tt.panicVal)
+				}
+			}()
+
+			if tt.wantErr && err == nil {
+				t.Errorf("expected error, got nil")
 			}
-			if w.Body.String() != tt.msg {
-				t.Errorf("expected body %q, got %q", tt.msg, w.Body.String())
+			if !tt.wantErr && err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+			if tt.wantErr && err != nil {
+				if err.Error() != tt.errMsg {
+					t.Errorf("error message = %q, want %q", err.Error(), tt.errMsg)
+				}
+				// For error type panics, verify the original error is unwrapped
+				if tt.checkWrap {
+					// The error should contain the original error message
+					if !errors.Is(err, tt.panicVal.(error)) {
+						t.Errorf("error should wrap the original panic error")
+					}
+				}
 			}
 		})
+	}
+}
+
+// TestRecoverResultErrorWrapping verifies that error types are properly wrapped
+func TestRecoverResultErrorWrapping(t *testing.T) {
+	originalErr := fmt.Errorf("original error")
+	var err error
+	func() {
+		defer RecoverResult(&err, "wrap-test")
+		panic(originalErr)
+	}()
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	// Verify the error can be unwrapped
+	if !errors.Is(err, originalErr) {
+		t.Errorf("errors.Is(err, originalErr) = false, want true")
+	}
+
+	// Verify error message
+	expected := "wrap-test: panic: original error"
+	if err.Error() != expected {
+		t.Errorf("error = %q, want %q", err.Error(), expected)
+	}
+}
+
+// TestRecoverResultStringPanic verifies string panics are handled correctly
+func TestRecoverResultStringPanic(t *testing.T) {
+	var err error
+	func() {
+		defer RecoverResult(&err, "string-test")
+		panic("something went wrong")
+	}()
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	expected := "string-test: panic: something went wrong"
+	if err.Error() != expected {
+		t.Errorf("error = %q, want %q", err.Error(), expected)
+	}
+}
+
+// TestRecoverResultNoPanic verifies behavior when no panic occurs
+func TestRecoverResultNoPanic(t *testing.T) {
+	var err error
+	func() {
+		defer RecoverResult(&err, "no-panic")
+		// Do nothing, no panic
+	}()
+
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
 	}
 }

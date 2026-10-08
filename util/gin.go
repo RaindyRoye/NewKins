@@ -109,10 +109,13 @@ func RecoverResult(errp *error, label string) {
 	}
 	logrus.Warnf("%s panic: %+v", label, r)
 	logrus.Warnf("%s stack:\n%s", label, string(debug.Stack()))
-	if e, ok := r.(error); ok {
-		*errp = fmt.Errorf("%s: panic: %w", label, e)
-	} else {
-		*errp = fmt.Errorf("%s: panic: %v", label, r)
+	switch v := r.(type) {
+	case error:
+		*errp = fmt.Errorf("%s: panic: %w", label, v)
+	case string:
+		*errp = fmt.Errorf("%s: panic: %s", label, v)
+	default:
+		*errp = fmt.Errorf("%s: panic: %v", label, v)
 	}
 }
 
