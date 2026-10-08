@@ -18,6 +18,15 @@ type BuildEngine struct {
 
 	tskslk sync.RWMutex
 	tasks  map[string]*BuildTask
+
+	// wakeCh is a buffered channel used to notify the run loop that new
+	// work has been enqueued via Put. Buffered with capacity 1 so that
+	// Put never blocks even if the run loop is busy processing.
+	wakeCh chan struct{}
+	// stopCh is closed by Stop to signal the run loop to exit immediately.
+	stopCh chan struct{}
+	// stopOnce ensures Stop is idempotent and safe to call multiple times.
+	stopOnce sync.Once
 }
 
 func StartBuildEngine() *BuildEngine {
@@ -25,20 +34,42 @@ func StartBuildEngine() *BuildEngine {
 		comm.Cfg.Server.RunLimit = 5
 	}
 	c := &BuildEngine{
-		taskw: list.New(),
-		tasks: make(map[string]*BuildTask),
+		taskw:  list.New(),
+		tasks:  make(map[string]*BuildTask),
+		wakeCh: make(chan struct{}, 1),
+		stopCh: make(chan struct{}),
 	}
 	go func() {
 		defer util.RecoverLog("BuildEngine.goroutine")
 		c.init()
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
 		for comm.Ctx.Err() == nil {
+			select {
+			case <-c.stopCh:
+				return
+			case <-c.wakeCh:
+				// Drain any pending notification to avoid stale signals
+				select {
+				case <-c.wakeCh:
+				default:
+				}
+			case <-ticker.C:
+			}
 			c.run()
-			time.Sleep(time.Millisecond * 100)
 		}
 	}()
 	return c
 }
+
+// Stop signals the run loop to exit and cancels all active builds.
+// Safe to call multiple times from concurrent goroutines.
 func (c *BuildEngine) Stop() {
+	if c.stopCh != nil {
+		c.stopOnce.Do(func() {
+			close(c.stopCh)
+		})
+	}
 	c.tskslk.RLock()
 	defer c.tskslk.RUnlock()
 	for _, v := range c.tasks {
@@ -112,6 +143,13 @@ func (c *BuildEngine) Put(bd *runtime.Build) {
 	c.tskwlk.Lock()
 	defer c.tskwlk.Unlock()
 	c.taskw.PushBack(bd)
+	// Wake up the run loop immediately so it can pick up the new build
+	// without waiting for the next ticker tick. The channel is buffered
+	// with capacity 1, so this never blocks even if the run loop is busy.
+	select {
+	case c.wakeCh <- struct{}{}:
+	default:
+	}
 }
 func (c *BuildEngine) Get(buildid string) (*BuildTask, bool) {
 	if c == nil || buildid == "" {

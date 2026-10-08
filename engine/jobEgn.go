@@ -19,6 +19,10 @@ type JobEngine struct {
 	execs map[string]*executer
 	joblk sync.RWMutex
 	jobs  map[string]*jobSync
+	// wakeCh is a buffered channel used to notify the run loop that new
+	// work has been enqueued via Put. Buffered with capacity 1 so that
+	// Put never blocks even if the run loop is busy processing.
+	wakeCh chan struct{}
 }
 type executer struct {
 	sync.RWMutex
@@ -55,15 +59,26 @@ func (c *jobSync) status(stat, errs string, event ...string) {
 
 func StartJobEngine() *JobEngine {
 	c := &JobEngine{
-		tmr:   utils.NewTimer(time.Second * 30),
-		execs: make(map[string]*executer),
-		jobs:  make(map[string]*jobSync),
+		tmr:    utils.NewTimer(time.Second * 30),
+		execs:  make(map[string]*executer),
+		jobs:   make(map[string]*jobSync),
+		wakeCh: make(chan struct{}, 1),
 	}
 	go func() {
 		defer util.RecoverLog("JobEngine.goroutine")
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
 		for comm.Ctx.Err() == nil {
+			select {
+			case <-c.wakeCh:
+				// Drain any pending notification to avoid stale signals
+				select {
+				case <-c.wakeCh:
+				default:
+				}
+			case <-ticker.C:
+			}
 			c.run()
-			time.Sleep(time.Second)
 		}
 	}()
 	return c
@@ -124,6 +139,13 @@ func (c *JobEngine) Put(job *jobSync) error {
 	e.Lock()
 	defer e.Unlock()
 	e.jobwt.PushBack(job)
+	// Signal the run loop to wake up immediately to process the new job
+	if c.wakeCh != nil {
+		select {
+		case c.wakeCh <- struct{}{}:
+		default:
+		}
+	}
 	return nil
 }
 func (c *JobEngine) Pull(name string, plugs []string) *runners.RunJob {
