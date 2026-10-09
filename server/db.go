@@ -15,14 +15,15 @@ import (
 )
 
 func initDb() error {
+	app := comm.GetApp()
 	var err error
 	dvs := comm.DatasourceDriverMySQL
-	ul := comm.Cfg.Datasource.Url
-	if comm.Cfg.Datasource.Driver != "" {
-		dvs = comm.Cfg.Datasource.Driver
+	ul := app.Cfg.Datasource.Url
+	if app.Cfg.Datasource.Driver != "" {
+		dvs = app.Cfg.Datasource.Driver
 	}
-	comm.IsMySQL = dvs == comm.DatasourceDriverMySQL
-	if !comm.Installed {
+	app.IsMySQL = dvs == comm.DatasourceDriverMySQL
+	if !app.Installed {
 		switch dvs {
 		case comm.DatasourceDriverMySQL:
 			err = migrates.UpMysqlMigrate(ul)
@@ -35,23 +36,28 @@ func initDb() error {
 	if err != nil {
 		return fmt.Errorf("database migration: %w", err)
 	}
-	db, err := xorm.NewEngine(dvs, comm.Cfg.Datasource.Url)
+	db, err := xorm.NewEngine(dvs, app.Cfg.Datasource.Url)
 	if err != nil {
 		return fmt.Errorf("open database (%s): %w", dvs, err)
 	}
 	db.ShowSQL(core.Debug)
-	comm.Db = db
+	app.Db = db
+	// Sync to globals for backward compatibility
+	comm.SyncToGlobals()
 	return nil
 }
 
 func initCache() error {
-	pth := filepath.Join(comm.WorkPath, "cache.dat")
+	app := comm.GetApp()
+	pth := filepath.Join(app.WorkPath, "cache.dat")
 	_ = os.Remove(pth)
 	db, err := bolt.Open(pth, 0640, nil)
 	if err != nil {
 		logrus.Errorf("InitCache err:%v", err)
 		return fmt.Errorf("open cache db at %s: %w", pth, err)
 	}
-	comm.BCache = db
+	app.BCache = db
+	// Sync to globals for backward compatibility
+	comm.SyncToGlobals()
 	return nil
 }

@@ -15,6 +15,7 @@ func TestParseConfig_MissingFile(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	comm.WorkPath = tmpDir
+	comm.SyncGlobals()
 
 	err := parseConfig()
 	if err == nil {
@@ -32,6 +33,7 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	comm.WorkPath = tmpDir
+	comm.SyncGlobals()
 
 	cfg := comm.Config{}
 	cfg.Datasource.Driver = "sqlite"
@@ -69,6 +71,7 @@ func TestParseConfig_InvalidYAML(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	comm.WorkPath = tmpDir
+	comm.SyncGlobals()
 
 	// Write invalid YAML content
 	invalidYAML := []byte(":\n  invalid:\n    - [broken yaml")
@@ -92,6 +95,7 @@ func TestParseConfig_InvalidDriver(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	comm.WorkPath = tmpDir
+	comm.SyncGlobals()
 
 	cfg := comm.Config{}
 	cfg.Datasource.Driver = "oracle" // unsupported driver
@@ -121,6 +125,7 @@ func TestParseConfig_YamlFallback(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	comm.WorkPath = tmpDir
+	comm.SyncGlobals()
 
 	cfg := comm.Config{}
 	cfg.Datasource.Driver = "mysql"
@@ -154,6 +159,7 @@ func TestParseConfig_NegativeRunLimit(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	comm.WorkPath = tmpDir
+	comm.SyncGlobals()
 
 	cfg := comm.Config{}
 	cfg.Datasource.Driver = "sqlite"
