@@ -216,8 +216,8 @@ func (PipelineController) delete(c *gin.Context, m *hbtp.Map) {
 	c.String(http.StatusOK, "ok")
 }
 func (PipelineController) new(c *gin.Context, npipe *bean.NewPipeline) {
-	if !npipe.Check() {
-		c.String(http.StatusBadRequest, "param err")
+	if err := npipe.Check(); err != nil {
+		util.RespErr(c, http.StatusBadRequest, "param err", err)
 		return
 	}
 	y := &bean.Pipeline{}

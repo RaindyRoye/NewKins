@@ -161,39 +161,39 @@ func TestCondition_Match(t *testing.T) {
 
 func TestNewPipeline_Check(t *testing.T) {
 	tests := []struct {
-		name string
-		p    *NewPipeline
-		want bool
+		name    string
+		p       *NewPipeline
+		wantErr error
 	}{
 		{
-			name: "valid pipeline",
-			p:    &NewPipeline{Name: "test", Content: "stages: []"},
-			want: true,
+			name:    "valid pipeline",
+			p:       &NewPipeline{Name: "test", Content: "stages: []"},
+			wantErr: nil,
 		},
 		{
-			name: "empty name",
-			p:    &NewPipeline{Name: "", Content: "stages: []"},
-			want: false,
+			name:    "empty name",
+			p:       &NewPipeline{Name: "", Content: "stages: []"},
+			wantErr: ErrPipelineNameRequired,
 		},
 		{
-			name: "empty content",
-			p:    &NewPipeline{Name: "test", Content: ""},
-			want: false,
+			name:    "empty content",
+			p:       &NewPipeline{Name: "test", Content: ""},
+			wantErr: ErrPipelineContentRequired,
 		},
 		{
-			name: "both empty",
-			p:    &NewPipeline{},
-			want: false,
+			name:    "both empty",
+			p:       &NewPipeline{},
+			wantErr: ErrPipelineNameRequired,
 		},
 		{
-			name: "name only",
-			p:    &NewPipeline{Name: "test"},
-			want: false,
+			name:    "name only",
+			p:       &NewPipeline{Name: "test"},
+			wantErr: ErrPipelineContentRequired,
 		},
 		{
-			name: "content only",
-			p:    &NewPipeline{Content: "stages: []"},
-			want: false,
+			name:    "content only",
+			p:       &NewPipeline{Content: "stages: []"},
+			wantErr: ErrPipelineNameRequired,
 		},
 		{
 			name: "all fields set",
@@ -206,14 +206,14 @@ func TestNewPipeline_Check(t *testing.T) {
 				Username:    "user",
 				AccessToken: "token",
 			},
-			want: true,
+			wantErr: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.p.Check()
-			if got != tt.want {
-				t.Errorf("NewPipeline.Check() = %v, want %v", got, tt.want)
+			if got != tt.wantErr {
+				t.Errorf("NewPipeline.Check() = %v, want %v", got, tt.wantErr)
 			}
 		})
 	}

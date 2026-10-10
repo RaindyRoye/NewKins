@@ -1,5 +1,13 @@
 package bean
 
+import "errors"
+
+// Sentinel errors for NewPipeline validation.
+var (
+	ErrPipelineNameRequired    = errors.New("pipeline name is required")
+	ErrPipelineContentRequired = errors.New("pipeline content is required")
+)
+
 type NewPipeline struct {
 	Name        string            `json:"name"`
 	DisplayName string            `json:"displayName"`
@@ -18,9 +26,14 @@ type NewPipelineVar struct {
 	Public  bool   `json:"public"`
 }
 
-func (p *NewPipeline) Check() bool {
-	if p.Name == "" || p.Content == "" {
-		return false
+// Check validates that the required fields Name and Content are non-empty.
+// Returns nil on success, or a sentinel error describing the missing field.
+func (p *NewPipeline) Check() error {
+	if p.Name == "" {
+		return ErrPipelineNameRequired
 	}
-	return true
+	if p.Content == "" {
+		return ErrPipelineContentRequired
+	}
+	return nil
 }
