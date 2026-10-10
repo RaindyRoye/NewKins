@@ -1,7 +1,9 @@
 package migrates
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -208,6 +210,16 @@ func TestSqliteMigrationErrorWrapping(t *testing.T) {
 			func() error { return UpSqliteMigrate("/nonexistent/sqlite/test.db") },
 			"sqlite",
 		},
+		{
+			"UpSqliteMigrateCtx empty",
+			func() error { return UpSqliteMigrateCtx(context.Background(), "") },
+			"database config not found",
+		},
+		{
+			"UpSqliteMigrateCtx invalid path",
+			func() error { return UpSqliteMigrateCtx(context.Background(), "/nonexistent/sqlite/test.db") },
+			"sqlite",
+		},
 	}
 
 	for _, tt := range tests {
@@ -218,6 +230,34 @@ func TestSqliteMigrationErrorWrapping(t *testing.T) {
 			}
 			if !strings.Contains(err.Error(), tt.wantMsg) {
 				t.Errorf("error = %q, want to contain %q", err.Error(), tt.wantMsg)
+			}
+		})
+	}
+}
+
+// TestContextAwareMigrationFunctions verifies that the *Ctx variants accept and use context.
+func TestContextAwareMigrationFunctions(t *testing.T) {
+	ctx := context.Background()
+
+	// Test that Ctx variants call through to the base functions
+	tests := []struct {
+		name string
+		fn   func(context.Context, string) error
+		arg  string
+	}{
+		{"UpMysqlMigrateCtx empty", UpMysqlMigrateCtx, ""},
+		{"UpPostgresMigrateCtx empty", UpPostgresMigrateCtx, ""},
+		{"UpSqliteMigrateCtx empty", UpSqliteMigrateCtx, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.fn(ctx, tt.arg)
+			if err == nil {
+				t.Error("expected error for empty connection string, got nil")
+			}
+			if !errors.Is(err, ErrDatabaseConfigMissing) {
+				t.Errorf("error should wrap ErrDatabaseConfigMissing, got: %v", err)
 			}
 		})
 	}
