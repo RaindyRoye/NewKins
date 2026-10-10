@@ -70,6 +70,9 @@ func (s *RepositoryService) GetRepos(ctx context.Context, accessToken, username,
 		if totalCount%int64(perPage) > 0 {
 			totalPages++
 		}
+		if totalPages == 0 {
+			totalPages = 1
+		}
 	}
 	list := convertRepositoryList(repoList)
 	rp := &thirdapi.RepositoryPage{
