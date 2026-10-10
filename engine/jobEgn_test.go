@@ -5,8 +5,10 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gokins/core/runtime"
+	"github.com/gokins/core/utils"
 )
 
 func newTestJobEngine() *JobEngine {
@@ -167,5 +169,101 @@ func TestJobEngineConcurrentPutAndPlugins(t *testing.T) {
 	je.exelk.RUnlock()
 	if cnt != 20 {
 		t.Errorf("expected 20 jobs in p1 queue, got %d", cnt)
+	}
+}
+
+func TestJobEngineRmExec(t *testing.T) {
+	je := newTestJobEngine()
+
+	// Create an executer with some jobs
+	job1 := &jobSync{
+		step:  &runtime.Step{Step: "plugin1", Id: "job1"},
+		cmdmp: make(map[string]*cmdSync),
+	}
+	job2 := &jobSync{
+		step:  &runtime.Step{Step: "plugin1", Id: "job2"},
+		cmdmp: make(map[string]*cmdSync),
+	}
+
+	ex := &executer{
+		plug:  "plugin1",
+		jobwt: list.New(),
+	}
+	ex.jobwt.PushBack(job1)
+	ex.jobwt.PushBack(job2)
+
+	je.execs["plugin1"] = ex
+
+	// Call rmExec
+	je.rmExec("plugin1", ex)
+
+	// Verify executer was removed
+	je.exelk.RLock()
+	_, exists := je.execs["plugin1"]
+	je.exelk.RUnlock()
+
+	if exists {
+		t.Error("expected executer to be removed")
+	}
+
+	// Verify jobs were marked as ended
+	if !job1.ended {
+		t.Error("expected job1 to be marked as ended")
+	}
+	if !job2.ended {
+		t.Error("expected job2 to be marked as ended")
+	}
+}
+
+func TestJobEngineRun_CleanupOldExecs(t *testing.T) {
+	je := newTestJobEngine()
+	je.tmr = utils.NewTimer(time.Second * 30)
+
+	// Create an old executer (more than 2 minutes old)
+	ex := &executer{
+		plug:  "plugin1",
+		tms:   time.Now().Add(-3 * time.Minute),
+		jobwt: list.New(),
+	}
+	je.execs["plugin1"] = ex
+
+	// Run cleanup
+	je.run()
+
+	// Give goroutines time to execute
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify executer was removed
+	je.exelk.RLock()
+	_, exists := je.execs["plugin1"]
+	je.exelk.RUnlock()
+
+	if exists {
+		t.Error("expected old executer to be removed")
+	}
+}
+
+func TestJobEngineRun_CleanupEndedJobs(t *testing.T) {
+	je := newTestJobEngine()
+	je.tmr = utils.NewTimer(time.Second * 30)
+
+	// Add an ended job
+	job := &jobSync{
+		step:  &runtime.Step{Step: "plugin1", Id: "job1"},
+		cmdmp: make(map[string]*cmdSync),
+		ended: true,
+	}
+	je.jobs["job1"] = job
+
+	// Run cleanup
+	je.run()
+
+	// Verify ended job was removed
+	je.joblk.RLock()
+	_, exists := je.jobs["job1"]
+	je.joblk.RUnlock()
+
+	if exists {
+		t.Error("expected ended job to be removed")
 	}
 }
