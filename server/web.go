@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"path/filepath"
@@ -48,12 +49,22 @@ func runWeb() {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	// Start server in a goroutine so we can handle graceful shutdown
+	// Start server in a goroutine so we can handle graceful shutdown.
+	// Use a net.Listener to bind the port synchronously, then signal readiness
+	// via WebReadyCh. This eliminates the old time.Sleep race condition where
+	// the server loop continued before the web server was actually listening.
+	ln, err := net.Listen("tcp", comm.WebHost)
+	if err != nil {
+		logrus.Errorf("Web server bind error: %v", err)
+		close(comm.WebReadyCh)
+		return
+	}
 	errCh := make(chan error, 1)
 	go func() {
 		defer util.RecoverLog("Web.ListenAndServe")
+		close(comm.WebReadyCh)
 		logrus.Infof("Web server listening on %s", comm.WebHost)
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
 		close(errCh)
