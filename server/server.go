@@ -18,20 +18,22 @@ import (
 )
 
 func Run() error {
-	if comm.WorkPath == "" {
+	app := comm.GetApp()
+	if app.WorkPath == "" {
 		pth := filepath.Join(utils2.HomePath(), ".gokins")
-		comm.WorkPath = utils2.EnvDefault("GOKINS_WORKPATH", pth)
+		app.WorkPath = utils2.EnvDefault("GOKINS_WORKPATH", pth)
 	}
-	if !comm.NotUpPass {
-		comm.NotUpPass = utils2.EnvDefault("GOKINS_NOTUPDATEPASS") == "true"
+	if !app.NotUpPass {
+		app.NotUpPass = utils2.EnvDefault("GOKINS_NOTUPDATEPASS") == "true"
 	}
+	comm.SyncToGlobals()
 
-	logrus.Infof("gokins Run workpath:%s", comm.WorkPath)
+	logrus.Infof("gokins Run workpath:%s", app.WorkPath)
 
-	if err := os.MkdirAll(comm.WorkPath, 0750); err != nil {
+	if err := os.MkdirAll(app.WorkPath, 0750); err != nil {
 		logrus.Warnf("create work path err: %v", err)
 	}
-	core.InitLog(comm.WorkPath)
+	core.InitLog(app.WorkPath)
 	go runWeb()
 	time.Sleep(time.Millisecond * 10)
 	err := parseConfig()
@@ -67,7 +69,7 @@ func Run() error {
 	}
 
 	go runHbtp()
-	hbtp.Infof("gokins running in %s", comm.WorkPath)
+	hbtp.Infof("gokins running in %s", app.WorkPath)
 	// Block until context is canceled (signal received)
 	<-comm.Ctx.Done()
 	logrus.Info("Context canceled, initiating shutdown...")
@@ -76,18 +78,21 @@ func Run() error {
 	return nil
 }
 func parseConfig() error {
-	bts, err := os.ReadFile(filepath.Join(comm.WorkPath, "app.yml"))
+	app := comm.GetApp()
+	bts, err := os.ReadFile(filepath.Join(app.WorkPath, "app.yml"))
 	if err != nil {
-		bts, err = os.ReadFile(filepath.Join(comm.WorkPath, "app.yaml"))
+		bts, err = os.ReadFile(filepath.Join(app.WorkPath, "app.yaml"))
 	}
 	if err != nil {
 		return fmt.Errorf("read config file: %w", err)
 	}
-	if err := yaml.Unmarshal(bts, &comm.Cfg); err != nil {
+	if err := yaml.Unmarshal(bts, &app.Cfg); err != nil {
 		return fmt.Errorf("parse config yaml: %w", err)
 	}
-	if err := comm.Cfg.Validate(); err != nil {
+	if err := app.Cfg.Validate(); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
+	// Sync back to globals for backward compatibility with other packages
+	comm.SyncToGlobals()
 	return nil
 }
