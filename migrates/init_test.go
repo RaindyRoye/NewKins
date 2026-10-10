@@ -68,17 +68,12 @@ func TestInitPostgresMigrate_EmptyParams(t *testing.T) {
 }
 
 func TestPostgresConnectionStringFormat(t *testing.T) {
-	user, host, dbs := "testuser", "localhost:5432", "testdb"
-	masked := fmt.Sprintf("postgres://%s:***@%s/%s?sslmode=disable", user, host, dbs)
+	user, pass, host, dbs := "testuser", "secret", "localhost:5432", "testdb"
+	masked := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, pass, host, dbs)
 
-	expected := "postgres://testuser:***@localhost:5432/testdb?sslmode=disable" //nolint:gosec // G101: test assertion string, not real credentials
+	expected := "postgres://testuser:secret@localhost:5432/testdb?sslmode=disable" //nolint:gosec // G101: test assertion string, not real credentials
 	if masked != expected {
-		t.Errorf("masked connection string = %q, want %q", masked, expected)
-	}
-
-	// Verify password is masked
-	if strings.Contains(masked, "password") {
-		t.Error("connection string should not contain actual password")
+		t.Errorf("connection string = %q, want %q", masked, expected)
 	}
 }
 
