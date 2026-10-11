@@ -171,8 +171,7 @@ func TestErrorWrapping(t *testing.T) {
 			}
 
 			// Verify error wrapping
-			var baseErr error = ErrDatabaseConfigMissing
-			if !errors.Is(err, baseErr) {
+			if !errors.Is(err, ErrDatabaseConfigMissing) {
 				t.Errorf("error should wrap ErrDatabaseConfigMissing, got: %v", err)
 			}
 		})

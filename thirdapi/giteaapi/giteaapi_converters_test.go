@@ -604,7 +604,7 @@ func TestConvertRepository_ZeroValues(t *testing.T) {
 	}
 }
 
-// TestGetRepos_WithContextCancellation tests GetRepos with a cancelled context.
+// TestGetRepos_WithContextCancellation tests GetRepos with a canceled context.
 func TestGetRepos_WithContextCancellation(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(500 * time.Millisecond)
@@ -623,7 +623,7 @@ func TestGetRepos_WithContextCancellation(t *testing.T) {
 
 	_, err = client.Repositories.GetRepos(ctx, "token", "user", "", "", "", 1, 10)
 	if err == nil {
-		t.Fatal("expected error for cancelled context, got nil")
+		t.Fatal("expected error for canceled context, got nil")
 	}
 }
 
