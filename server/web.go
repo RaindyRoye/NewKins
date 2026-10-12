@@ -34,14 +34,15 @@ var apiRateLimiter = middleware.NewRateLimiter(120, time.Minute)
 
 func runWeb() {
 	defer util.RecoverLog("Web")
-	comm.WebEgn = gin.Default()
-	comm.WebEgn.Use(middleware.MidRequestID())
-	comm.WebEgn.Use(middleware.MidSecurityHeaders())
-	comm.WebEgn.Use(midUiHandle)
+	app := comm.GetApp()
+	app.WebEgn = gin.Default()
+	app.WebEgn.Use(middleware.MidRequestID())
+	app.WebEgn.Use(middleware.MidSecurityHeaders())
+	app.WebEgn.Use(midUiHandle)
 
 	srv := &http.Server{
-		Addr:              comm.WebHost,
-		Handler:           comm.WebEgn,
+		Addr:              app.WebHost,
+		Handler:           app.WebEgn,
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      60 * time.Second,
@@ -52,7 +53,7 @@ func runWeb() {
 	errCh := make(chan error, 1)
 	go func() {
 		defer util.RecoverLog("Web.ListenAndServe")
-		logrus.Infof("Web server listening on %s", comm.WebHost)
+		logrus.Infof("Web server listening on %s", app.WebHost)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
@@ -79,8 +80,9 @@ func runWeb() {
 }
 
 func regApi() {
+	app := comm.GetApp()
 	// Apply rate limiting to all /api/* routes.
-	comm.WebEgn.Use(func(c *gin.Context) {
+	app.WebEgn.Use(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.URL.Path, "/api/") || c.Request.URL.Path == "/api" {
 			middleware.MidRateLimit(apiRateLimiter)(c)
 			return
@@ -88,13 +90,13 @@ func regApi() {
 		c.Next()
 	})
 	if core.Debug {
-		comm.WebEgn.Use(middleware.MidCORS())
+		app.WebEgn.Use(middleware.MidCORS())
 	}
 
 	// Enable pprof in debug mode or when explicitly enabled via config
-	enablePprof := core.Debug || comm.Cfg.Server.EnablePprof
+	enablePprof := core.Debug || app.Cfg.Server.EnablePprof
 	if enablePprof {
-		pprofGroup := comm.WebEgn.Group("/debug/pprof")
+		pprofGroup := app.WebEgn.Group("/debug/pprof")
 		{
 			pprofGroup.GET("/", gin.WrapF(pprof.Index))
 			pprofGroup.GET("/cmdline", gin.WrapF(pprof.Cmdline))
@@ -108,10 +110,10 @@ func regApi() {
 			pprofGroup.GET("/mutex", gin.WrapH(pprof.Handler("mutex")))
 			pprofGroup.GET("/threadcreate", gin.WrapH(pprof.Handler("threadcreate")))
 		}
-		logrus.Infof("pprof profiling endpoints enabled at /debug/pprof (debug=%v, config=%v)", core.Debug, comm.Cfg.Server.EnablePprof)
+		logrus.Infof("pprof profiling endpoints enabled at /debug/pprof (debug=%v, config=%v)", core.Debug, app.Cfg.Server.EnablePprof)
 	}
 	// Health check endpoints
-	comm.WebEgn.GET("/healthz", func(c *gin.Context) {
+	app.WebEgn.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":     "ok",
 			"version":    comm.Version,
@@ -119,7 +121,7 @@ func regApi() {
 			"git_commit": comm.GitCommit,
 		})
 	})
-	comm.WebEgn.GET("/readyz", func(c *gin.Context) {
+	app.WebEgn.GET("/readyz", func(c *gin.Context) {
 		status := gin.H{
 			"status": "ready",
 			"db":     "connected",
@@ -127,13 +129,13 @@ func regApi() {
 		}
 		httpStatus := http.StatusOK
 
-		if comm.Db == nil {
+		if app.Db == nil {
 			status["db"] = "disconnected"
 			status["status"] = "not_ready"
 			httpStatus = http.StatusServiceUnavailable
 		} else {
 			// Verify actual database connectivity with a ping.
-			db := comm.Db.DB()
+			db := app.Db.DB()
 			if db != nil {
 				if err := db.Ping(); err != nil {
 					status["db"] = fmt.Sprintf("error: %v", err)
@@ -142,7 +144,7 @@ func regApi() {
 				}
 			}
 		}
-		if comm.BCache == nil {
+		if app.BCache == nil {
 			status["cache"] = "disconnected"
 			status["status"] = "not_ready"
 			httpStatus = http.StatusServiceUnavailable
@@ -150,26 +152,27 @@ func regApi() {
 		c.JSON(httpStatus, status)
 	})
 
-	util.GinRegController(comm.WebEgn, &route.ApiController{})
-	util.GinRegController(comm.WebEgn, &route.ArtifactController{})
-	util.GinRegController(comm.WebEgn, &route.ArtPublicController{})
-	util.GinRegController(comm.WebEgn, &route.LoginController{})
-	util.GinRegController(comm.WebEgn, &route.UserController{})
-	util.GinRegController(comm.WebEgn, &route.OrgController{})
-	util.GinRegController(comm.WebEgn, &route.PipelineController{})
-	util.GinRegController(comm.WebEgn, &route.PipelineVersionController{})
-	util.GinRegController(comm.WebEgn, &route.RuntimeController{})
-	util.GinRegController(comm.WebEgn, &route.YmlController{})
-	util.GinRegController(comm.WebEgn, &route.TriggerController{})
-	util.GinRegController(comm.WebEgn, &route.HookController{})
+	util.GinRegController(app.WebEgn, &route.ApiController{})
+	util.GinRegController(app.WebEgn, &route.ArtifactController{})
+	util.GinRegController(app.WebEgn, &route.ArtPublicController{})
+	util.GinRegController(app.WebEgn, &route.LoginController{})
+	util.GinRegController(app.WebEgn, &route.UserController{})
+	util.GinRegController(app.WebEgn, &route.OrgController{})
+	util.GinRegController(app.WebEgn, &route.PipelineController{})
+	util.GinRegController(app.WebEgn, &route.PipelineVersionController{})
+	util.GinRegController(app.WebEgn, &route.RuntimeController{})
+	util.GinRegController(app.WebEgn, &route.YmlController{})
+	util.GinRegController(app.WebEgn, &route.TriggerController{})
+	util.GinRegController(app.WebEgn, &route.HookController{})
 }
 func midUiHandle(c *gin.Context) {
 	c.Next()
 	if c.Writer.Status() != http.StatusNotFound || c.Writer.Size() > 0 {
 		return
 	}
+	app := comm.GetApp()
 	pth := c.Request.URL.Path
-	if !comm.Installed && !strings.HasPrefix(pth, "/gokinsui/") && pth != "/install" {
+	if !app.Installed && !strings.HasPrefix(pth, "/gokinsui/") && pth != "/install" {
 		httpex.ResMsgUrl(c, "未安装,跳转中...", "/install")
 		return
 	}
