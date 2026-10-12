@@ -34,6 +34,11 @@ var (
 // It is used to signal the main server loop instead of busy-waiting.
 var InstalledCh = make(chan struct{})
 
+// WebReadyCh is closed when the web server has finished binding to its port
+// and is ready to accept connections. This eliminates the race condition that
+// occurred when using time.Sleep after launching runWeb().
+var WebReadyCh = make(chan struct{})
+
 var installOnce sync.Once
 
 // MarkInstalled signals that installation is complete. Safe to call multiple times.
