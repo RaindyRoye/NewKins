@@ -45,19 +45,13 @@ func TestTriggerPermCtx_EmptyPipelineId(t *testing.T) {
 }
 
 func TestTriggerPermCtx_UnknownPipeline(t *testing.T) {
-	// With a non-empty but non-existent pipeline ID, the DB query in
-	// NewPipePermCtx will fail to find the pipeline (when DB is nil or the
-	// pipeline doesn't exist), so TriggerPermCtx should return ErrPipelineNotFound.
+	// With a non-empty but non-existent pipeline ID, NewPipePermCtx now
+	// handles nil Db gracefully and returns a PipePerm with nil pipeline,
+	// so TriggerPermCtx should return ErrPipelineNotFound without panicking.
 	tt := &model.TTrigger{
 		Uid:        "user1",
 		PipelineId: "nonexistent-pipeline-id",
 	}
-	// This will panic if comm.Db is nil, so we recover gracefully.
-	defer func() {
-		if r := recover(); r != nil {
-			t.Logf("recovered panic (Db is nil in unit tests): %v", r)
-		}
-	}()
 	err := TriggerPermCtx(context.Background(), tt)
 	if err == nil {
 		t.Fatal("expected error for nonexistent pipeline, got nil")

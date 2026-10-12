@@ -34,12 +34,7 @@ func TestTriggerPermCtx_TriggerWithNonexistentPipeline(t *testing.T) {
 		Uid:        "user1",
 		PipelineId: "nonexistent-pipeline",
 	}
-	// This will panic if comm.Db is nil, so we recover gracefully
-	defer func() {
-		if r := recover(); r != nil {
-			t.Logf("recovered panic (Db is nil in unit tests): %v", r)
-		}
-	}()
+	// NewPipePermCtx now handles nil Db gracefully, no panic expected.
 	err := TriggerPermCtx(ctx, tt)
 	// Should return ErrPipelineNotFound
 	if err == nil {
@@ -61,12 +56,7 @@ func TestTriggerPermCtx_CancelledContext(t *testing.T) {
 		Uid:        "user1",
 		PipelineId: "pipe1",
 	}
-	// This will panic if comm.Db is nil, so we recover gracefully
-	defer func() {
-		if r := recover(); r != nil {
-			t.Logf("recovered panic (Db is nil in unit tests): %v", r)
-		}
-	}()
+	// NewPipePermCtx now handles nil Db gracefully, no panic expected.
 	err := TriggerPermCtx(ctx, tt)
 	// With canceled context and no DB, should still return an error
 	if err == nil {
@@ -102,12 +92,7 @@ func TestTriggerPermCtx_ErrorTypes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			// This will panic if comm.Db is nil, so we recover gracefully
-			defer func() {
-				if r := recover(); r != nil {
-					t.Logf("recovered panic (Db is nil in unit tests): %v", r)
-				}
-			}()
+			// NewPipePermCtx now handles nil Db gracefully, no panic expected.
 			err := TriggerPermCtx(ctx, tt.trigger)
 			if err == nil {
 				t.Fatal("expected error, got nil")

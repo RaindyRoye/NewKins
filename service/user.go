@@ -331,8 +331,14 @@ func NewPipePerm(lgusr *model.TUser, pipeId string) *PipePerm {
 }
 
 // NewPipePermCtx is the context-aware version of NewPipePerm.
+// Returns a PipePerm with a nil pipeline when the database is unavailable,
+// rather than panicking on a nil comm.Db dereference.
 func NewPipePermCtx(ctx context.Context, lgusr *model.TUser, pipeId string) *PipePerm {
 	c := &PipePerm{lgusr: lgusr}
+	if comm.Db == nil {
+		logrus.Warn("NewPipePermCtx: comm.Db is nil, returning empty PipePerm")
+		return c
+	}
 	pipe := &model.TPipeline{}
 	ok := false
 	if pipeId != "" {
