@@ -119,10 +119,17 @@ func CacheGet(key string) ([]byte, error) {
 		err = fmt.Errorf("cache get key %q: %w", key, err)
 	}
 	// Delete expired keys in a separate write transaction (View is read-only).
+	// Capture BCache in a local variable to avoid data race: the global BCache
+	// may be reassigned (e.g. during test cleanup or shutdown) while this
+	// goroutine is still pending.
 	if expired {
+		db := BCache
 		go func() {
 			defer util.RecoverLog("CacheGet.expired-cleanup")
-			if err := BCache.Update(func(tx *bolt.Tx) error {
+			if db == nil {
+				return
+			}
+			if err := db.Update(func(tx *bolt.Tx) error {
 				bk := tx.Bucket(mainCacheBucket)
 				if bk == nil {
 					return nil
@@ -134,6 +141,11 @@ func CacheGet(key string) ([]byte, error) {
 		}()
 	}
 	if time.Since(time.Unix(0, mainCacheClearTime.Load())).Hours() > 30 {
+		// Capture BCache before spawning goroutine to avoid racing with
+		// code that reassigns the global (e.g. test cleanup or shutdown).
+		// mainCacheClear already captures BCache internally, but we still
+		// need to guard the goroutine spawn in case BCache becomes nil
+		// between the check and goroutine execution.
 		go mainCacheClear()
 	}
 	return rt, err
@@ -177,7 +189,10 @@ var mainCacheClearTime atomic.Int64 // stores UnixNano timestamp of last cache c
 func mainCacheClear() {
 	defer util.RecoverLog("mainCacheClear")
 
-	if BCache == nil {
+	// Capture BCache locally to avoid racing with code that reassigns the
+	// global (e.g. test cleanup or shutdown).
+	db := BCache
+	if db == nil {
 		return
 	}
 	/*if time.Now().Hour()!=3|| time.Since(mainCacheClearTime).Hours() < 30 {
@@ -188,7 +203,7 @@ func mainCacheClear() {
 		logrus.Errorf("mainCacheClear err:%v", err)
 	}*/
 	var deleteErrors int
-	err := BCache.Update(func(tx *bolt.Tx) error {
+	err := db.Update(func(tx *bolt.Tx) error {
 		bk := tx.Bucket(mainCacheBucket)
 		if bk == nil {
 			return nil
