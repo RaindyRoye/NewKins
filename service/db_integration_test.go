@@ -308,9 +308,114 @@ func TestGetIdOrAidE_IntegFindById(t *testing.T) {
 // --- BatchOrgPipeCounts / BatchOrgUserCounts with real data ---
 
 func TestBatchOrgPipeCounts_WithRealData(t *testing.T) {
-	t.Skip("Skipping: BatchOrgPipeCounts uses raw SQL with IN (?) which requires MySQL/PostgreSQL array parameter support")
+	eng, err := xorm.NewEngine("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatalf("failed to create test database: %v", err)
+	}
+	oldDb := comm.Db
+	comm.Db = eng
+	t.Cleanup(func() {
+		comm.Db = oldDb
+		_ = eng.Close()
+	})
+
+	// Sync required tables
+	if err := eng.Sync2(&model.TOrgPipe{}); err != nil {
+		t.Fatalf("failed to sync schema: %v", err)
+	}
+
+	// Create test data
+	orgPipes := []*model.TOrgPipe{
+		{OrgId: "org-1", PipeId: "pipe-1"},
+		{OrgId: "org-1", PipeId: "pipe-2"},
+		{OrgId: "org-1", PipeId: "pipe-3"},
+		{OrgId: "org-2", PipeId: "pipe-4"},
+		{OrgId: "org-2", PipeId: "pipe-5"},
+		{OrgId: "org-3", PipeId: "pipe-6"},
+	}
+
+	for _, op := range orgPipes {
+		_, err := eng.Insert(op)
+		if err != nil {
+			t.Fatalf("failed to insert org pipe: %v", err)
+		}
+	}
+
+	// Test the function
+	ctx := context.Background()
+	counts, err := BatchOrgPipeCounts(ctx, []string{"org-1", "org-2", "org-3", "org-4"})
+	if err != nil {
+		t.Fatalf("BatchOrgPipeCounts failed: %v", err)
+	}
+
+	// Verify results
+	if counts["org-1"] != 3 {
+		t.Errorf("org-1 count = %d, want 3", counts["org-1"])
+	}
+	if counts["org-2"] != 2 {
+		t.Errorf("org-2 count = %d, want 2", counts["org-2"])
+	}
+	if counts["org-3"] != 1 {
+		t.Errorf("org-3 count = %d, want 1", counts["org-3"])
+	}
+	if _, exists := counts["org-4"]; exists {
+		t.Errorf("org-4 should not exist in results, got count = %d", counts["org-4"])
+	}
 }
 
 func TestBatchOrgUserCounts_WithRealData(t *testing.T) {
-	t.Skip("Skipping: BatchOrgUserCounts uses raw SQL with IN (?) which requires MySQL/PostgreSQL array parameter support")
+	eng, err := xorm.NewEngine("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatalf("failed to create test database: %v", err)
+	}
+	oldDb := comm.Db
+	comm.Db = eng
+	t.Cleanup(func() {
+		comm.Db = oldDb
+		_ = eng.Close()
+	})
+
+	// Sync required tables
+	if err := eng.Sync2(&model.TUserOrg{}); err != nil {
+		t.Fatalf("failed to sync schema: %v", err)
+	}
+
+	// Create test data
+	userOrgs := []*model.TUserOrg{
+		{OrgId: "org-1", Uid: "user-1"},
+		{OrgId: "org-1", Uid: "user-2"},
+		{OrgId: "org-1", Uid: "user-3"},
+		{OrgId: "org-1", Uid: "user-4"},
+		{OrgId: "org-2", Uid: "user-5"},
+		{OrgId: "org-2", Uid: "user-6"},
+		{OrgId: "org-3", Uid: "user-7"},
+	}
+
+	for _, uo := range userOrgs {
+		_, err := eng.Insert(uo)
+		if err != nil {
+			t.Fatalf("failed to insert user org: %v", err)
+		}
+	}
+
+	// Test the function
+	ctx := context.Background()
+	counts, err := BatchOrgUserCounts(ctx, []string{"org-1", "org-2", "org-3", "org-4"})
+	if err != nil {
+		t.Fatalf("BatchOrgUserCounts failed: %v", err)
+	}
+
+	// Verify results
+	if counts["org-1"] != 4 {
+		t.Errorf("org-1 count = %d, want 4", counts["org-1"])
+	}
+	if counts["org-2"] != 2 {
+		t.Errorf("org-2 count = %d, want 2", counts["org-2"])
+	}
+	if counts["org-3"] != 1 {
+		t.Errorf("org-3 count = %d, want 1", counts["org-3"])
+	}
+	if _, exists := counts["org-4"]; exists {
+		t.Errorf("org-4 should not exist in results, got count = %d", counts["org-4"])
+	}
 }
