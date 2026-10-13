@@ -158,7 +158,7 @@ func (c *BuildTask) updateStepCmd(cmd *cmdSync) {
 		Status: cmd.status,
 		Code:   cmd.code,
 	}
-	cols := []string{"status"}
+	cols := []string{"status", "code"}
 	switch cmd.status {
 	case common.BuildStatusRunning:
 		cmde.Started = cmd.started
