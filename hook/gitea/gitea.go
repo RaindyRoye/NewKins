@@ -251,6 +251,10 @@ func convertCommentHook(gp *giteaCommentHook) (*hook.PullRequestCommentHook, err
 	if err != nil {
 		return nil, fmt.Errorf("gitea: convert comment hook: %w", err)
 	}
+	if pullRequestHook == nil {
+		// TODO: gitea API PR lookup not implemented yet
+		return nil, fmt.Errorf("gitea: comment hook conversion not implemented")
+	}
 	return &hook.PullRequestCommentHook{
 		Action: hook.EventsTypeComment,
 		Repo: hook.Repository{
