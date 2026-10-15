@@ -15,7 +15,7 @@ type TPipeline struct {
 	Username     string    `xorm:"-" json:"username"`
 	Deleted      int       `xorm:"index(idx_pipeline_deleted) default 0 INT(1)" json:"-"`
 	DeletedTime  time.Time `xorm:"DATETIME" json:"-"`
-	CreateTime   time.Time `xorm:"DATETIME" json:"-"`
+	Created      time.Time `xorm:"DATETIME" json:"-"`
 
 	Nick    string    `xorm:"-" json:"nick"`
 	Avat    string    `xorm:"-" json:"avat"`
