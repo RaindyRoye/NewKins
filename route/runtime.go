@@ -178,7 +178,7 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	/*tstp := &model.TStep{}
-	ok, _ := comm.Db.Where("id=?", stepId).Get(tstp)
+	ok, _ := comm.Db.Context(c.Request.Context()).Where("id=?", stepId).Get(tstp)
 	if !ok {
 		c.String(http.StatusNotFound, "Not Found")
 		return
