@@ -1,6 +1,6 @@
 package bean
 
-import "errors"
+import "fmt"
 
 type TriggerParam struct {
 	Id         string `json:"id"`
@@ -14,16 +14,16 @@ type TriggerParam struct {
 
 func (c *TriggerParam) Check() error {
 	if c.PipelineId == "" {
-		return errors.New("pipeline ID is required")
+		return fmt.Errorf("%w: pipelineId", ErrTriggerFieldEmpty)
 	}
 	if c.Types == "" {
-		return errors.New("trigger type is required")
+		return fmt.Errorf("%w: types", ErrTriggerFieldEmpty)
 	}
 	if c.Name == "" {
-		return errors.New("trigger name is required")
+		return fmt.Errorf("%w: name", ErrTriggerFieldEmpty)
 	}
 	if c.Params == "" {
-		return errors.New("trigger params is required")
+		return fmt.Errorf("%w: params", ErrTriggerFieldEmpty)
 	}
 	return nil
 }

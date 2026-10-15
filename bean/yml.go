@@ -2,7 +2,6 @@ package bean
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 )
