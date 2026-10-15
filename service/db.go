@@ -78,10 +78,11 @@ func BatchOrgPipeCounts(ctx context.Context, orgIds []string) (map[string]int64,
 		Cnt   int64  `xorm:"cnt"`
 	}
 	var counts []orgCount
-	err := comm.Db.Context(ctx).SQL(
-		"SELECT org_id, COUNT(*) as cnt FROM t_org_pipe WHERE org_id IN (?) GROUP BY org_id",
-		orgIds,
-	).Find(&counts)
+	err := comm.Db.Context(ctx).Table("t_org_pipe").
+		Select("org_id, COUNT(*) as cnt").
+		In("org_id", orgIds).
+		GroupBy("org_id").
+		Find(&counts)
 	if err != nil {
 		return nil, fmt.Errorf("batch org pipe counts: %w", err)
 	}
@@ -103,10 +104,11 @@ func BatchOrgUserCounts(ctx context.Context, orgIds []string) (map[string]int64,
 		Cnt   int64  `xorm:"cnt"`
 	}
 	var counts []orgCount
-	err := comm.Db.Context(ctx).SQL(
-		"SELECT org_id, COUNT(*) as cnt FROM t_user_org WHERE org_id IN (?) GROUP BY org_id",
-		orgIds,
-	).Find(&counts)
+	err := comm.Db.Context(ctx).Table("t_user_org").
+		Select("org_id, COUNT(*) as cnt").
+		In("org_id", orgIds).
+		GroupBy("org_id").
+		Find(&counts)
 	if err != nil {
 		return nil, fmt.Errorf("batch org user counts: %w", err)
 	}
