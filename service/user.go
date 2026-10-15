@@ -100,6 +100,9 @@ func GetUserCacheCtx(ctx context.Context, uid string) (*model.TUser, bool) {
 	return e, ok
 }
 func CurrUserCache(c *gin.Context) (*model.TUser, bool) {
+	if c == nil || c.Request == nil {
+		return nil, false
+	}
 	return CurrUserCacheCtx(c.Request.Context(), c)
 }
 
