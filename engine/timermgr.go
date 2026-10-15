@@ -84,6 +84,12 @@ func (c *TimerEngine) execItem(v *timerExec) {
 
 func (c *TimerEngine) refresh() {
 	defer util.RecoverLog("TimerEngine.refresh")
+
+	if comm.Db == nil {
+		logrus.Errorf("TimerEngine.refresh: %v", ErrDbNil)
+		return
+	}
+
 	var ls []*model.TTrigger
 	if err := comm.Db.Context(comm.Ctx).Where("enabled = 1 AND types = 'timer'").Find(&ls); err != nil {
 		logrus.Errorf("TimerEngine refresh find err: %v", err)
@@ -179,6 +185,10 @@ func (c *TimerEngine) Refresh(tmrid string) error {
 	if tmrid == "" {
 		return fmt.Errorf("timer id is empty: %w", ErrEmptyParams)
 	}
+	if comm.Db == nil {
+		return fmt.Errorf("TimerEngine.Refresh: %w", ErrDbNil)
+	}
+
 	tmr := &model.TTrigger{}
 	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", tmrid).Get(tmr)
 	if err != nil {

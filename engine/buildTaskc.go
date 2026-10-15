@@ -136,6 +136,11 @@ func (c *BuildTask) check() bool {
 
 func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) {
 	defer util.RecoverResult(&rterr, "BuildTask.genRunjob")
+
+	if comm.Db == nil {
+		return fmt.Errorf("BuildTask.genRunjob: %w", ErrDbNil)
+	}
+
 	runjb := &runners.RunJob{
 		Id:           job.step.Id,
 		PipelineId:   job.task.build.PipelineId,

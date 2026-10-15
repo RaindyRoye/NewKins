@@ -64,4 +64,7 @@ var (
 
 	// ErrRepositoryNil is returned when a repository reference is unexpectedly nil.
 	ErrRepositoryNil = errors.New("repository is nil")
+
+	// ErrDbNil is returned when the database engine (comm.Db) has not been initialized.
+	ErrDbNil = errors.New("database engine is nil")
 )

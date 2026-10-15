@@ -362,6 +362,9 @@ func (c *baseRunner) FindArtVersionIdCtx(ctx context.Context, buildID, idnt stri
 	if !ok {
 		return "", fmt.Errorf("findArtVersionId: %w: %q", ErrBuildNotFound, buildID)
 	}
+	if comm.Db == nil {
+		return "", fmt.Errorf("findArtVersionId: %w", ErrDbNil)
+	}
 
 	arty := &model.TArtifactory{}
 	var err error
@@ -424,6 +427,9 @@ func (c *baseRunner) NewArtVersionIdCtx(ctx context.Context, buildID, idnt strin
 	build, ok := Mgr.buildEgn.Get(buildID)
 	if !ok {
 		return "", fmt.Errorf("newArtVersionId: %w: %q", ErrBuildNotFound, buildID)
+	}
+	if comm.Db == nil {
+		return "", fmt.Errorf("newArtVersionId: %w", ErrDbNil)
 	}
 
 	arty := &model.TArtifactory{}
