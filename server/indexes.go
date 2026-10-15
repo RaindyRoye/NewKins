@@ -85,6 +85,42 @@ func ensureIndexes() {
 
 		// t_build: batch status updates filter by status columns
 		{"t_build", "idx_build_status", "status"},
+
+		// t_trigger_run: queried by tid (trigger ID) for trigger run history
+		{"t_trigger_run", "idx_trigrun_tid", "tid"},
+
+		// t_trigger: queried by pipeline_id for pipeline trigger listing
+		{"t_trigger", "idx_trigger_pipeline_id", "pipeline_id"},
+
+		// t_user_org: queried by uid and org_id for permission checks
+		{"t_user_org", "idx_userorg_uid_orgid", "uid, org_id"},
+
+		// t_artifactory: queried by deleted + identifier + org_id for runner artifact lookups
+		{"t_artifactory", "idx_artifactory_deleted_identifier", "deleted, identifier"},
+
+		// t_artifactory: queried by deleted + repo_id + name for artifact name lookup
+		{"t_artifactory", "idx_artifactory_deleted_repo_name", "deleted, repo_id, name"},
+
+		// t_user_msg: queried by uid for user message listing
+		{"t_user_msg", "idx_usermsg_uid", "uid"},
+
+		// t_org: queried by uid for org ownership checks
+		{"t_org", "idx_org_uid", "uid"},
+
+		// t_org: queried by deleted for active org listing
+		{"t_org", "idx_org_deleted", "deleted"},
+
+		// t_yml_plugin: queried by deleted for template listing
+		{"t_yml_plugin", "idx_ymlplugin_deleted", "deleted"},
+
+		// t_yml_template: queried by deleted for template listing
+		{"t_yml_template", "idx_ymltemplate_deleted", "deleted"},
+
+		// t_pipeline: composite index for uid + deleted for user's active pipelines
+		{"t_pipeline", "idx_pipeline_uid_deleted", "uid, deleted"},
+
+		// t_stage: queried by pipeline_version_id for build stage listing
+		{"t_stage", "idx_stage_pipeline_version_id", "pipeline_version_id"},
 	}
 
 	for _, idx := range indexes {
