@@ -3,7 +3,6 @@ package engine
 import (
 	"testing"
 
-	"github.com/gokins/core/common"
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/runner/runners"
 )
@@ -152,48 +151,4 @@ func TestGencmds_MixedTypes(t *testing.T) {
 	}
 }
 
-func TestBuildTaskCheck_NilRepo(t *testing.T) {
-	task := &BuildTask{
-		build: &runtime.Build{
-			Id:   "test-build",
-			Repo: nil,
-		},
-		stages: make(map[string]*taskStage),
-		jobs:   make(map[string]*jobSync),
-	}
-	result := task.check()
-	if result {
-		t.Fatal("expected check() to return false when Repo is nil")
-	}
-	// check() calls c.status(BuildEventCheckParam, "repo param err") which sets Status and Error
-	if task.build.Status != common.BuildEventCheckParam {
-		t.Errorf("expected build status to be %q, got %q", common.BuildEventCheckParam, task.build.Status)
-	}
-	if task.build.Error != "repo param err" {
-		t.Errorf("expected error 'repo param err', got %q", task.build.Error)
-	}
-}
-
-func TestBuildTaskCheck_EmptyStages(t *testing.T) {
-	task := &BuildTask{
-		build: &runtime.Build{
-			Id: "test-build",
-			Repo: &runtime.Repository{
-				CloneURL: "",
-			},
-			Stages: []*runtime.Stage{},
-		},
-		stages: make(map[string]*taskStage),
-		jobs:   make(map[string]*jobSync),
-	}
-	result := task.check()
-	if result {
-		t.Fatal("expected check() to return false when Stages is empty")
-	}
-	if task.build.Event != common.BuildEventCheckParam {
-		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
-	}
-	if task.build.Error != "build Stages is empty" {
-		t.Errorf("expected error 'build Stages is empty', got %q", task.build.Error)
-	}
-}
+// check() tests moved to buildTaskc_check_test.go
