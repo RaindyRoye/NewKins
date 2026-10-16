@@ -49,12 +49,16 @@ func ensureIndexes() {
 		// t_pipeline: queried by uid and deleted flag
 		{"t_pipeline", "idx_pipeline_uid", "uid"},
 		{"t_pipeline", "idx_pipeline_deleted", "deleted"},
+		// composite: most frequent listing query filters by uid + deleted
+		{"t_pipeline", "idx_pipeline_uid_deleted", "uid, deleted"},
 
 		// t_pipeline_conf: queried by pipeline_id
 		{"t_pipeline_conf", "idx_pipeconf_pipeline_id", "pipeline_id"},
 
-		// t_pipeline_version: queried by pipeline_id
+		// t_pipeline_version: queried by pipeline_id, often ordered by number DESC
 		{"t_pipeline_version", "idx_pipever_pipeline_id", "pipeline_id"},
+		// composite: version listing for a pipeline (WHERE pipeline_id=? ORDER BY number DESC)
+		{"t_pipeline_version", "idx_pipever_pipeid_number", "pipeline_id, number"},
 
 		// t_pipeline_var: queried by pipeline_id
 		{"t_pipeline_var", "idx_pipevar_pipeline_id", "pipeline_id"},
@@ -85,6 +89,13 @@ func ensureIndexes() {
 
 		// t_build: batch status updates filter by status columns
 		{"t_build", "idx_build_status", "status"},
+
+		// composite indexes for cascade-cancel queries (WHERE build_id=? AND status NOT IN ...)
+		{"t_stage", "idx_stage_build_status", "build_id, status"},
+		{"t_step", "idx_step_build_status", "build_id, status"},
+		{"t_step", "idx_step_stage_status", "stage_id, status"},
+		{"t_cmd_line", "idx_cmdline_build_status", "build_id, status"},
+		{"t_cmd_line", "idx_cmdline_step_status", "step_id, status"},
 	}
 
 	for _, idx := range indexes {
