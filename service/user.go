@@ -124,7 +124,7 @@ func CurrUserCacheCtx(ctx context.Context, c *gin.Context) (*model.TUser, bool) 
 	return GetUserCacheCtx(ctx, uids)
 }
 func IsAdmin(usr *model.TUser) bool {
-	return usr.Id == "admin"
+	return usr != nil && usr.Id == "admin"
 }
 
 // IsOrgAdmin checks whether a user is an org admin using the global context.
