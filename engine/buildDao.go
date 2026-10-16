@@ -23,6 +23,55 @@ func (c *BuildTask) taskCtx() context.Context {
 	return comm.Ctx
 }
 
+// cascadeCancel cancels child entities when a parent build/stage/step ends.
+// This helper reduces code duplication in update* methods.
+func (c *BuildTask) cascadeCancel(ctx context.Context, table, foreignKey, id string, cols []string) {
+	now := time.Now()
+	statuses := []string{
+		common.BuildStatusOk,
+		common.BuildStatusError,
+		common.BuildStatusCancel,
+	}
+
+	switch table {
+	case "t_stage":
+		entity := &model.TStage{
+			Status:   common.BuildStatusCancel,
+			Finished: now,
+			Updated:  now,
+		}
+		_, err := comm.Db.Context(ctx).Cols(cols...).
+			Where(foreignKey+"=? and `status` NOT IN ?", id, statuses).
+			Update(entity)
+		if err != nil {
+			logrus.Errorf("cascadeCancel %s err:%v", table, err)
+		}
+	case "t_step":
+		entity := &model.TStep{
+			Status:   common.BuildStatusCancel,
+			Finished: now,
+			Updated:  now,
+		}
+		_, err := comm.Db.Context(ctx).Cols(cols...).
+			Where(foreignKey+"=? and `status` NOT IN ?", id, statuses).
+			Update(entity)
+		if err != nil {
+			logrus.Errorf("cascadeCancel %s err:%v", table, err)
+		}
+	case "t_cmd_line":
+		entity := &model.TCmdLine{
+			Status:   common.BuildStatusCancel,
+			Finished: now,
+		}
+		_, err := comm.Db.Context(ctx).Cols(cols...).
+			Where(foreignKey+"=? and `status` NOT IN ?", id, statuses).
+			Update(entity)
+		if err != nil {
+			logrus.Errorf("cascadeCancel %s err:%v", table, err)
+		}
+	}
+}
+
 func (c *BuildTask) updateBuild(build *runtime.Build) {
 	defer util.RecoverLog("BuildTask.updateBuild")
 
@@ -45,38 +94,11 @@ func (c *BuildTask) updateBuild(build *runtime.Build) {
 	if !common.BuildStatusEnded(e.Status) {
 		return
 	}
-	stge := &model.TStage{
-		Status:   common.BuildStatusCancel,
-		Finished: time.Now(),
-		Updated:  time.Now(),
-	}
-	_, err = comm.Db.Context(ctx).Cols("status", "finished", "updated").
-		Where("build_id=? and `status`!=? and `status`!=? and `status`!=?",
-			build.Id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).Update(stge)
-	if err != nil {
-		logrus.Errorf("BuildTask.updateBuild stage err:%v", err)
-	}
-	stpe := &model.TStep{
-		Status:   common.BuildStatusCancel,
-		Finished: time.Now(),
-		Updated:  time.Now(),
-	}
-	_, err = comm.Db.Context(ctx).Cols("status", "finished", "updated").
-		Where("build_id=? and `status`!=? and `status`!=? and `status`!=?",
-			build.Id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).Update(stpe)
-	if err != nil {
-		logrus.Errorf("BuildTask.updateBuild step err:%v", err)
-	}
-	cmde := &model.TCmdLine{
-		Status:   common.BuildStatusCancel,
-		Finished: time.Now(),
-	}
-	_, err = comm.Db.Context(ctx).Cols("status", "finished").
-		Where("build_id=? and `status`!=? and `status`!=? and `status`!=?",
-			build.Id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).Update(cmde)
-	if err != nil {
-		logrus.Errorf("BuildTask.updateBuild cmd err:%v", err)
-	}
+
+	// Cascade cancel child entities
+	c.cascadeCancel(ctx, "t_stage", "build_id", build.Id, []string{"status", "finished", "updated"})
+	c.cascadeCancel(ctx, "t_step", "build_id", build.Id, []string{"status", "finished", "updated"})
+	c.cascadeCancel(ctx, "t_cmd_line", "build_id", build.Id, []string{"status", "finished"})
 }
 func (c *BuildTask) updateStage(stage *runtime.Stage) {
 	defer util.RecoverLog("BuildTask.updateStage")
@@ -99,17 +121,9 @@ func (c *BuildTask) updateStage(stage *runtime.Stage) {
 	if !common.BuildStatusEnded(e.Status) {
 		return
 	}
-	stpe := &model.TStep{
-		Status:   common.BuildStatusCancel,
-		Finished: time.Now(),
-		Updated:  time.Now(),
-	}
-	_, err = comm.Db.Context(ctx).Cols("status", "finished", "updated").
-		Where("stage_id=? and `status`!=? and `status`!=? and `status`!=?",
-			stage.Id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).Update(stpe)
-	if err != nil {
-		logrus.Errorf("BuildTask.updateStage step err:%v", err)
-	}
+
+	// Cascade cancel child steps
+	c.cascadeCancel(ctx, "t_step", "stage_id", stage.Id, []string{"status", "finished", "updated"})
 }
 func (c *BuildTask) updateStep(job *jobSync) {
 	defer util.RecoverLog("BuildTask.updateStep")
@@ -136,16 +150,9 @@ func (c *BuildTask) updateStep(job *jobSync) {
 	if !common.BuildStatusEnded(e.Status) {
 		return
 	}
-	cmde := &model.TCmdLine{
-		Status:   common.BuildStatusCancel,
-		Finished: time.Now(),
-	}
-	_, err = comm.Db.Context(ctx).Cols("status", "finished").
-		Where("step_id=? and `status`!=? and `status`!=? and `status`!=?",
-			job.step.Id, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel).Update(cmde)
-	if err != nil {
-		logrus.Errorf("BuildTask.updateStep cmd err:%v", err)
-	}
+
+	// Cascade cancel child command lines
+	c.cascadeCancel(ctx, "t_cmd_line", "step_id", job.step.Id, []string{"status", "finished"})
 }
 func (c *BuildTask) updateStepCmd(cmd *cmdSync) {
 	defer util.RecoverLog("BuildTask.updateStepCmd")
