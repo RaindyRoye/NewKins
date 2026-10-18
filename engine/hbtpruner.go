@@ -237,7 +237,7 @@ func (HbtpRunner) FindArtVersionId(c *hbtp.Context) {
 	buildID := c.ReqHeader().GetString("buildID")
 	idnt := c.ReqHeader().GetString("idnt")
 	name := c.ReqHeader().GetString("name")
-	rts, err := Mgr.brun.FindArtVersionId(buildID, idnt, name)
+	rts, err := Mgr.brun.FindArtVersionIdCtx(comm.Ctx, buildID, idnt, name)
 	if err != nil {
 		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return
@@ -248,7 +248,7 @@ func (HbtpRunner) NewArtVersionId(c *hbtp.Context) {
 	buildID := c.ReqHeader().GetString("buildID")
 	idnt := c.ReqHeader().GetString("idnt")
 	name := c.ReqHeader().GetString("name")
-	rts, err := Mgr.brun.NewArtVersionId(buildID, idnt, name)
+	rts, err := Mgr.brun.NewArtVersionIdCtx(comm.Ctx, buildID, idnt, name)
 	if err != nil {
 		_ = c.ResString(hbtp.ResStatusErr, err.Error())
 		return

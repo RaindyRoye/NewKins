@@ -43,7 +43,7 @@ func (HookController) hooks(c *gin.Context) {
 		c.String(http.StatusNotFound, "触发器不存在或者未激活")
 		return
 	}
-	rb, err := service.TriggerHook(tt, c.Request)
+	rb, err := service.TriggerHookCtx(c.Request.Context(), tt, c.Request)
 	if err != nil {
 		util.RespInternalErr(c, "trigger hook", err)
 		return
