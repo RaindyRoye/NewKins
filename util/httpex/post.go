@@ -28,6 +28,29 @@ var ErrNilResult = errors.New("result is nil")
 //	if errors.Is(err, httpex.ErrHTTPResponse) { ... }
 var ErrHTTPResponse = errors.New("http response error")
 
+// Get sends a GET request.
+// For context-aware usage, prefer GetCtx.
+func Get(ul string, timeout time.Duration, hds ...http.Header) (*http.Response, error) {
+	return GetCtx(context.Background(), ul, timeout, hds...)
+}
+
+// GetCtx sends a GET request with context support.
+// The context is used for request cancellation and deadlines.
+func GetCtx(ctx context.Context, ul string, timeout time.Duration, hds ...http.Header) (*http.Response, error) {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, ul, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating GET request: %w", err)
+	}
+	header := http.Header{}
+	if len(hds) > 0 {
+		header = hds[0]
+	}
+	request.Header = header
+	client := *defaultClient
+	client.Timeout = time.Second * timeout
+	return client.Do(request)
+}
+
 // defaultClient is a shared HTTP client with connection pooling enabled.
 // Creating a new http.Client per request disables keep-alive and connection
 // reuse, which hurts latency and throughput. This client uses the default
