@@ -17,6 +17,7 @@ import (
 
 	"github.com/gokins/gokins/hook"
 	"github.com/gokins/gokins/util"
+	"github.com/gokins/gokins/util/httpex"
 )
 
 func Parse(req *http.Request, secret string) (wb hook.WebHook, err error) {
@@ -228,11 +229,7 @@ func convertPushHook(gp *githubPushHook) *hook.PushHook {
 func convertPullRequestURL(u string) (*githubPullRequestURL, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
-	request, err := http.NewRequestWithContext(ctx, "GET", u, nil)
-	if err != nil {
-		return nil, fmt.Errorf("github: build PR request for %q: %w", u, err)
-	}
-	res, err := http.DefaultClient.Do(request)
+	res, err := httpex.GetCtx(ctx, u, 8)
 	if err != nil {
 		return nil, fmt.Errorf("github: fetch PR info from %q: %w", u, err)
 	}

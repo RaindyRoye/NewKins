@@ -61,11 +61,7 @@ func (InstallController) check(c *gin.Context) {
 func checkUrl(host string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, "POST", host+"/api/install/check", nil)
-	if err != nil {
-		return false
-	}
-	res, err := http.DefaultClient.Do(req)
+	res, err := httpex.PostCtx(ctx, host+"/api/install/check", nil, 5)
 	if err != nil {
 		return false
 	}
