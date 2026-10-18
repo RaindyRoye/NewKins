@@ -220,10 +220,10 @@ func convertPullRequestHook(gp *giteaPRHook) *hook.PullRequestHook {
 	}
 }
 
-//nolint:unparam // gc will be used when TODO (gitea API PR lookup) is implemented
+//nolint:unparam // gc will be used when gitea API PR lookup is implemented
 func convertPullRequestURL(gc *giteaCommentHook) (result *giteaPullRequestURL, err error) {
 	defer util.RecoverResult(&err, "gitea.convertPullRequestURL")
-	// TODO 请求gitea api 获取pr 详情
+	// TODO: Query gitea API to fetch PR details
 	// client := cl.Repositories.(*giteaapi.RepositoryService)
 	// tk := &pipeline.TUserToken{}
 	// ok, _ := comm.DBMain.GetDB().Where("openid=?", gc.Sender.Id).Get(tk)
