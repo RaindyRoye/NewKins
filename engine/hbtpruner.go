@@ -34,14 +34,11 @@ func (HbtpRunner) AuthFun() hbtp.AuthFun {
 		}
 		tm, err := strconv.ParseInt(times, 10, 64)
 		if err != nil {
-			_ = c.ResString(hbtp.ResStatusAuth, "times err:"+err.Error())
+			logrus.Warnf("hbtp runner auth: invalid timestamp %q: %v", times, err)
+			_ = c.ResString(hbtp.ResStatusAuth, "invalid timestamp")
 			return false
 		}
 		tms := time.Unix(tm, 0)
-		/*if err != nil {
-			c.ResString(hbtp.ResStatusAuth, "times err:"+err.Error())
-			return false
-		}*/
 		hbtp.Debugf("HbtpRunnerAuth parse.times:%s", tms.Format(common.TimeFmt))
 		return true
 	}
@@ -49,7 +46,8 @@ func (HbtpRunner) AuthFun() hbtp.AuthFun {
 func (HbtpRunner) ServerInfo(c *hbtp.Context) {
 	rts, err := Mgr.brun.ServerInfo()
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Errorf("hbtp ServerInfo: %v", err)
+		_ = c.ResString(hbtp.ResStatusErr, "internal server error")
 		return
 	}
 	_ = c.ResJson(hbtp.ResStatusOk, rts)
@@ -57,7 +55,8 @@ func (HbtpRunner) ServerInfo(c *hbtp.Context) {
 func (HbtpRunner) PullJob(c *hbtp.Context, m *runners.ReqPullJob) {
 	rts, err := Mgr.brun.PullJob(m.Name, m.Plugs)
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Errorf("hbtp PullJob(name=%s): %v", m.Name, err)
+		_ = c.ResString(hbtp.ResStatusErr, "internal server error")
 		return
 	}
 	_ = c.ResJson(hbtp.ResStatusOk, rts)
@@ -69,7 +68,8 @@ func (HbtpRunner) CheckCancel(c *hbtp.Context) {
 func (HbtpRunner) Update(c *hbtp.Context, m *runners.UpdateJobInfo) {
 	err := Mgr.brun.Update(m)
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Errorf("hbtp Update: %v", err)
+		_ = c.ResString(hbtp.ResStatusErr, "internal server error")
 		return
 	}
 	_ = c.ResString(hbtp.ResStatusOk, "ok")
@@ -81,12 +81,14 @@ func (HbtpRunner) UpdateCmd(c *hbtp.Context) {
 	fs, err := c.ReqHeader().GetInt("fs")
 	code, _ := c.ReqHeader().GetInt("code")
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Warnf("hbtp UpdateCmd: invalid fs param: %v", err)
+		_ = c.ResString(hbtp.ResStatusErr, "invalid fs parameter")
 		return
 	}
 	err = Mgr.brun.UpdateCmd(buildID, jobID, cmdID, int(fs), int(code))
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Errorf("hbtp UpdateCmd(build=%s, job=%s, cmd=%s): %v", buildID, jobID, cmdID, err)
+		_ = c.ResString(hbtp.ResStatusErr, "internal server error")
 		return
 	}
 	_ = c.ResString(hbtp.ResStatusOk, "ok")
@@ -99,7 +101,8 @@ func (HbtpRunner) PushOutLine(c *hbtp.Context) {
 	iserr := c.ReqHeader().GetBool("iserr")
 	err := Mgr.brun.PushOutLine(buildID, jobID, cmdID, bs, iserr)
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Errorf("hbtp PushOutLine(build=%s, job=%s, cmd=%s): %v", buildID, jobID, cmdID, err)
+		_ = c.ResString(hbtp.ResStatusErr, "internal server error")
 		return
 	}
 	_ = c.ResString(hbtp.ResStatusOk, "ok")
@@ -120,12 +123,14 @@ func (HbtpRunner) ReadDir(c *hbtp.Context) {
 	pth := c.ReqHeader().GetString("pth")
 	fs, err := c.ReqHeader().GetInt("fs")
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Warnf("hbtp ReadDir: invalid fs param: %v", err)
+		_ = c.ResString(hbtp.ResStatusErr, "invalid fs parameter")
 		return
 	}
 	rts, err := Mgr.brun.ReadDir(int(fs), buildID, pth)
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Errorf("hbtp ReadDir(build=%s, path=%s): %v", buildID, pth, err)
+		_ = c.ResString(hbtp.ResStatusErr, "internal server error")
 		return
 	}
 	_ = c.ResJson(hbtp.ResStatusOk, rts)
@@ -136,12 +141,14 @@ func (HbtpRunner) ReadFile(c *hbtp.Context) {
 	fs, err := c.ReqHeader().GetInt("fs")
 	start, _ := c.ReqHeader().GetInt("start")
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Warnf("hbtp ReadFile: invalid fs param: %v", err)
+		_ = c.ResString(hbtp.ResStatusErr, "invalid fs parameter")
 		return
 	}
 	flsz, flr, err := Mgr.brun.ReadFile(int(fs), buildID, pth, start)
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Errorf("hbtp ReadFile(build=%s, path=%s): %v", buildID, pth, err)
+		_ = c.ResString(hbtp.ResStatusErr, "internal server error")
 		return
 	}
 	defer func() { _ = flr.Close() }()
@@ -177,7 +184,8 @@ func (HbtpRunner) GenEnv(c *hbtp.Context, env utils.EnvVal) {
 	jobID := c.ReqHeader().GetString("jobID")
 	err := Mgr.brun.GenEnv(buildID, jobID, env)
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Errorf("hbtp GenEnv(build=%s, job=%s): %v", buildID, jobID, err)
+		_ = c.ResString(hbtp.ResStatusErr, "internal server error")
 		return
 	}
 	_ = c.ResString(hbtp.ResStatusOk, "ok")
@@ -189,12 +197,14 @@ func (HbtpRunner) StatFile(c *hbtp.Context) {
 	pth := c.ReqHeader().GetString("pth")
 	fs, err := c.ReqHeader().GetInt("fs")
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Warnf("hbtp StatFile: invalid fs param: %v", err)
+		_ = c.ResString(hbtp.ResStatusErr, "invalid fs parameter")
 		return
 	}
 	stat, err := Mgr.brun.StatFile(int(fs), buildID, jobID, dir, pth)
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Errorf("hbtp StatFile(build=%s, job=%s, path=%s): %v", buildID, jobID, pth, err)
+		_ = c.ResString(hbtp.ResStatusErr, "internal server error")
 		return
 	}
 	_ = c.ResJson(hbtp.ResStatusOk, stat)
@@ -207,12 +217,14 @@ func (HbtpRunner) UploadFile(c *hbtp.Context) {
 	start, _ := c.ReqHeader().GetInt("start")
 	fs, err := c.ReqHeader().GetInt("fs")
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Warnf("hbtp UploadFile: invalid fs param: %v", err)
+		_ = c.ResString(hbtp.ResStatusErr, "invalid fs parameter")
 		return
 	}
 	flw, err := Mgr.brun.UploadFile(int(fs), buildID, jobID, dir, pth, start)
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Errorf("hbtp UploadFile(build=%s, job=%s, path=%s): %v", buildID, jobID, pth, err)
+		_ = c.ResString(hbtp.ResStatusErr, "internal server error")
 		return
 	}
 	defer func() { _ = flw.Close() }()
@@ -239,7 +251,8 @@ func (HbtpRunner) FindArtVersionId(c *hbtp.Context) {
 	name := c.ReqHeader().GetString("name")
 	rts, err := Mgr.brun.FindArtVersionIdCtx(comm.Ctx, buildID, idnt, name)
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Errorf("hbtp FindArtVersionId(build=%s, idnt=%s, name=%s): %v", buildID, idnt, name, err)
+		_ = c.ResString(hbtp.ResStatusErr, "internal server error")
 		return
 	}
 	_ = c.ResString(hbtp.ResStatusOk, rts)
@@ -250,7 +263,8 @@ func (HbtpRunner) NewArtVersionId(c *hbtp.Context) {
 	name := c.ReqHeader().GetString("name")
 	rts, err := Mgr.brun.NewArtVersionIdCtx(comm.Ctx, buildID, idnt, name)
 	if err != nil {
-		_ = c.ResString(hbtp.ResStatusErr, err.Error())
+		logrus.Errorf("hbtp NewArtVersionId(build=%s, idnt=%s, name=%s): %v", buildID, idnt, name, err)
+		_ = c.ResString(hbtp.ResStatusErr, "internal server error")
 		return
 	}
 	_ = c.ResString(hbtp.ResStatusOk, rts)

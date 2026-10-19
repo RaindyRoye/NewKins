@@ -2,8 +2,6 @@ module github.com/gokins/gokins
 
 go 1.25.0
 
-toolchain go1.26.4
-
 require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-git/go-git/v5 v5.17.1

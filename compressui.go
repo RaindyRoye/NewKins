@@ -22,29 +22,30 @@ func main() {
 	}
 	err := gengo()
 	if err != nil {
-		println("bdzip err:" + err.Error())
+		fmt.Fprintf(os.Stderr, "bdzip error: %v\n", err)
+		os.Exit(1)
 	}
 }
 
 func gengo() error {
 	zipfl := filepath.Join(utils.HomePath(), "dist.zip")
-	os.RemoveAll(zipfl)
-	defer os.RemoveAll(zipfl)
-	err := utils.Zip(pth, zipfl, true)
-	if err != nil {
-		return err
+	if err := os.RemoveAll(zipfl); err != nil {
+		return fmt.Errorf("remove old zip %s: %w", zipfl, err)
+	}
+	defer func() { _ = os.RemoveAll(zipfl) }()
+	if err := utils.Zip(pth, zipfl, true); err != nil {
+		return fmt.Errorf("zip directory %s: %w", pth, err)
 	}
 	bts, err := os.ReadFile(zipfl)
 	if err != nil {
-		return err
+		return fmt.Errorf("read zip file %s: %w", zipfl, err)
 	}
 	cont := base64.StdEncoding.EncodeToString(bts)
-	err = os.WriteFile("comm/uis.go",
-		[]byte(fmt.Sprintf("package comm\n\nconst StaticPkg = \"%s\"", cont)),
-		0644)
-	if err != nil {
-		return err
+	if err := os.WriteFile("comm/uis.go",
+		[]byte(fmt.Sprintf("package comm\n\nconst StaticPkg = %q", cont)),
+		0644); err != nil {
+		return fmt.Errorf("write comm/uis.go: %w", err)
 	}
-	println("ui insert go ok!!!")
+	fmt.Println("ui insert go ok!!!")
 	return nil
 }

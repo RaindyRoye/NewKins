@@ -1,13 +1,14 @@
 package comm
 
 import (
+	"strings"
 	"testing"
 )
 
 func TestGetThirdApi_GitlabTypo(t *testing.T) {
-	// Reset the global apiClient to ensure a clean test state.
-	apiClient = nil
-	defer func() { apiClient = nil }()
+	// Reset the global state to ensure a clean test.
+	ResetThirdApiClient()
+	defer ResetThirdApiClient()
 
 	// "gitlab" (not "gitalb") should be recognized as a valid provider.
 	// The host is intentionally fake — the API client will be created but
@@ -28,9 +29,8 @@ func TestGetThirdApi_GitlabTypo(t *testing.T) {
 }
 
 func TestGetThirdApi_DefaultFallback(t *testing.T) {
-	// Reset the global apiClient.
-	apiClient = nil
-	defer func() { apiClient = nil }()
+	ResetThirdApiClient()
+	defer ResetThirdApiClient()
 
 	// Unknown provider should fall through to default (github).
 	client, err := GetThirdApi("unknown-provider", "")
@@ -43,9 +43,8 @@ func TestGetThirdApi_DefaultFallback(t *testing.T) {
 }
 
 func TestGetThirdApi_CachedClient(t *testing.T) {
-	// Reset the global apiClient.
-	apiClient = nil
-	defer func() { apiClient = nil }()
+	ResetThirdApiClient()
+	defer ResetThirdApiClient()
 
 	// First call should create the client.
 	client1, err := GetThirdApi("github", "")
@@ -53,7 +52,7 @@ func TestGetThirdApi_CachedClient(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Second call should return the same cached client.
+	// Second call should return the same cached client (sync.Once prevents re-init).
 	client2, err := GetThirdApi("gitee", "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -64,9 +63,8 @@ func TestGetThirdApi_CachedClient(t *testing.T) {
 }
 
 func TestGetThirdApi_GiteaError(t *testing.T) {
-	// Reset the global apiClient.
-	apiClient = nil
-	defer func() { apiClient = nil }()
+	ResetThirdApiClient()
+	defer ResetThirdApiClient()
 
 	// Gitea with an invalid host should return an error wrapped with context.
 	_, err := GetThirdApi("gitea", "://invalid-host")
@@ -78,5 +76,9 @@ func TestGetThirdApi_GiteaError(t *testing.T) {
 	// If there IS an error, it should contain context about gitea.
 	if errStr := err.Error(); len(errStr) == 0 {
 		t.Error("error message should not be empty")
+	}
+	// Error should be wrapped with gitea context.
+	if !strings.Contains(err.Error(), "gitea") {
+		t.Errorf("expected error to contain 'gitea', got: %v", err)
 	}
 }

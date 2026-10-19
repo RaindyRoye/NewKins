@@ -2,6 +2,7 @@ package comm
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/gokins/gokins/thirdapi"
 	"github.com/gokins/gokins/thirdapi/giteaapi"
@@ -9,42 +10,59 @@ import (
 	"github.com/gokins/gokins/thirdapi/giteepremiumapi"
 	"github.com/gokins/gokins/thirdapi/githubapi"
 	"github.com/gokins/gokins/thirdapi/gitlabapi"
-	"github.com/sirupsen/logrus"
 )
 
 var (
-	apiClient *thirdapi.Client
+	apiClient     *thirdapi.Client
+	apiClientOnce sync.Once
+	apiClientErr  error
 )
 
+// ResetThirdApiClient clears the cached API client so the next call to
+// GetThirdApi creates a fresh one. This is primarily useful in tests.
+func ResetThirdApiClient() {
+	apiClientOnce = sync.Once{}
+	apiClient = nil
+	apiClientErr = nil
+}
+
+// GetThirdApi returns a cached third-party API client for the given provider.
+// The client is created lazily on first call and reused thereafter.
+// Supported providers: "gitee", "github", "gitlab", "giteepremium", "gitea".
+// Falls back to GitHub if the provider is unrecognized.
 func GetThirdApi(s string, host string) (*thirdapi.Client, error) {
-	if apiClient == nil {
+	apiClientOnce.Do(func() {
+		var client *thirdapi.Client
 		switch s {
 		case "gitee":
-			apiClient = giteeapi.NewDefault()
+			client = giteeapi.NewDefault()
 		case "github":
-			apiClient = githubapi.NewDefault()
+			client = githubapi.NewDefault()
 		case "gitlab":
-			client, err := gitlabapi.New(host + "/api/v4")
+			c, err := gitlabapi.New(host + "/api/v4")
 			if err != nil {
-				return nil, fmt.Errorf("create gitlab client (host=%s): %w", host, err)
+				apiClientErr = fmt.Errorf("create gitlab client (host=%s): %w", host, err)
+				return
 			}
-			apiClient = client
+			client = c
 		case "giteepremium":
-			client, err := giteepremiumapi.New(host + "/api/v5")
+			c, err := giteepremiumapi.New(host + "/api/v5")
 			if err != nil {
-				return nil, fmt.Errorf("create giteepremium client (host=%s): %w", host, err)
+				apiClientErr = fmt.Errorf("create giteepremium client (host=%s): %w", host, err)
+				return
 			}
-			apiClient = client
+			client = c
 		case "gitea":
-			client, err := giteaapi.New(host + "/api/v1")
+			c, err := giteaapi.New(host + "/api/v1")
 			if err != nil {
-				return nil, fmt.Errorf("create gitea client (host=%s): %w", host, err)
+				apiClientErr = fmt.Errorf("create gitea client (host=%s): %w", host, err)
+				return
 			}
-			apiClient = client
+			client = c
 		default:
-			logrus.Debug("GetThirdApi default : 'github' ")
-			apiClient = githubapi.NewDefault()
+			client = githubapi.NewDefault()
 		}
-	}
-	return apiClient, nil
+		apiClient = client
+	})
+	return apiClient, apiClientErr
 }
