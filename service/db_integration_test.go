@@ -308,9 +308,65 @@ func TestGetIdOrAidE_IntegFindById(t *testing.T) {
 // --- BatchOrgPipeCounts / BatchOrgUserCounts with real data ---
 
 func TestBatchOrgPipeCounts_WithRealData(t *testing.T) {
-	t.Skip("Skipping: BatchOrgPipeCounts uses raw SQL with IN (?) which requires MySQL/PostgreSQL array parameter support")
+	eng := setupBatchCountTestDB(t)
+	ctx := context.Background()
+
+	// Create org-pipe mappings
+	orgPipes := []model.TOrgPipe{
+		{OrgId: "org-real-1", PipeId: "pipe-real-1"},
+		{OrgId: "org-real-1", PipeId: "pipe-real-2"},
+		{OrgId: "org-real-2", PipeId: "pipe-real-3"},
+	}
+	for _, op := range orgPipes {
+		if _, err := eng.Insert(&op); err != nil {
+			t.Fatalf("failed to insert org pipe: %v", err)
+		}
+	}
+
+	counts, err := BatchOrgPipeCounts(ctx, []string{"org-real-1", "org-real-2", "org-real-3"})
+	if err != nil {
+		t.Fatalf("BatchOrgPipeCounts failed: %v", err)
+	}
+
+	if counts["org-real-1"] != 2 {
+		t.Errorf("org-real-1 count = %d, want 2", counts["org-real-1"])
+	}
+	if counts["org-real-2"] != 1 {
+		t.Errorf("org-real-2 count = %d, want 1", counts["org-real-2"])
+	}
+	if _, exists := counts["org-real-3"]; exists {
+		t.Error("org-real-3 should not be in the result")
+	}
 }
 
 func TestBatchOrgUserCounts_WithRealData(t *testing.T) {
-	t.Skip("Skipping: BatchOrgUserCounts uses raw SQL with IN (?) which requires MySQL/PostgreSQL array parameter support")
+	eng := setupBatchCountTestDB(t)
+	ctx := context.Background()
+
+	// Create user-org mappings
+	userOrgs := []model.TUserOrg{
+		{OrgId: "org-real-1", Uid: "user-real-1"},
+		{OrgId: "org-real-1", Uid: "user-real-2"},
+		{OrgId: "org-real-2", Uid: "user-real-3"},
+	}
+	for _, uo := range userOrgs {
+		if _, err := eng.Insert(&uo); err != nil {
+			t.Fatalf("failed to insert user org: %v", err)
+		}
+	}
+
+	counts, err := BatchOrgUserCounts(ctx, []string{"org-real-1", "org-real-2", "org-real-3"})
+	if err != nil {
+		t.Fatalf("BatchOrgUserCounts failed: %v", err)
+	}
+
+	if counts["org-real-1"] != 2 {
+		t.Errorf("org-real-1 count = %d, want 2", counts["org-real-1"])
+	}
+	if counts["org-real-2"] != 1 {
+		t.Errorf("org-real-2 count = %d, want 1", counts["org-real-2"])
+	}
+	if _, exists := counts["org-real-3"]; exists {
+		t.Error("org-real-3 should not be in the result")
+	}
 }
