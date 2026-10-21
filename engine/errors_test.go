@@ -20,6 +20,7 @@ func TestSentinelErrors_AreDistinct(t *testing.T) {
 		{"ErrArtifactNotFound", ErrArtifactNotFound},
 		{"ErrPermissionDenied", ErrPermissionDenied},
 		{"ErrPluginNotFound", ErrPluginNotFound},
+		{"ErrTriggerNotFound", ErrTriggerNotFound},
 	}
 
 	for i, s := range sentinels {
@@ -80,6 +81,7 @@ func TestSentinelErrors_ErrorMessages(t *testing.T) {
 		{ErrArtifactNotFound, "artifact not found"},
 		{ErrPermissionDenied, "permission denied"},
 		{ErrPluginNotFound, "plugin not found"},
+		{ErrTriggerNotFound, "trigger not found"},
 	}
 
 	for _, tt := range tests {

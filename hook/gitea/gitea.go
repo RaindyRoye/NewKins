@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -220,9 +221,18 @@ func convertPullRequestHook(gp *giteaPRHook) *hook.PullRequestHook {
 	}
 }
 
-//nolint:unparam // gc will be used when TODO (gitea API PR lookup) is implemented
-func convertPullRequestURL(gc *giteaCommentHook) (result *giteaPullRequestURL, err error) {
-	defer util.RecoverResult(&err, "gitea.convertPullRequestURL")
+// ErrGiteaPRInfoUnavailable is returned when the gitea API PR lookup is not
+// yet implemented. Comment webhook processing requires PR details (head/base
+// refs and repos) which can only be fetched via the gitea API.
+var ErrGiteaPRInfoUnavailable = errors.New("gitea PR info not available: API lookup not yet implemented")
+
+// convertPullRequestURL fetches PR details from the gitea API.
+// TODO: Implement actual API call via giteaapi.RepositoryService.GetPullQuest.
+// Currently returns a sentinel error so callers get a clear diagnostic instead
+// of a nil-pointer panic.
+//
+//nolint:unparam // First return value will be used when the gitea API lookup is implemented.
+func convertPullRequestURL(gc *giteaCommentHook) (*giteaPullRequestURL, error) {
 	// TODO 请求gitea api 获取pr 详情
 	// client := cl.Repositories.(*giteaapi.RepositoryService)
 	// tk := &pipeline.TUserToken{}
@@ -231,7 +241,6 @@ func convertPullRequestURL(gc *giteaCommentHook) (result *giteaPullRequestURL, e
 	//	logrus.Error("convertPullRequestURL not found user token")
 	//	return nil, errors.New("convertPullRequestURL not found user token")
 	//}
-	//
 	// quest, err := client.GetPullQuest(tk.AccessToken, gc.Repository.Owner.Login, gc.Repository.Name, gc.Issue.Number)
 	// if err != nil {
 	//	logrus.Errorf("convertPullRequestURL.GetPullQuest err : %v", err)
@@ -243,7 +252,11 @@ func convertPullRequestURL(gc *giteaCommentHook) (result *giteaPullRequestURL, e
 	//	logrus.Errorf("gitea convertPullRequestURL Unmarshal err %v", err)
 	//	return nil, err
 	//}
-	return nil, nil
+	if gc == nil {
+		return nil, fmt.Errorf("convertPullRequestURL: %w (nil comment hook)", ErrGiteaPRInfoUnavailable)
+	}
+	return nil, fmt.Errorf("convertPullRequestURL: %w (issue #%d on %s)",
+		ErrGiteaPRInfoUnavailable, gc.Issue.Number, gc.Repository.FullName)
 }
 
 func convertCommentHook(gp *giteaCommentHook) (*hook.PullRequestCommentHook, error) {

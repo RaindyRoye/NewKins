@@ -186,7 +186,7 @@ func (c *TimerEngine) Refresh(tmrid string) error {
 	}
 	if !ok || tmr.Enabled != 1 {
 		c.Delete(tmrid)
-		return fmt.Errorf("trigger %s not found or disabled: %w", tmrid, ErrBuildNotFound)
+		return fmt.Errorf("trigger %s not found or disabled: %w", tmrid, ErrTriggerNotFound)
 	}
 	return c.resetOne(tmr)
 }

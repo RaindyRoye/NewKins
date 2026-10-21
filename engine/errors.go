@@ -64,4 +64,7 @@ var (
 
 	// ErrRepositoryNil is returned when a repository reference is unexpectedly nil.
 	ErrRepositoryNil = errors.New("repository is nil")
+
+	// ErrTriggerNotFound is returned when a trigger ID does not match any record or is disabled.
+	ErrTriggerNotFound = errors.New("trigger not found")
 )
