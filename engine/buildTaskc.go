@@ -18,7 +18,7 @@ import (
 
 func (c *BuildTask) check() bool {
 	if c.build.Repo == nil {
-		c.status(common.BuildEventCheckParam, "repo param err")
+		c.status(common.BuildStatusError, "repo param err", common.BuildEventCheckParam)
 		return false
 	}
 	/*if c.build.Repo.CloneURL == "" {

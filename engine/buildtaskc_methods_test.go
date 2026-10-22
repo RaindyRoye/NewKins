@@ -20,8 +20,9 @@ func TestBuildTask_Check_NoRepo(t *testing.T) {
 
 	result := bt.check()
 	assert.False(t, result)
-	// check() calls c.status() which sets Status (not Event) in the nil-repo case
-	assert.Equal(t, common.BuildEventCheckParam, bt.build.Status)
+	// After bug fix, check() sets Status=BuildStatusError and Event=BuildEventCheckParam
+	assert.Equal(t, common.BuildStatusError, bt.build.Status)
+	assert.Equal(t, common.BuildEventCheckParam, bt.build.Event)
 	assert.Equal(t, "repo param err", bt.build.Error)
 }
 

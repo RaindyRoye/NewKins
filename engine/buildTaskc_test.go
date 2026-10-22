@@ -165,12 +165,15 @@ func TestBuildTaskCheck_NilRepo(t *testing.T) {
 	if result {
 		t.Fatal("expected check() to return false when Repo is nil")
 	}
-	// check() calls c.status(BuildEventCheckParam, "repo param err") which sets Status and Error
-	if task.build.Status != common.BuildEventCheckParam {
-		t.Errorf("expected build status to be %q, got %q", common.BuildEventCheckParam, task.build.Status)
+	// check() calls c.status(BuildStatusError, "repo param err", BuildEventCheckParam)
+	if task.build.Status != common.BuildStatusError {
+		t.Errorf("expected build status to be %q, got %q", common.BuildStatusError, task.build.Status)
 	}
 	if task.build.Error != "repo param err" {
 		t.Errorf("expected error 'repo param err', got %q", task.build.Error)
+	}
+	if task.build.Event != common.BuildEventCheckParam {
+		t.Errorf("expected event %q, got %q", common.BuildEventCheckParam, task.build.Event)
 	}
 }
 
