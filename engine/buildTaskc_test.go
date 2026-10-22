@@ -155,22 +155,21 @@ func TestGencmds_MixedTypes(t *testing.T) {
 func TestBuildTaskCheck_NilRepo(t *testing.T) {
 	task := &BuildTask{
 		build: &runtime.Build{
-			Id:   "test-build",
-			Repo: nil,
+			Id: "test-build",
 		},
-		stages: make(map[string]*taskStage),
-		jobs:   make(map[string]*jobSync),
 	}
 	result := task.check()
 	if result {
-		t.Fatal("expected check() to return false when Repo is nil")
+		t.Error("expected check() to return false for nil repo")
 	}
-	// check() calls c.status(BuildEventCheckParam, "repo param err") which sets Status and Error
-	if task.build.Status != common.BuildEventCheckParam {
-		t.Errorf("expected build status to be %q, got %q", common.BuildEventCheckParam, task.build.Status)
+	if task.build.Status != common.BuildStatusError {
+		t.Errorf("expected build status to be %q, got %q", common.BuildStatusError, task.build.Status)
 	}
-	if task.build.Error != "repo param err" {
-		t.Errorf("expected error 'repo param err', got %q", task.build.Error)
+	if task.build.Event != common.BuildEventCheckParam {
+		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
+	}
+	if task.build.Error != ErrRepoNil.Error() {
+		t.Errorf("expected error %q, got %q", ErrRepoNil.Error(), task.build.Error)
 	}
 }
 
@@ -193,7 +192,7 @@ func TestBuildTaskCheck_EmptyStages(t *testing.T) {
 	if task.build.Event != common.BuildEventCheckParam {
 		t.Errorf("expected build event to be %q, got %q", common.BuildEventCheckParam, task.build.Event)
 	}
-	if task.build.Error != "build Stages is empty" {
-		t.Errorf("expected error 'build Stages is empty', got %q", task.build.Error)
+	if task.build.Error != ErrStagesEmpty.Error() {
+		t.Errorf("expected error %q, got %q", ErrStagesEmpty.Error(), task.build.Error)
 	}
 }

@@ -127,8 +127,8 @@ func TestBuildTaskRun_EmptyStages(t *testing.T) {
 	if bt.build.Status != common.BuildStatusError {
 		t.Errorf("status = %q, want %q", bt.build.Status, common.BuildStatusError)
 	}
-	if bt.build.Error != "build Stages is empty" {
-		t.Errorf("error = %q, want %q", bt.build.Error, "build Stages is empty")
+	if bt.build.Error != ErrStagesEmpty.Error() {
+		t.Errorf("error = %q, want %q", bt.build.Error, ErrStagesEmpty.Error())
 	}
 }
 
