@@ -30,7 +30,7 @@ func TestBuildTaskRun_NoStages(t *testing.T) {
 	bt := NewBuildTask(e, build)
 	bt.ctx, bt.cncl = context.WithCancel(context.Background())
 	defer bt.cncl()
-	
+
 	// Set up a temporary work path
 	origWorkPath := comm.WorkPath
 	comm.WorkPath = t.TempDir()
@@ -146,7 +146,7 @@ func TestBuildTaskRun_CreatePathError(t *testing.T) {
 	}
 }
 
-// TestBuildTaskRun_CancelledContext verifies that run() respects a cancelled
+// TestBuildTaskRun_CanceledContext verifies that run() respects a canceled
 // context and exits cleanly.
 func TestBuildTaskRun_CancelledContext(t *testing.T) {
 	e := &BuildEngine{
@@ -188,7 +188,7 @@ func TestBuildTaskRun_CancelledContext(t *testing.T) {
 	comm.WorkPath = t.TempDir()
 	defer func() { comm.WorkPath = origWorkPath }()
 
-	// Should exit early due to cancelled context
+	// Should exit early due to canceled context
 	bt.run()
 
 	// Verify it didn't panic and exited cleanly
@@ -213,11 +213,11 @@ func TestBuildTaskRun_Stopd(t *testing.T) {
 		t.Error("stopd() should return false when ctx is active")
 	}
 
-	// cancelled context should return true
+	// canceled context should return true
 	cancel()
 	time.Sleep(10 * time.Millisecond) // give time for cancellation to propagate
 	if !bt2.stopd() {
-		t.Error("stopd() should return true when ctx is cancelled")
+		t.Error("stopd() should return true when ctx is canceled")
 	}
 }
 
@@ -225,9 +225,9 @@ func TestBuildTaskRun_Stopd(t *testing.T) {
 func TestBuildTaskRun_StopMethod(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	bt := &BuildTask{
-		ctx:         ctx,
-		cncl:        cancel,
-		ctrlendtm:   time.Now(),
+		ctx:       ctx,
+		cncl:      cancel,
+		ctrlendtm: time.Now(),
 	}
 
 	bt.stop()
@@ -237,7 +237,7 @@ func TestBuildTaskRun_StopMethod(t *testing.T) {
 		t.Error("stop() should zero ctrlendtm")
 	}
 
-	// context should be cancelled
+	// context should be canceled
 	time.Sleep(10 * time.Millisecond)
 	if ctx.Err() == nil {
 		t.Error("stop() should cancel the context")
@@ -261,7 +261,7 @@ func TestBuildTaskRun_CancelMethod(t *testing.T) {
 		t.Error("Cancel() should set ctrlendtm to current time")
 	}
 
-	// context should be cancelled
+	// context should be canceled
 	time.Sleep(10 * time.Millisecond)
 	if ctx.Err() == nil {
 		t.Error("Cancel() should cancel the context")
