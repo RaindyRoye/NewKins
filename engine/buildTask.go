@@ -119,7 +119,7 @@ func (c *BuildTask) run() {
 	c.repoPaths = filepath.Join(c.buildPath, common.PathRepo)
 	err := os.MkdirAll(c.buildPath, 0750)
 	if err != nil {
-		c.status(common.BuildStatusError, fmt.Errorf("create build path: %w", err).Error(), common.BuildEventPath)
+		c.status(common.BuildStatusError, ErrCreateBuildPath.Error()+": "+err.Error(), common.BuildEventPath)
 		return
 	}
 
@@ -138,7 +138,7 @@ func (c *BuildTask) run() {
 	err = c.getRepo()
 	if err != nil {
 		logrus.Errorf("clone repo err:%v", err)
-		c.status(common.BuildStatusError, fmt.Errorf("clone repository: %w", err).Error(), common.BuildEventGetRepo)
+		c.status(common.BuildStatusError, ErrCloneRepo.Error()+": "+err.Error(), common.BuildEventGetRepo)
 		return
 	}
 	c.build.Status = common.BuildStatusRunning
@@ -174,7 +174,7 @@ func (c *BuildTask) runStage(stage *runtime.Stage) {
 	stg, ok := c.stages[stage.Name]
 	c.staglk.RUnlock()
 	if !ok {
-		stg.status(common.BuildStatusError, fmt.Sprintf("not found stage?:%s", stage.Name))
+		stg.status(common.BuildStatusError, fmt.Errorf("%w: %q", ErrStageNotFound, stage.Name).Error())
 		return
 	}
 
@@ -234,11 +234,11 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 			e, ok := stage.jobs[v]
 			stage.RUnlock()
 			if !ok {
-				job.status(common.BuildStatusError, fmt.Sprintf("wait on %s not found", v))
+				job.status(common.BuildStatusError, fmt.Errorf("%w: %q", ErrWaitNotFound, v).Error())
 				return
 			}
 			if e.step.Name == job.step.Name {
-				job.status(common.BuildStatusError, fmt.Sprintf("wait on %s is your self", job.step.Name))
+				job.status(common.BuildStatusError, fmt.Errorf("%w: %q", ErrWaitSelf, job.step.Name).Error())
 				return
 			}
 			ls = append(ls, e)
@@ -266,7 +266,7 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 					if v.step.ErrIgnore {
 						waitln--
 					} else {
-						job.status(common.BuildStatusError, fmt.Sprintf("wait on %s is err", v.step.Name))
+						job.status(common.BuildStatusError, fmt.Errorf("%w: %q", ErrWaitFailed, v.step.Name).Error())
 						return
 					}
 				}
@@ -285,7 +285,7 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 	go c.updateStep(job)
 	err := Mgr.jobEgn.Put(job)
 	if err != nil {
-		job.status(common.BuildStatusError, fmt.Sprintf("command run err:%v", err))
+		job.status(common.BuildStatusError, ErrJobPut.Error()+": "+err.Error())
 		return
 	}
 	logrus.Debugf("BuildTask put step:%s", job.step.Name)

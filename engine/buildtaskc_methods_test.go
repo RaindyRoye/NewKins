@@ -20,9 +20,9 @@ func TestBuildTask_Check_NoRepo(t *testing.T) {
 
 	result := bt.check()
 	assert.False(t, result)
-	// check() calls c.status() which sets Status (not Event) in the nil-repo case
-	assert.Equal(t, common.BuildEventCheckParam, bt.build.Status)
-	assert.Equal(t, "repo param err", bt.build.Error)
+	// check() calls c.status() which sets Status and Error in the nil-repo case
+	assert.Equal(t, common.BuildStatusError, bt.build.Status)
+	assert.Equal(t, ErrRepoNil.Error(), bt.build.Error)
 }
 
 // TestBuildTask_Check_EmptyStages tests check() when build has no stages
@@ -39,7 +39,7 @@ func TestBuildTask_Check_EmptyStages(t *testing.T) {
 	result := bt.check()
 	assert.False(t, result)
 	assert.Equal(t, common.BuildEventCheckParam, bt.build.Event)
-	assert.Contains(t, bt.build.Error, "Stages is empty")
+	assert.Contains(t, bt.build.Error, ErrStagesEmpty.Error())
 }
 
 // TestBuildTask_Check_StageBuildIdMismatch tests check() when stage build ID doesn't match
@@ -72,7 +72,7 @@ func TestBuildTask_Check_StageBuildIdMismatch(t *testing.T) {
 	result := bt.check()
 	assert.False(t, result)
 	assert.Equal(t, common.BuildEventCheckParam, bt.build.Event)
-	assert.Contains(t, bt.build.Error, "Stage Build id err")
+	assert.Contains(t, bt.build.Error, ErrStageBuildIdMismatch.Error())
 }
 
 // TestBuildTask_Check_EmptyStageName tests check() when stage name is empty
@@ -105,7 +105,7 @@ func TestBuildTask_Check_EmptyStageName(t *testing.T) {
 	result := bt.check()
 	assert.False(t, result)
 	assert.Equal(t, common.BuildEventCheckParam, bt.build.Event)
-	assert.Contains(t, bt.build.Error, "Stage name is empty")
+	assert.Contains(t, bt.build.Error, ErrStageNameEmpty.Error())
 }
 
 // TestBuildTask_Check_EmptySteps tests check() when stage has no steps
@@ -182,7 +182,7 @@ func TestBuildTask_Check_DuplicateStageName(t *testing.T) {
 	result := bt.check()
 	assert.False(t, result)
 	assert.Equal(t, common.BuildEventCheckParam, bt.build.Event)
-	assert.Contains(t, bt.build.Error, "is repeat")
+	assert.Contains(t, bt.build.Error, ErrStageDuplicate.Error())
 }
 
 // TestBuildTask_Check_StepBuildIdMismatch tests check() when step build ID doesn't match
@@ -216,7 +216,7 @@ func TestBuildTask_Check_StepBuildIdMismatch(t *testing.T) {
 	result := bt.check()
 	assert.False(t, result)
 	assert.Equal(t, common.BuildEventCheckParam, bt.build.Event)
-	assert.Contains(t, bt.build.Error, "Job Build id err")
+	assert.Contains(t, bt.build.Error, ErrJobBuildIdMismatch.Error())
 }
 
 // TestBuildTask_Check_StepStageIdMismatch tests check() when step stage ID doesn't match
@@ -250,7 +250,7 @@ func TestBuildTask_Check_StepStageIdMismatch(t *testing.T) {
 	result := bt.check()
 	assert.False(t, result)
 	assert.Equal(t, common.BuildEventCheckParam, bt.build.Event)
-	assert.Contains(t, bt.build.Error, "Job Stage id err")
+	assert.Contains(t, bt.build.Error, ErrJobStageIdMismatch.Error())
 }
 
 // TestBuildTask_Check_EmptyStepPlugin tests check() when step plugin is empty
@@ -284,7 +284,7 @@ func TestBuildTask_Check_EmptyStepPlugin(t *testing.T) {
 	result := bt.check()
 	assert.False(t, result)
 	assert.Equal(t, common.BuildEventCheckParam, bt.build.Event)
-	assert.Contains(t, bt.build.Error, "Step Plugin is empty")
+	assert.Contains(t, bt.build.Error, ErrStepPluginEmpty.Error())
 }
 
 // TestBuildTask_Check_EmptyStepName tests check() when step name is empty
@@ -318,7 +318,7 @@ func TestBuildTask_Check_EmptyStepName(t *testing.T) {
 	result := bt.check()
 	assert.False(t, result)
 	assert.Equal(t, common.BuildEventCheckParam, bt.build.Event)
-	assert.Contains(t, bt.build.Error, "Step name is empty")
+	assert.Contains(t, bt.build.Error, ErrStepNameEmpty.Error())
 }
 
 // TestBuildTask_Check_DuplicateStepName tests check() when step names are duplicated
@@ -362,7 +362,7 @@ func TestBuildTask_Check_DuplicateStepName(t *testing.T) {
 	result := bt.check()
 	assert.False(t, result)
 	assert.Equal(t, common.BuildEventCheckParam, bt.build.Event)
-	assert.Contains(t, bt.build.Error, "is repeat")
+	assert.Contains(t, bt.build.Error, ErrJobDuplicate.Error())
 }
 
 // TestBuildTask_GenRunjob_StringCommands tests genRunjob with string commands
