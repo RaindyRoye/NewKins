@@ -20,6 +20,8 @@ func setupTestRouter(t *testing.T) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	comm.WebEgn = gin.New()
 	comm.WebEgn.Use(gin.Recovery())
+	// Sync globals to App so regApi() can access WebEgn via GetApp()
+	comm.SyncGlobals()
 	regApi()
 	return comm.WebEgn
 }
