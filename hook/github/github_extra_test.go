@@ -209,11 +209,11 @@ func TestParsePullRequestNoAction(t *testing.T) {
 func TestParseCommentHookWithMockServer(t *testing.T) {
 	// Mock server that responds with a PR payload
 	prResponse := map[string]any{
-		"number":  99,
-		"title":   "Commented PR",
-		"body":    "PR body text",
-		"state":   "open",
-		"locked":  false,
+		"number":   99,
+		"title":    "Commented PR",
+		"body":     "PR body text",
+		"state":    "open",
+		"locked":   false,
 		"html_url": "https://github.com/org/repo/pull/99",
 		"user": map[string]any{
 			"login": "prauthor",
@@ -264,7 +264,9 @@ func TestParseCommentHookWithMockServer(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(prResponse)
+		if err := json.NewEncoder(w).Encode(prResponse); err != nil {
+			t.Logf("encode PR response: %v", err)
+		}
 	}))
 	defer srv.Close()
 
@@ -353,7 +355,7 @@ func TestParseCommentHookBadPRURL(t *testing.T) {
 	// Mock server that returns an error
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("internal error"))
+		_, _ = w.Write([]byte("internal error"))
 	}))
 	defer srv.Close()
 

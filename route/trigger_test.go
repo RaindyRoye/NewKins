@@ -74,6 +74,43 @@ func setupTriggerTestDb(t *testing.T) *xorm.Engine {
 		t.Fatalf("create trigger_run table: %v", err)
 	}
 
+	_, err = db.Exec(`CREATE TABLE t_pipeline_version (
+		id VARCHAR(64) NOT NULL PRIMARY KEY,
+		uid VARCHAR(64),
+		pipeline_id VARCHAR(64),
+		number BIGINT,
+		events VARCHAR(100),
+		sha VARCHAR(255),
+		pipeline_name VARCHAR(255),
+		pipeline_display_name VARCHAR(255),
+		version VARCHAR(255),
+		content TEXT,
+		created DATETIME,
+		deleted INT DEFAULT 0,
+		pr_number BIGINT,
+		repo_clone_url VARCHAR(255)
+	)`)
+	if err != nil {
+		t.Fatalf("create pipeline_version table: %v", err)
+	}
+
+	_, err = db.Exec(`CREATE TABLE t_build (
+		id VARCHAR(64) NOT NULL PRIMARY KEY,
+		pipeline_id VARCHAR(64),
+		pipeline_version_id VARCHAR(64),
+		status VARCHAR(100),
+		error VARCHAR(500),
+		event VARCHAR(100),
+		started DATETIME,
+		finished DATETIME,
+		created DATETIME,
+		updated DATETIME,
+		version VARCHAR(255)
+	)`)
+	if err != nil {
+		t.Fatalf("create build table: %v", err)
+	}
+
 	return db
 }
 
@@ -460,5 +497,57 @@ func TestBatchRunPipelineVersions_NoIDs(t *testing.T) {
 	}
 	if len(result) != 0 {
 		t.Errorf("expected empty result for empty IDs, got %d entries", len(result))
+	}
+}
+
+func TestBatchRunPipelineVersions_WithData(t *testing.T) {
+	db := setupTriggerTestDb(t)
+
+	// Create pipeline
+	pipeline := &model.TPipeline{Id: "pipe-1", Name: "test-pipeline", Uid: "user-1"}
+	if _, err := db.Insert(pipeline); err != nil {
+		t.Fatalf("insert pipeline: %v", err)
+	}
+
+	// Create pipeline versions with builds
+	versions := []*model.TPipelineVersion{
+		{Id: "pv-1", PipelineId: "pipe-1", Number: 1, Created: time.Now()},
+		{Id: "pv-2", PipelineId: "pipe-1", Number: 2, Created: time.Now()},
+	}
+	for _, v := range versions {
+		if _, err := db.Insert(v); err != nil {
+			t.Fatalf("insert pipeline version: %v", err)
+		}
+	}
+
+	// Test batch query
+	result, err := batchRunPipelineVersions(context.TODO(), []string{"pv-1", "pv-2"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 2 {
+		t.Errorf("expected 2 results, got %d", len(result))
+	}
+	if v, ok := result["pv-1"]; !ok {
+		t.Error("expected pv-1 in result")
+	} else if v.Number != 1 {
+		t.Errorf("pv-1 number = %d, want 1", v.Number)
+	}
+	if v, ok := result["pv-2"]; !ok {
+		t.Error("expected pv-2 in result")
+	} else if v.Number != 2 {
+		t.Errorf("pv-2 number = %d, want 2", v.Number)
+	}
+}
+
+func TestBatchRunPipelineVersions_NonexistentIDs(t *testing.T) {
+	setupTriggerTestDb(t)
+
+	result, err := batchRunPipelineVersions(context.TODO(), []string{"nonexistent-1", "nonexistent-2"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("expected empty result for nonexistent IDs, got %d entries", len(result))
 	}
 }
