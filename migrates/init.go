@@ -18,7 +18,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// InitMysqlMigrate initializes MySQL migrations with the provided credentials.
+// It uses context.Background() for database operations.
 func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, errs error) {
+	return InitMysqlMigrateCtx(context.Background(), host, dbs, user, pass)
+}
+
+// InitMysqlMigrateCtx initializes MySQL migrations with the provided context and credentials.
+// The context is used for database pings and allows callers to enforce timeouts or cancellation.
+func InitMysqlMigrateCtx(ctx context.Context, host, dbs, user, pass string) (wait bool, rtul string, errs error) {
 	wait = false
 	if host == "" || dbs == "" || user == "" {
 		errs = fmt.Errorf("%w: mysql requires host, database, and user", ErrDatabaseConfigMissing)
@@ -35,7 +43,6 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 		errs = fmt.Errorf("open mysql database: %w", err)
 		return
 	}
-	ctx := context.Background()
 	err = db.PingContext(ctx)
 	if err != nil {
 		_ = db.Close()
@@ -159,7 +166,15 @@ func InitSqliteMigrate() (rtul string, errs error) {
 	return ul, nil
 }
 
+// InitPostgresMigrate initializes PostgreSQL migrations with the provided credentials.
+// It uses context.Background() for database operations.
 func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, errs error) {
+	return InitPostgresMigrateCtx(context.Background(), host, dbs, user, pass)
+}
+
+// InitPostgresMigrateCtx initializes PostgreSQL migrations with the provided context and credentials.
+// The context is used for database pings and allows callers to enforce timeouts or cancellation.
+func InitPostgresMigrateCtx(ctx context.Context, host, dbs, user, pass string) (wait bool, rtul string, errs error) {
 	wait = false
 	if host == "" || dbs == "" || user == "" {
 		errs = fmt.Errorf("%w: postgres requires host, database, and user", ErrDatabaseConfigMissing)
@@ -172,8 +187,7 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 		errs = fmt.Errorf("open postgres database: %w", err)
 		return
 	}
-	err = db.PingContext(context.Background())
-	if err != nil {
+	if err = db.PingContext(ctx); err != nil {
 		_ = db.Close()
 		errs = fmt.Errorf("ping postgres database: %w", err)
 		return
