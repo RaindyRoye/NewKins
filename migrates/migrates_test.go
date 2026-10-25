@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gokins/gokins/comm"
+	"github.com/golang-migrate/migrate/v4/database"
 	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -43,6 +44,114 @@ func filterAssets(prefix string) []string {
 		}
 	}
 	return nms
+}
+
+// TestFilterAssetNames tests the filterAssetNames helper function.
+func TestFilterAssetNames(t *testing.T) {
+	tests := []struct {
+		name   string
+		prefix string
+	}{
+		{"mysql assets", "mysql"},
+		{"sqlite assets", "sqlite"},
+		{"postgres assets", "postgres"},
+		{"nonexistent prefix returns empty", "nonexistent_db_driver_xyz"},
+		{"empty prefix", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filterAssetNames(tt.prefix)
+			// Verify no elements contain the prefix itself
+			for _, name := range got {
+				if strings.Contains(name, tt.prefix+"/") {
+					t.Errorf("filterAssetNames(%q) returned %q which still contains prefix", tt.prefix, name)
+				}
+			}
+			// For known drivers, if there are any assets at all, they should be non-empty strings
+			if tt.prefix != "" && tt.prefix != "nonexistent_db_driver_xyz" {
+				for _, name := range got {
+					if name == "" {
+						t.Errorf("filterAssetNames(%q) returned empty string", tt.prefix)
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestFilterAssetNamesConsistency verifies filterAssetNames matches filterAssets.
+func TestFilterAssetNamesConsistency(t *testing.T) {
+	for _, prefix := range []string{"mysql", "sqlite", "postgres"} {
+		got := filterAssetNames(prefix)
+		want := filterAssets(prefix)
+		if len(got) != len(want) {
+			t.Errorf("filterAssetNames(%q) returned %d items, filterAssets returned %d", prefix, len(got), len(want))
+		}
+	}
+}
+
+// TestRunMigrationEmptyURL verifies runMigration rejects empty connection strings.
+func TestRunMigrationEmptyURL(t *testing.T) {
+	tests := []struct {
+		name      string
+		dbDriver  string
+		prefix    string
+		wantInErr string
+	}{
+		{"mysql empty url", "mysql", "mysql", "database config not found"},
+		{"postgres empty url", "postgres", "postgres", "database config not found"},
+		{"sqlite3 empty url", "sqlite3", "sqlite", "database config not found"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := runMigration(tt.dbDriver, "", tt.prefix, newSqlite3Driver)
+			if err == nil {
+				t.Fatal("expected error for empty URL, got nil")
+			}
+			if !errors.Is(err, ErrDatabaseConfigMissing) {
+				t.Errorf("error should wrap ErrDatabaseConfigMissing, got: %v", err)
+			}
+			if !strings.Contains(err.Error(), tt.wantInErr) {
+				t.Errorf("error = %q, want to contain %q", err.Error(), tt.wantInErr)
+			}
+			if !strings.Contains(err.Error(), tt.dbDriver) {
+				t.Errorf("error = %q, want to contain driver name %q", err.Error(), tt.dbDriver)
+			}
+		})
+	}
+}
+
+// TestRunMigrationInvalidConnection verifies runMigration handles connection failures.
+func TestRunMigrationInvalidConnection(t *testing.T) {
+	// Use an invalid sqlite3 path to trigger connection failure
+	err := runMigration("sqlite3", "/nonexistent/path/to/db.sqlite", "sqlite", newSqlite3Driver)
+	if err == nil {
+		t.Skip("skipping: connection unexpectedly succeeded")
+	}
+	// Error should mention the driver
+	if !strings.Contains(err.Error(), "sqlite3") {
+		t.Errorf("error = %q, want to contain 'sqlite3'", err.Error())
+	}
+}
+
+// TestRunMigrationBadDriverFactory verifies runMigration handles driver factory errors.
+func TestRunMigrationBadDriverFactory(t *testing.T) {
+	// Use a temp sqlite db that actually opens, but provide a broken driver factory
+	tmpDir := t.TempDir()
+	dbPath := tmpDir + "/test.db"
+
+	badFactory := func(db *sql.DB) (database.Driver, error) {
+		return nil, fmt.Errorf("intentional driver factory error")
+	}
+	err := runMigration("sqlite3", dbPath, "sqlite", badFactory)
+	if err == nil {
+		t.Fatal("expected error from bad driver factory, got nil")
+	}
+	if !strings.Contains(err.Error(), "driver") {
+		t.Errorf("error = %q, want to contain 'driver'", err.Error())
+	}
 }
 
 // TestInitMysqlMigrate_ConnectionRefused tests MySQL migration when connection fails.

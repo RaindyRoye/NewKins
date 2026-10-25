@@ -34,7 +34,7 @@ func CacheSet(key string, data []byte, outm ...time.Duration) error {
 		if bk == nil {
 			bk, err = tx.CreateBucket(mainCacheBucket)
 			if err != nil {
-				return err
+				return fmt.Errorf("create cache bucket: %w", err)
 			}
 		}
 		if data == nil {
