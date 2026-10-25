@@ -33,9 +33,17 @@ func StartTimerEngine() *TimerEngine {
 	go func() {
 		defer util.RecoverLog("TimerEngine.main")
 		c.refresh()
+		// Use a ticker instead of time.Sleep to avoid busy-waiting.
+		// The 10ms interval matches the previous polling frequency.
+		ticker := time.NewTicker(time.Millisecond * 10)
+		defer ticker.Stop()
 		for comm.Ctx.Err() == nil {
-			c.run()
-			time.Sleep(time.Millisecond * 10)
+			select {
+			case <-comm.Ctx.Done():
+				return
+			case <-ticker.C:
+				c.run()
+			}
 		}
 	}()
 	return c
@@ -60,7 +68,6 @@ func (c *TimerEngine) execItem(v *timerExec) {
 				defer util.RecoverLog("TimerEngine.delete")
 				c.Delete(id)
 			}(v.tt.Id)
-			time.Sleep(time.Millisecond * 10)
 		case 1:
 			v.tick = now.Add(time.Minute)
 		case 2:

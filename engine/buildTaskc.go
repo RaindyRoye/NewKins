@@ -67,8 +67,9 @@ func (c *BuildTask) check() bool {
 			return false
 		}
 		vs := &taskStage{
-			stage: v,
-			jobs:  make(map[string]*jobSync),
+			stage:  v,
+			jobs:   make(map[string]*jobSync),
+			doneCh: make(chan struct{}, 1),
 		}
 		stages[v.Name] = vs
 		for _, e := range v.Steps {

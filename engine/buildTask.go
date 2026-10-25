@@ -25,6 +25,9 @@ type taskStage struct {
 	wg    sync.WaitGroup
 	stage *runtime.Stage
 	jobs  map[string]*jobSync
+	// doneCh is closed when a job within this stage finishes (ok/error/cancel),
+	// waking up any waiters that poll dependency status in runStep.
+	doneCh chan struct{}
 }
 
 func (c *taskStage) status(stat, errs string, event ...string) {
@@ -34,6 +37,13 @@ func (c *taskStage) status(stat, errs string, event ...string) {
 	c.stage.Error = errs
 	if len(event) > 0 {
 		c.stage.Event = event[0]
+	}
+	// Signal doneCh when stage reaches a terminal status
+	if common.BuildStatusEnded(stat) && c.doneCh != nil {
+		select {
+		case c.doneCh <- struct{}{}:
+		default:
+		}
 	}
 }
 
@@ -59,6 +69,12 @@ type BuildTask struct {
 
 	isClone  bool
 	repoPath string
+
+	// jobDoneCh is a buffered channel (capacity 1) signaled whenever any
+	// job's status transitions to a terminal state (ok/error/cancel). It is
+	// used by the runStep polling loop to wake up immediately instead of
+	// sleeping for a fixed interval, reducing CPU usage and latency.
+	jobDoneCh chan struct{}
 }
 
 func (c *BuildTask) status(stat, errs string, event ...string) {
@@ -72,7 +88,11 @@ func (c *BuildTask) status(stat, errs string, event ...string) {
 }
 
 func NewBuildTask(egn *BuildEngine, bd *runtime.Build) *BuildTask {
-	c := &BuildTask{egn: egn, build: bd}
+	c := &BuildTask{
+		egn:       egn,
+		build:     bd,
+		jobDoneCh: make(chan struct{}, 1),
+	}
 	return c
 }
 
@@ -245,8 +265,18 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 		}
 		// Use the task's own context (which has a timeout) instead of the global
 		// comm.Ctx, so that step waits are properly bounded by the build deadline.
+		// Instead of busy-waiting with time.Sleep, use a channel-based select so
+		// we wake up immediately when a dependency finishes or the context cancels.
 		for c.ctx.Err() == nil {
-			time.Sleep(time.Millisecond * 100)
+			select {
+			case <-c.ctx.Done():
+				job.status(common.BuildStatusCancel, "")
+				return
+			case <-stage.doneCh:
+				// A job in this stage finished; re-check dependencies below
+			case <-time.After(time.Millisecond * 100):
+				// Periodic re-check in case doneCh was not signaled
+			}
 			if c.stopd() {
 				job.status(common.BuildStatusCancel, "")
 				return
@@ -291,6 +321,9 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 	logrus.Debugf("BuildTask put step:%s", job.step.Name)
 	// Use the task's own context (with timeout) instead of the global comm.Ctx
 	// so that the polling loop respects the build deadline.
+	// Instead of busy-waiting with time.Sleep, use a channel-based select so we
+	// wake up immediately when the job finishes, reducing latency from up to 10ms
+	// to near-zero and avoiding wasted CPU cycles in the polling loop.
 	for c.ctx.Err() == nil {
 		job.Lock()
 		stats := job.step.Status
@@ -302,7 +335,15 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 			job.status(common.BuildStatusCancel, "cancel")
 			break
 		}
-		time.Sleep(time.Millisecond * 10)
+		select {
+		case <-c.ctx.Done():
+			job.status(common.BuildStatusCancel, "")
+			return
+		case <-c.jobDoneCh:
+			// Job status changed; re-check immediately
+		case <-time.After(time.Millisecond * 10):
+			// Periodic re-check as fallback
+		}
 	}
 }
 
@@ -385,6 +426,14 @@ func (c *BuildTask) UpJob(job *jobSync, stat, errs string, code int) {
 	job.step.Error = errs
 	job.step.ExitCode = code
 	job.Unlock()
+	// Signal jobDoneCh when status reaches a terminal state so that the
+	// polling loop in runStep can wake up immediately instead of sleeping.
+	if common.BuildStatusEnded(stat) && c.jobDoneCh != nil {
+		select {
+		case c.jobDoneCh <- struct{}{}:
+		default:
+		}
+	}
 	go c.updateStep(job)
 }
 func (c *BuildTask) UpJobCmd(cmd *cmdSync, fs, code int) {
