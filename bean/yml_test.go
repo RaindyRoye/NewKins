@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestTriggerParamCheck(t *testing.T) {
+func TestTriggerParamCheck_ErrMsgs(t *testing.T) {
 	tests := []struct {
 		name    string
 		param   TriggerParam
