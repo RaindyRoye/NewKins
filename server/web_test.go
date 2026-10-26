@@ -184,6 +184,10 @@ func TestGracefulShutdown(t *testing.T) {
 	// Restore original context after test
 	defer comm.ResetCtx()
 
+	// Reset global channels to avoid double-close panics from previous tests
+	webReadyCh = make(chan struct{})
+	webDoneCh = make(chan struct{})
+
 	gin.SetMode(gin.TestMode)
 	comm.WebEgn = gin.New()
 	comm.WebEgn.Use(gin.Recovery())
@@ -203,8 +207,13 @@ func TestGracefulShutdown(t *testing.T) {
 		close(done)
 	}()
 
-	// Give server time to start
-	time.Sleep(50 * time.Millisecond)
+	// Wait for webReadyCh to signal that the server is ready
+	select {
+	case <-webReadyCh:
+		// Server is ready
+	case <-time.After(2 * time.Second):
+		t.Fatal("server did not become ready within 2s")
+	}
 
 	// Make a request to verify server is running
 	// (Note: we can't easily test the actual HTTP request here since

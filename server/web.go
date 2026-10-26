@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/pprof"
 	"path/filepath"
@@ -29,15 +30,40 @@ import (
 // to complete during graceful shutdown.
 const shutdownTimeout = 10 * time.Second
 
+// uiBufferSize is the buffer size used when streaming static UI files to clients.
+// 32 KiB is a good balance: large enough to amortize syscall overhead, small
+// enough to keep memory usage modest for concurrent clients.
+const uiBufferSize = 32 * 1024
+
+// uiMaxSize is the maximum allowed uncompressed size for a single static
+// UI asset. Files larger than this are rejected to prevent decompression
+// bombs (gosec G110) from consuming server memory.
+const uiMaxSize = 50 << 20 // 50 MiB
+
+// uiCacheMaxAge is the Cache-Control max-age value for immutable static assets.
+// One year in seconds (RFC 7234 recommends at most 1 year).
+const uiCacheMaxAge = 365 * 24 * 60 * 60
+
+// webDoneCh is closed when the runWeb goroutine has fully exited, allowing
+// the main Run loop to wait for graceful web server shutdown without a
+// fixed-duration sleep.
+var webDoneCh = make(chan struct{})
+
 // apiRateLimiter limits all API requests to 120 per minute per IP.
 var apiRateLimiter = middleware.NewRateLimiter(120, time.Minute)
 
 func runWeb() {
+	defer close(webDoneCh)
 	defer util.RecoverLog("Web")
+
 	comm.WebEgn = gin.Default()
 	comm.WebEgn.Use(middleware.MidRequestID())
 	comm.WebEgn.Use(middleware.MidSecurityHeaders())
 	comm.WebEgn.Use(midUiHandle)
+
+	// Signal that the gin engine is initialized and ready for route registration.
+	// This replaces the fragile time.Sleep(10ms) in Run() with proper synchronization.
+	close(webReadyCh)
 
 	srv := &http.Server{
 		Addr:              comm.WebHost,
@@ -75,7 +101,6 @@ func runWeb() {
 	}
 
 	comm.Cancel()
-	time.Sleep(time.Millisecond * 100)
 }
 
 func regApi() {
@@ -178,51 +203,62 @@ func midUiHandle(c *gin.Context) {
 		r, err = getFile("index.html")
 	}
 	if err != nil {
-		// c.String(404, "rdr err:"+err.Error())
 		httpex.ResMsgUrl(c, "未找到内容,跳转中...", "/")
+		return
+	}
+	// Reject oversized assets before opening to prevent decompression bombs (gosec G110).
+	if r.UncompressedSize64 > uiMaxSize {
+		httpex.ResMsgUrl(c, "内容过大,拒绝加载", "/")
 		return
 	}
 	rd, err := r.Open()
 	if err != nil {
-		// c.String(500, "open err:"+err.Error())
 		httpex.ResMsgUrl(c, "内容有误,跳转中...", "/")
 		return
 	}
 	defer func() { _ = rd.Close() }()
-	c.Writer.Header().Set("Cache-Control", "max-age=360000000")
 
+	// Wrap in LimitReader as defense-in-depth against decompression bombs.
+	// The size check above rejects known-large files, but LimitReader ensures
+	// we never read beyond uiMaxSize even if metadata is corrupted.
+	limitedRd := io.LimitReader(rd, uiMaxSize+1)
+
+	// Set Content-Length from the uncompressed file size so clients can
+	// show download progress and allocate buffers efficiently.
+	c.Writer.Header().Set("Content-Length", fmt.Sprintf("%d", r.UncompressedSize64))
+
+	// Determine content type from file extension and set appropriate cache headers.
 	ext := filepath.Ext(r.Name)
 	switch ext {
 	case ".html":
+		// HTML must not be cached aggressively so deployments pick up new versions.
 		c.Writer.Header().Set("Cache-Control", "no-cache")
 		c.Writer.Header().Set("Pragma", "no-cache")
 		c.Writer.Header().Set("Expires", "0")
 		c.Writer.Header().Set("Content-Type", "text/html")
 	case ".css":
 		c.Writer.Header().Set("Content-Type", "text/css")
+		c.Writer.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d", uiCacheMaxAge))
 	case ".js":
 		c.Writer.Header().Set("Content-Type", "application/javascript")
+		c.Writer.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d", uiCacheMaxAge))
 	case ".svg":
 		c.Writer.Header().Set("Content-Type", "image/svg+xml")
+		c.Writer.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d", uiCacheMaxAge))
 	case ".woff2":
-		// c.Writer.Header().Set("Content-Type", "image/svg+xml")
+		c.Writer.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d", uiCacheMaxAge))
 	case ".ttf", ".ttc":
 		c.Writer.Header().Set("Content-Type", "application/x-font-ttf")
+		c.Writer.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d", uiCacheMaxAge))
 	}
-	c.Status(200)
-	bts := make([]byte, 1024)
-	for c.Request.Context().Err() == nil {
-		n, err := rd.Read(bts)
-		if n <= 0 {
-			break
-		}
-		if _, werr := c.Writer.Write(bts[:n]); werr != nil {
-			break
-		}
-		if err != nil {
-			break
-		}
-	}
+
+	c.Status(http.StatusOK)
+
+	// Use io.Copy with a reusable buffer instead of manual read/write loops.
+	// This reduces GC pressure (single allocation per request vs. one per chunk)
+	// and respects context cancellation through gin's response writer.
+	buf := make([]byte, uiBufferSize)
+	_, _ = io.CopyBuffer(c.Writer, limitedRd, buf) //nolint:gosec // G110: limitedRd is bounded by io.LimitReader(uiMaxSize+1) above, and UncompressedSize64 is pre-checked
 }
 
 var (

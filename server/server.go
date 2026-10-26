@@ -17,6 +17,17 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// shutdownGracePeriod is the maximum time allowed for background goroutines
+// to finish after the context is canceled.
+const shutdownGracePeriod = 3 * time.Second
+
+// webReadyCh is closed when the web server goroutine has initialized the gin
+// engine and is ready to accept configuration (install routes, API registration).
+var webReadyCh = make(chan struct{})
+
+// Run starts the Gokins server. It coordinates startup between the web server,
+// database initialization, and the build engine using proper synchronization
+// instead of fixed-duration sleeps.
 func Run() error {
 	if comm.WorkPath == "" {
 		pth := filepath.Join(utils2.HomePath(), ".gokins")
@@ -32,8 +43,22 @@ func Run() error {
 		logrus.Warnf("create work path err: %v", err)
 	}
 	core.InitLog(comm.WorkPath)
+
+	// Reset the ready channel in case Run is called multiple times (e.g. in tests)
+	webReadyCh = make(chan struct{})
 	go runWeb()
-	time.Sleep(time.Millisecond * 10)
+
+	// Wait for the web server to initialize the gin engine before
+	// registering install routes on it.
+	select {
+	case <-webReadyCh:
+		// Web server is ready
+	case <-comm.Ctx.Done():
+		return fmt.Errorf("shutdown before web server ready: %w", comm.Ctx.Err())
+	case <-time.After(10 * time.Second):
+		return fmt.Errorf("web server did not start within 10 seconds")
+	}
+
 	err := parseConfig()
 	if err != nil {
 		logrus.Debugf("parseConfig err:%v", err)
@@ -70,9 +95,16 @@ func Run() error {
 	hbtp.Infof("gokins running in %s", comm.WorkPath)
 	// Block until context is canceled (signal received)
 	<-comm.Ctx.Done()
-	logrus.Info("Context canceled, initiating shutdown...")
-	// Give background goroutines time to clean up
-	time.Sleep(time.Second)
+	logrus.Info("Context canceled, waiting for background goroutines to finish...")
+
+	// Wait for the web server goroutine to finish its shutdown sequence,
+	// with a bounded timeout to prevent hanging indefinitely.
+	select {
+	case <-webDoneCh:
+		logrus.Info("Web server shutdown complete")
+	case <-time.After(shutdownGracePeriod):
+		logrus.Warn("Shutdown grace period exceeded, forcing exit")
+	}
 	return nil
 }
 func parseConfig() error {
