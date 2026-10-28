@@ -35,6 +35,7 @@ func TriggerHookCtx(ctx context.Context, tt *model.TTrigger, req *http.Request) 
 	defer func() {
 		ttr := &model.TTriggerRun{
 			Id:            utils.NewXid(),
+			Aid:           time.Now().UnixNano(),
 			Tid:           tt.Id,
 			PipeVersionId: tvpId,
 			Created:       time.Now(),
@@ -120,6 +121,7 @@ func TriggerWeb(ctx context.Context, tt *model.TTrigger, secret string) (rb *run
 	defer func() {
 		ttr := &model.TTriggerRun{
 			Id:            utils.NewXid(),
+			Aid:           time.Now().UnixNano(),
 			Tid:           tt.Id,
 			PipeVersionId: tvpId,
 			Infos:         "{}",
@@ -165,6 +167,7 @@ func TriggerWeb(ctx context.Context, tt *model.TTrigger, secret string) (rb *run
 func TriggerTimer(ctx context.Context, tt *model.TTrigger) (rb *runtime.Build, err error) {
 	ttr := &model.TTriggerRun{
 		Id:      utils.NewXid(),
+		Aid:     time.Now().UnixNano(),
 		Tid:     tt.Id,
 		Created: time.Now(),
 		Infos:   "{}",

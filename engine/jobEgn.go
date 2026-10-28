@@ -89,20 +89,28 @@ func (c *JobEngine) run() {
 	if !c.tmr.Tick() {
 		return
 	}
+	// Collect expired executors first while holding read lock
+	var toRemove []string
 	func() {
 		c.exelk.RLock()
 		defer c.exelk.RUnlock()
 		for k, v := range c.execs {
 			v.RLock()
 			if time.Since(v.tms).Minutes() > 2 {
-				go func(key string, ex *executer) {
-					defer util.RecoverLog("JobEngine.rmExec.launch")
-					c.rmExec(key, ex)
-				}(k, v)
+				toRemove = append(toRemove, k)
 			}
 			v.RUnlock()
 		}
 	}()
+	// Now remove them while holding write lock
+	for _, key := range toRemove {
+		c.exelk.RLock()
+		ex, ok := c.execs[key]
+		c.exelk.RUnlock()
+		if ok {
+			c.rmExec(key, ex)
+		}
+	}
 	func() {
 		c.joblk.Lock()
 		defer c.joblk.Unlock()
