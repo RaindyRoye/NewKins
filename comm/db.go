@@ -36,18 +36,27 @@ func findCount(cds builder.Cond, data any) (int64, error) {
 	return 0, fmt.Errorf("%w, got %T", ErrFindCountNotSlice, data)
 }
 
+// FindPage executes a paginated query using the global context.
+// Prefer FindPageCtx when a request context is available.
 func FindPage(ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
+	return FindPageCtx(Ctx, ses, ls, page, size...)
+}
+
+// FindPageCtx executes a paginated query with explicit context for cancellation/timeout.
+// This enables request-scoped cancellation so long-running paginated queries can be
+// aborted when the HTTP request times out or the client disconnects.
+func FindPageCtx(ctx context.Context, ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
 	count, err := findCount(ses.Conds(), ls)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("FindPage: count query: %w", err)
 	}
-	return findPages(ses, ls, count, page, size...)
+	return findPagesCtx(ctx, ses, ls, count, page, size...)
 }
-func findPages(ses *xorm.Session, ls any, count, page int64, size ...int64) (*bean.Page, error) {
+
+func findPagesCtx(ctx context.Context, ses *xorm.Session, ls any, count, page int64, size ...int64) (*bean.Page, error) {
 	var pageno int64 = 1
 	var sizeno int64 = 10
 	var pagesno int64
-	// var count=c.FindCount(pars)
 	if page > 0 {
 		pageno = page
 	}
@@ -55,9 +64,11 @@ func findPages(ses *xorm.Session, ls any, count, page int64, size ...int64) (*be
 		sizeno = size[0]
 	}
 	start := (pageno - 1) * sizeno
-	err := ses.Limit(int(sizeno), int(start)).Find(ls)
+	// Use context-bound session for cancellation support
+	ctxSes := ses.Context(ctx)
+	err := ctxSes.Limit(int(sizeno), int(start)).Find(ls)
 	if err != nil {
-		return nil, fmt.Errorf("findPages: query data: %w", err)
+		return nil, fmt.Errorf("FindPage: query data: %w", err)
 	}
 	pagest := count / sizeno
 	if count%sizeno > 0 {

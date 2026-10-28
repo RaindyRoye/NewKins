@@ -500,7 +500,7 @@ func (OrgController) vars(c *gin.Context, m *hbtp.Map) {
 	if q != "" {
 		session.And("(name like ? or value like ?)", "%"+q+"%", "%"+q+"%")
 	}
-	page, err = comm.FindPage(session, &ls, pg)
+	page, err = comm.FindPageCtx(c.Request.Context(), session, &ls, pg)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return

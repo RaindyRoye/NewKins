@@ -269,7 +269,7 @@ func (ArtifactController) packageList(c *gin.Context, m *hbtp.Map) {
 		qs := "%" + q + "%"
 		ses.And("name like ? or display_name like ?", qs, qs)
 	}
-	page, err := comm.FindPage(ses, &ls, pg, 20)
+	page, err := comm.FindPageCtx(c.Request.Context(), ses, &ls, pg, 20)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
@@ -303,7 +303,7 @@ func (ArtifactController) versionList(c *gin.Context, m *hbtp.Map) {
 		qs := "%" + q + "%"
 		ses.And("name like ? or display_name like ?", qs, qs)
 	}
-	page, err := comm.FindPage(ses, &ls, pg, 10)
+	page, err := comm.FindPageCtx(c.Request.Context(), ses, &ls, pg, 10)
 	if err != nil {
 		util.RespInternalErr(c, "db operation", err)
 		return
