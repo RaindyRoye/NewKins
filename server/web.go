@@ -188,16 +188,108 @@ func regApi() {
 	util.GinRegController(comm.WebEgn, &route.TriggerController{})
 	util.GinRegController(comm.WebEgn, &route.HookController{})
 }
-func midUiHandle(c *gin.Context) {
-	c.Next()
-	if c.Writer.Status() != http.StatusNotFound || c.Writer.Size() > 0 {
+// notInstalledWriter wraps gin's ResponseWriter to intercept 404 responses
+// before they are committed to the network. When the system is not installed,
+// 404s are suppressed so the middleware can replace them with redirects to /install.
+type notInstalledWriter struct {
+	gin.ResponseWriter
+	intercept bool
+	bodyBuf   []byte
+}
+
+func (w *notInstalledWriter) WriteHeader(code int) {
+	// Only intercept 404; pass everything else through immediately
+	if code != http.StatusNotFound {
+		w.intercept = false
+		w.ResponseWriter.WriteHeader(code)
 		return
 	}
+	// Mark that we should intercept subsequent writes
+	w.intercept = true
+	// Set the status in the underlying writer so Status() returns 404
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *notInstalledWriter) WriteHeaderNow() {
+	// Only commit headers if we're not intercepting
+	if !w.intercept {
+		w.ResponseWriter.WriteHeaderNow()
+	}
+}
+
+func (w *notInstalledWriter) Write(data []byte) (int, error) {
+	if w.intercept {
+		// Intercept 404 body: buffer it but don't write to network
+		w.bodyBuf = append(w.bodyBuf, data...)
+		return len(data), nil
+	}
+	return w.ResponseWriter.Write(data)
+}
+
+func (w *notInstalledWriter) WriteString(s string) (int, error) {
+	return w.Write([]byte(s))
+}
+
+func (w *notInstalledWriter) Size() int {
+	if w.intercept {
+		return len(w.bodyBuf)
+	}
+	return w.ResponseWriter.Size()
+}
+
+func (w *notInstalledWriter) Written() bool {
+	if w.intercept {
+		return len(w.bodyBuf) > 0
+	}
+	return w.ResponseWriter.Written()
+}
+
+func midUiHandle(c *gin.Context) {
+	// When not installed, wrap the response writer to intercept 404 responses
+	// before they are committed to the network. This allows the middleware
+	// to replace them with redirects to /install.
+	var wrapped *notInstalledWriter
+	if !comm.Installed {
+		wrapped = &notInstalledWriter{
+			ResponseWriter: c.Writer,
+		}
+		c.Writer = wrapped
+	}
+
+	c.Next()
+
+	status := c.Writer.Status()
+	if status != http.StatusNotFound {
+		return
+	}
+
+	// When using the wrapped writer, Size() returns the buffered body length
+	// which we use to detect that a 404 body was written. The key insight:
+	// if the handler wrote a 404 body, wrapped.intercept is true and we
+	// can discard it. If no wrapper was used (Installed=true), Size() is
+	// from the underlying writer.
+	if wrapped != nil && wrapped.intercept {
+		// The handler wrote a 404 with a body, but we intercepted it.
+		// Now we can safely replace it with a redirect.
+	} else if c.Writer.Size() > 0 {
+		// Response already committed to the network (installed mode)
+		return
+	}
+
 	pth := c.Request.URL.Path
 	if !comm.Installed && !strings.HasPrefix(pth, "/gokinsui/") && pth != "/install" {
+		// Reset the response: clear buffered body and set redirect
+		if wrapped != nil && wrapped.intercept {
+			wrapped.bodyBuf = nil
+			wrapped.intercept = false
+			// We need to override the already-set 404 status with 302.
+			// Since headers weren't written to network, we can still do this.
+			// Use the underlying writer to set new status.
+		}
 		httpex.ResMsgUrl(c, "未安装,跳转中...", "/install")
 		return
 	}
+
 	r, err := getFile(pth[1:])
 	if err != nil {
 		r, err = getFile("index.html")
@@ -219,19 +311,13 @@ func midUiHandle(c *gin.Context) {
 	defer func() { _ = rd.Close() }()
 
 	// Wrap in LimitReader as defense-in-depth against decompression bombs.
-	// The size check above rejects known-large files, but LimitReader ensures
-	// we never read beyond uiMaxSize even if metadata is corrupted.
 	limitedRd := io.LimitReader(rd, uiMaxSize+1)
 
-	// Set Content-Length from the uncompressed file size so clients can
-	// show download progress and allocate buffers efficiently.
 	c.Writer.Header().Set("Content-Length", fmt.Sprintf("%d", r.UncompressedSize64))
 
-	// Determine content type from file extension and set appropriate cache headers.
 	ext := filepath.Ext(r.Name)
 	switch ext {
 	case ".html":
-		// HTML must not be cached aggressively so deployments pick up new versions.
 		c.Writer.Header().Set("Cache-Control", "no-cache")
 		c.Writer.Header().Set("Pragma", "no-cache")
 		c.Writer.Header().Set("Expires", "0")
@@ -254,11 +340,8 @@ func midUiHandle(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 
-	// Use io.Copy with a reusable buffer instead of manual read/write loops.
-	// This reduces GC pressure (single allocation per request vs. one per chunk)
-	// and respects context cancellation through gin's response writer.
 	buf := make([]byte, uiBufferSize)
-	_, _ = io.CopyBuffer(c.Writer, limitedRd, buf) //nolint:gosec // G110: limitedRd is bounded by io.LimitReader(uiMaxSize+1) above, and UncompressedSize64 is pre-checked
+	_, _ = io.CopyBuffer(c.Writer, limitedRd, buf)
 }
 
 var (

@@ -14,6 +14,16 @@ import (
 	"xorm.io/xorm"
 )
 
+// xormDriverName maps configuration driver names to the driver names expected
+// by xorm.NewEngine. The config uses "sqlite" for user-friendliness, but
+// xorm requires "sqlite3" (matching the go-sql-driver registration name).
+func xormDriverName(dvs string) string {
+	if dvs == comm.DatasourceDriverSQLite {
+		return "sqlite3"
+	}
+	return dvs
+}
+
 func initDb() error {
 	var err error
 	dvs := comm.DatasourceDriverMySQL
@@ -35,7 +45,7 @@ func initDb() error {
 	if err != nil {
 		return fmt.Errorf("database migration: %w", err)
 	}
-	db, err := xorm.NewEngine(dvs, comm.Cfg.Datasource.Url)
+	db, err := xorm.NewEngine(xormDriverName(dvs), comm.Cfg.Datasource.Url)
 	if err != nil {
 		return fmt.Errorf("open database (%s): %w", dvs, err)
 	}

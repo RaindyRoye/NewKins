@@ -50,6 +50,10 @@ func ResMsgUrl(c *gin.Context, msg string, url ...string) {
 	hls := strings.ReplaceAll(HTMLMsgUrl, "{{msg}}", msg)
 	if len(url) > 0 {
 		hls = strings.ReplaceAll(hls, "{{url}}", url[0])
+		// Set proper Location header for HTTP redirect alongside the JS fallback.
+		// This ensures automated clients (curl, tests, search engines) follow
+		// the redirect without needing to parse the HTML body.
+		c.Header("Location", url[0])
 	} else {
 		hls = strings.ReplaceAll(hls, "{{url}}", "")
 	}
