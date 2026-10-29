@@ -188,6 +188,7 @@ func regApi() {
 	util.GinRegController(comm.WebEgn, &route.TriggerController{})
 	util.GinRegController(comm.WebEgn, &route.HookController{})
 }
+
 // notInstalledWriter wraps gin's ResponseWriter to intercept 404 responses
 // before they are committed to the network. When the system is not installed,
 // 404s are suppressed so the middleware can replace them with redirects to /install.
