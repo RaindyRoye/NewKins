@@ -2,18 +2,19 @@ package engine
 
 import (
 	"container/list"
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/core/utils"
-	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/util"
 	"github.com/gokins/runner/runners"
 )
 
 type JobEngine struct {
+	ctx   context.Context
 	tmr   *utils.Timer
 	exelk sync.RWMutex
 	execs map[string]*executer
@@ -57,8 +58,9 @@ func (c *jobSync) status(stat, errs string, event ...string) {
 	}
 }
 
-func StartJobEngine() *JobEngine {
+func StartJobEngine(ctx context.Context) *JobEngine {
 	c := &JobEngine{
+		ctx:    ctx,
 		tmr:    utils.NewTimer(time.Second * 30),
 		execs:  make(map[string]*executer),
 		jobs:   make(map[string]*jobSync),
@@ -68,8 +70,10 @@ func StartJobEngine() *JobEngine {
 		defer util.RecoverLog("JobEngine.goroutine")
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
-		for comm.Ctx.Err() == nil {
+		for ctx.Err() == nil {
 			select {
+			case <-ctx.Done():
+				return
 			case <-c.wakeCh:
 				// Drain any pending notification to avoid stale signals
 				select {

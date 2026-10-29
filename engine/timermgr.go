@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -16,6 +17,7 @@ import (
 )
 
 type TimerEngine struct {
+	ctx    context.Context
 	tasklk sync.RWMutex
 	tasks  map[string]*timerExec
 }
@@ -26,16 +28,21 @@ type timerExec struct {
 	tick time.Time
 }
 
-func StartTimerEngine() *TimerEngine {
+func StartTimerEngine(ctx context.Context) *TimerEngine {
 	c := &TimerEngine{
+		ctx:   ctx,
 		tasks: make(map[string]*timerExec),
 	}
 	go func() {
 		defer util.RecoverLog("TimerEngine.main")
 		c.refresh()
-		for comm.Ctx.Err() == nil {
+		for ctx.Err() == nil {
 			c.run()
-			time.Sleep(time.Millisecond * 10)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Millisecond * 10):
+			}
 		}
 	}()
 	return c
@@ -85,7 +92,11 @@ func (c *TimerEngine) execItem(v *timerExec) {
 func (c *TimerEngine) refresh() {
 	defer util.RecoverLog("TimerEngine.refresh")
 	var ls []*model.TTrigger
-	if err := comm.Db.Context(comm.Ctx).Where("enabled = 1 AND types = 'timer'").Find(&ls); err != nil {
+	ctx := c.ctx
+	if ctx == nil {
+		ctx = comm.Ctx
+	}
+	if err := comm.Db.Context(ctx).Where("enabled = 1 AND types = 'timer'").Find(&ls); err != nil {
 		logrus.Errorf("TimerEngine refresh find err: %v", err)
 		return
 	}
@@ -180,7 +191,11 @@ func (c *TimerEngine) Refresh(tmrid string) error {
 		return fmt.Errorf("timer id is empty: %w", ErrEmptyParams)
 	}
 	tmr := &model.TTrigger{}
-	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", tmrid).Get(tmr)
+	ctx := c.ctx
+	if ctx == nil {
+		ctx = comm.Ctx
+	}
+	ok, err := comm.Db.Context(ctx).Where("id=?", tmrid).Get(tmr)
 	if err != nil {
 		return fmt.Errorf("query trigger %s: %w", tmrid, err)
 	}

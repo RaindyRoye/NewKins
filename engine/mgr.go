@@ -23,9 +23,9 @@ type Manager struct {
 }
 
 func Start() error {
-	Mgr.buildEgn = StartBuildEngine()
-	Mgr.jobEgn = StartJobEngine()
-	Mgr.timerEgn = StartTimerEngine()
+	Mgr.buildEgn = StartBuildEngine(comm.Ctx)
+	Mgr.jobEgn = StartJobEngine(comm.Ctx)
+	Mgr.timerEgn = StartTimerEngine(comm.Ctx)
 
 	Mgr.brun = &baseRunner{}
 	Mgr.hrun = &HbtpRunner{}
