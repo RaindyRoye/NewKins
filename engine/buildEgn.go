@@ -2,6 +2,7 @@ package engine
 
 import (
 	"container/list"
+	"context"
 	"sync"
 	"time"
 
@@ -13,8 +14,9 @@ import (
 )
 
 type BuildEngine struct {
-	tskwlk sync.RWMutex
-	taskw  *list.List
+	ctx      context.Context
+	tskwlk   sync.RWMutex
+	taskw    *list.List
 
 	tskslk sync.RWMutex
 	tasks  map[string]*BuildTask
@@ -29,11 +31,12 @@ type BuildEngine struct {
 	stopOnce sync.Once
 }
 
-func StartBuildEngine() *BuildEngine {
+func StartBuildEngine(ctx context.Context) *BuildEngine {
 	if comm.Cfg.Server.RunLimit < 2 {
 		comm.Cfg.Server.RunLimit = 5
 	}
 	c := &BuildEngine{
+		ctx:    ctx,
 		taskw:  list.New(),
 		tasks:  make(map[string]*BuildTask),
 		wakeCh: make(chan struct{}, 1),
@@ -44,8 +47,10 @@ func StartBuildEngine() *BuildEngine {
 		c.init()
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
-		for comm.Ctx.Err() == nil {
+		for ctx.Err() == nil {
 			select {
+			case <-ctx.Done():
+				return
 			case <-c.stopCh:
 				return
 			case <-c.wakeCh:
@@ -78,25 +83,29 @@ func (c *BuildEngine) Stop() {
 }
 func (c *BuildEngine) init() {
 	cont := "server restart"
-	if _, err := comm.Db.Context(comm.Ctx).Exec(
+	ctx := c.ctx
+	if ctx == nil {
+		ctx = comm.Ctx
+	}
+	if _, err := comm.Db.Context(ctx).Exec(
 		"update `t_build` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	); err != nil {
 		logrus.Errorf("BuildEngine init: failed to cancel pending builds: %v", err)
 	}
-	if _, err := comm.Db.Context(comm.Ctx).Exec(
+	if _, err := comm.Db.Context(ctx).Exec(
 		"update `t_stage` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	); err != nil {
 		logrus.Errorf("BuildEngine init: failed to cancel pending stages: %v", err)
 	}
-	if _, err := comm.Db.Context(comm.Ctx).Exec(
+	if _, err := comm.Db.Context(ctx).Exec(
 		"update `t_step` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	); err != nil {
 		logrus.Errorf("BuildEngine init: failed to cancel pending steps: %v", err)
 	}
-	if _, err := comm.Db.Context(comm.Ctx).Exec(
+	if _, err := comm.Db.Context(ctx).Exec(
 		"update `t_cmd_line` set `status`=? where `status`!=? and `status`!=? and `status`!=?",
 		common.BuildStatusCancel, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	); err != nil {

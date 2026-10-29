@@ -225,7 +225,11 @@ func TestJobEngineRmExecConcurrent(t *testing.T) {
 		jobs:  make(map[string]*jobSync),
 	}
 
-	var wg sync.WaitGroup
+	// Pre-populate the map while no goroutines are running, then launch
+	// workers. rmExec locks exelk before mutating the map, so we must not
+	// write to it concurrently here.
+	names := make([]string, 0, 10)
+	execs := make([]*executer, 0, 10)
 	for i := 0; i < 10; i++ {
 		name := "plugin-concurrent-" + string(rune('a'+i))
 		ex := &executer{
@@ -234,11 +238,17 @@ func TestJobEngineRmExecConcurrent(t *testing.T) {
 			jobwt: list.New(),
 		}
 		c.execs[name] = ex
+		names = append(names, name)
+		execs = append(execs, ex)
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func(n string, e *executer) {
 			defer wg.Done()
 			c.rmExec(n, e)
-		}(name, ex)
+		}(names[i], execs[i])
 	}
 	wg.Wait()
 
