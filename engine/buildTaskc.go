@@ -208,19 +208,25 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 				vas = va.Value
 				secret = va.Secret
 			}
-			v.Conts = strings.ReplaceAll(v.Conts, zs[0], vas)
 			if secret {
+				v.Conts = strings.ReplaceAll(v.Conts, zs[0], comm.MaskedValue)
 				cmd.Content = strings.ReplaceAll(cmd.Content, zs[0], comm.MaskedValue)
 			} else {
+				v.Conts = strings.ReplaceAll(v.Conts, zs[0], vas)
 				cmd.Content = strings.ReplaceAll(cmd.Content, zs[0], vas)
 			}
-		}
-		_, err = comm.Db.Context(c.taskCtx()).InsertOne(cmd)
-		if err != nil {
-			if _, delErr := comm.Db.Context(c.taskCtx()).Where("build_id=? and step_id=?", cmd.BuildId, cmd.StepId).Delete(cmd); delErr != nil {
-				logrus.Errorf("appendcmds: failed to cleanup cmd after insert error: %v", delErr)
+				// Skip DB operations when DB is not initialized (e.g., during validation checks).
+			// The actual build process will persist commands when DB is available.
+			if comm.Db == nil {
+				continue
 			}
-			return fmt.Errorf("insert cmd %s: %w", cmd.Id, err)
+			_, err = comm.Db.Context(c.taskCtx()).InsertOne(cmd)
+			if err != nil {
+				if _, delErr := comm.Db.Context(c.taskCtx()).Where("build_id=? and step_id=?", cmd.BuildId, cmd.StepId).Delete(cmd); delErr != nil {
+					logrus.Errorf("appendcmds: failed to cleanup cmd after insert error: %v", delErr)
+				}
+				return fmt.Errorf("insert cmd %s: %w", cmd.Id, err)
+			}
 		}
 	}
 	return nil
