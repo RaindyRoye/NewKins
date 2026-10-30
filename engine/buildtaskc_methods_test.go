@@ -401,11 +401,11 @@ func TestBuildTask_GenRunjob_StringCommands(t *testing.T) {
 	}
 
 	err := bt.genRunjob(stage, job)
-	// Will fail because no DB, but we're testing the code path
-	assert.Error(t, err)
+	// With nil DB, genRunjob should succeed but skip DB persistence
+	assert.NoError(t, err)
+	assert.NotNil(t, job.runjb, "RunJob should be created")
+	assert.Len(t, job.runjb.Commands, 1, "Should have 1 command")
 }
-
-// TestBuildTask_GenRunjob_SliceCommands tests genRunjob with slice commands
 func TestBuildTask_GenRunjob_SliceCommands(t *testing.T) {
 	buildId := utils.NewXid()
 	stageId := utils.NewXid()
@@ -444,11 +444,11 @@ func TestBuildTask_GenRunjob_SliceCommands(t *testing.T) {
 	}
 
 	err := bt.genRunjob(stage, job)
-	// Will fail because no DB, but we're testing the code path
-	assert.Error(t, err)
+	// With nil DB, genRunjob should succeed but skip DB persistence
+	assert.NoError(t, err)
+	assert.NotNil(t, job.runjb, "RunJob should be created")
+	assert.Len(t, job.runjb.Commands, 2, "Should have 2 commands")
 }
-
-// TestBuildTask_GenRunjob_StringSliceCommands tests genRunjob with []string commands
 func TestBuildTask_GenRunjob_StringSliceCommands(t *testing.T) {
 	buildId := utils.NewXid()
 	stageId := utils.NewXid()
@@ -484,11 +484,11 @@ func TestBuildTask_GenRunjob_StringSliceCommands(t *testing.T) {
 	}
 
 	err := bt.genRunjob(stage, job)
-	// Will fail because no DB, but we're testing the code path
-	assert.Error(t, err)
+	// With nil DB, genRunjob should succeed but skip DB persistence
+	assert.NoError(t, err)
+	assert.NotNil(t, job.runjb, "RunJob should be created")
+	assert.Len(t, job.runjb.Commands, 2, "Should have 2 commands")
 }
-
-// TestBuildTask_GenRunjob_GitStep tests genRunjob with git step
 func TestBuildTask_GenRunjob_GitStep(t *testing.T) {
 	buildId := utils.NewXid()
 	stageId := utils.NewXid()
@@ -527,8 +527,9 @@ func TestBuildTask_GenRunjob_GitStep(t *testing.T) {
 	}
 
 	err := bt.genRunjob(stage, job)
-	// Will fail because no DB, but we're testing the code path
-	assert.Error(t, err)
+	// With nil DB, genRunjob should succeed but skip DB persistence
+	assert.NoError(t, err)
+	assert.NotNil(t, job.runjb, "RunJob should be created")
 }
 
 // TestBuildTask_AppendCmds tests appendcmds method

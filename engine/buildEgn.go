@@ -77,6 +77,11 @@ func (c *BuildEngine) Stop() {
 	}
 }
 func (c *BuildEngine) init() {
+	if comm.Db == nil {
+		logrus.Warnf("BuildEngine init: database not initialized, skipping initialization")
+		return
+	}
+
 	cont := "server restart"
 	if _, err := comm.Db.Context(comm.Ctx).Exec(
 		"update `t_build` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
