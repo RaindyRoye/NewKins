@@ -35,7 +35,15 @@ func initDb() error {
 	if err != nil {
 		return fmt.Errorf("database migration: %w", err)
 	}
-	db, err := xorm.NewEngine(dvs, comm.Cfg.Datasource.Url)
+	// Map config driver names to xorm-compatible driver names.
+	// The config uses short names ("sqlite"), but xorm and database/sql
+	// require the registered driver name ("sqlite3").
+	xormDriver := dvs
+	switch dvs {
+	case comm.DatasourceDriverSQLite:
+		xormDriver = "sqlite3"
+	}
+	db, err := xorm.NewEngine(xormDriver, comm.Cfg.Datasource.Url)
 	if err != nil {
 		return fmt.Errorf("open database (%s): %w", dvs, err)
 	}
