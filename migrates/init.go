@@ -18,7 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, errs error) {
+func InitMysqlMigrate(ctx context.Context, host, dbs, user, pass string) (wait bool, rtul string, errs error) {
 	wait = false
 	if host == "" || dbs == "" || user == "" {
 		errs = fmt.Errorf("%w: mysql requires host, database, and user", ErrDatabaseConfigMissing)
@@ -35,7 +35,6 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 		errs = fmt.Errorf("open mysql database: %w", err)
 		return
 	}
-	ctx := context.Background()
 	err = db.PingContext(ctx)
 	if err != nil {
 		_ = db.Close()
@@ -108,7 +107,7 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 	return false, ul, nil
 }
 
-func InitSqliteMigrate() (rtul string, errs error) {
+func InitSqliteMigrate(ctx context.Context) (rtul string, errs error) {
 	ul := filepath.Join(comm.WorkPath, "db.dat")
 	db, err := sql.Open("sqlite3", ul)
 	if err != nil {
@@ -159,7 +158,7 @@ func InitSqliteMigrate() (rtul string, errs error) {
 	return ul, nil
 }
 
-func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, errs error) {
+func InitPostgresMigrate(ctx context.Context, host, dbs, user, pass string) (wait bool, rtul string, errs error) {
 	wait = false
 	if host == "" || dbs == "" || user == "" {
 		errs = fmt.Errorf("%w: postgres requires host, database, and user", ErrDatabaseConfigMissing)
@@ -172,7 +171,7 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 		errs = fmt.Errorf("open postgres database: %w", err)
 		return
 	}
-	err = db.PingContext(context.Background())
+	err = db.PingContext(ctx)
 	if err != nil {
 		_ = db.Close()
 		errs = fmt.Errorf("ping postgres database: %w", err)

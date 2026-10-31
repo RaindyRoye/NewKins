@@ -47,7 +47,8 @@ func filterAssets(prefix string) []string {
 
 // TestInitMysqlMigrate_ConnectionRefused tests MySQL migration when connection fails.
 func TestInitMysqlMigrate_ConnectionRefused(t *testing.T) {
-	wait, _, err := InitMysqlMigrate("127.0.0.1:1", "testdb", "user", "pass")
+	ctx := context.Background()
+	wait, _, err := InitMysqlMigrate(ctx, "127.0.0.1:1", "testdb", "user", "pass")
 	if err == nil {
 		t.Skip("skipping: connection unexpectedly succeeded")
 	}
@@ -58,7 +59,8 @@ func TestInitMysqlMigrate_ConnectionRefused(t *testing.T) {
 
 // TestInitPostgresMigrate_ConnectionRefused tests PostgreSQL migration when connection fails.
 func TestInitPostgresMigrate_ConnectionRefused(t *testing.T) {
-	wait, _, err := InitPostgresMigrate("127.0.0.1:1", "testdb", "user", "pass")
+	ctx := context.Background()
+	wait, _, err := InitPostgresMigrate(ctx, "127.0.0.1:1", "testdb", "user", "pass")
 	if err == nil {
 		t.Skip("skipping: connection unexpectedly succeeded")
 	}
@@ -69,7 +71,8 @@ func TestInitPostgresMigrate_ConnectionRefused(t *testing.T) {
 
 // TestUpMysqlMigrate_ConnectionRefused tests UpMysqlMigrate when connection fails.
 func TestUpMysqlMigrate_ConnectionRefused(t *testing.T) {
-	err := UpMysqlMigrate("user:pass@tcp(127.0.0.1:1)/testdb?parseTime=true")
+	ctx := context.Background()
+	err := UpMysqlMigrate(ctx, "user:pass@tcp(127.0.0.1:1)/testdb?parseTime=true")
 	if err == nil {
 		t.Skip("skipping: connection unexpectedly succeeded")
 	}
@@ -77,7 +80,8 @@ func TestUpMysqlMigrate_ConnectionRefused(t *testing.T) {
 
 // TestUpPostgresMigrate_ConnectionRefused tests UpPostgresMigrate when connection fails.
 func TestUpPostgresMigrate_ConnectionRefused(t *testing.T) {
-	err := UpPostgresMigrate("postgres://user:pass@127.0.0.1:1/testdb?sslmode=disable")
+	ctx := context.Background()
+	err := UpPostgresMigrate(ctx, "postgres://user:***@127.0.0.1:1/testdb?sslmode=disable")
 	if err == nil {
 		t.Skip("skipping: connection unexpectedly succeeded")
 	}
@@ -88,7 +92,8 @@ func TestMysqlCreateDatabasePath(t *testing.T) {
 	// This test verifies the code path where MySQL tries to create a database
 	// when the initial ping fails. We can't easily test this without a real MySQL
 	// server, but we can verify the function signature and error handling.
-	_, _, err := InitMysqlMigrate("invalid-host:3306", "testdb", "user", "pass")
+	ctx := context.Background()
+	_, _, err := InitMysqlMigrate(ctx, "invalid-host:3306", "testdb", "user", "pass")
 	if err == nil {
 		t.Skip("skipping: connection unexpectedly succeeded")
 	}
@@ -122,7 +127,8 @@ func TestSqliteMigrationWithRealDB(t *testing.T) {
 	comm.WorkPath = tmpDir
 
 	// Test InitSqliteMigrate
-	dbPath, err := InitSqliteMigrate()
+	ctx := context.Background()
+	dbPath, err := InitSqliteMigrate(ctx)
 	if err != nil {
 		t.Fatalf("InitSqliteMigrate() error = %v", err)
 	}
@@ -146,7 +152,7 @@ func TestSqliteMigrationWithRealDB(t *testing.T) {
 	}
 
 	// Test UpSqliteMigrate on existing DB
-	err = UpSqliteMigrate(dbPath)
+	err = UpSqliteMigrate(ctx, dbPath)
 	if err != nil {
 		t.Errorf("UpSqliteMigrate() error = %v", err)
 	}
@@ -154,13 +160,14 @@ func TestSqliteMigrationWithRealDB(t *testing.T) {
 
 // TestErrorWrapping verifies that errors are properly wrapped.
 func TestErrorWrapping(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		name string
 		fn   func() error
 	}{
-		{"UpMysqlMigrate empty", func() error { return UpMysqlMigrate("") }},
-		{"UpPostgresMigrate empty", func() error { return UpPostgresMigrate("") }},
-		{"UpSqliteMigrate empty", func() error { return UpSqliteMigrate("") }},
+		{"UpMysqlMigrate empty", func() error { return UpMysqlMigrate(ctx, "") }},
+		{"UpPostgresMigrate empty", func() error { return UpPostgresMigrate(ctx, "") }},
+		{"UpSqliteMigrate empty", func() error { return UpSqliteMigrate(ctx, "") }},
 	}
 
 	for _, tt := range tests {
@@ -195,7 +202,8 @@ func TestInitMysqlMigrate_AllEmptyParams(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("host=%q,dbs=%q,user=%q", c.host, c.dbs, c.user), func(t *testing.T) {
-			wait, _, err := InitMysqlMigrate(c.host, c.dbs, c.user, c.pass)
+			ctx := context.Background()
+			wait, _, err := InitMysqlMigrate(ctx, c.host, c.dbs, c.user, c.pass)
 			if err == nil {
 				t.Error("expected error for empty params")
 			}
@@ -222,7 +230,8 @@ func TestInitPostgresMigrate_AllEmptyParams(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("host=%q,dbs=%q,user=%q", c.host, c.dbs, c.user), func(t *testing.T) {
-			wait, _, err := InitPostgresMigrate(c.host, c.dbs, c.user, c.pass)
+			ctx := context.Background()
+			wait, _, err := InitPostgresMigrate(ctx, c.host, c.dbs, c.user, c.pass)
 			if err == nil {
 				t.Error("expected error for empty params")
 			}
