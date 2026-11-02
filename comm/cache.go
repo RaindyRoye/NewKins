@@ -120,9 +120,13 @@ func CacheGet(key string) ([]byte, error) {
 	}
 	// Delete expired keys in a separate write transaction (View is read-only).
 	if expired {
+		// Capture BCache as a local before spawning the goroutine so that
+		// concurrent code that reassigns the global (e.g. test teardown)
+		// does not race with the goroutine's read of BCache.
+		db := BCache
 		go func() {
 			defer util.RecoverLog("CacheGet.expired-cleanup")
-			if err := BCache.Update(func(tx *bolt.Tx) error {
+			if err := db.Update(func(tx *bolt.Tx) error {
 				bk := tx.Bucket(mainCacheBucket)
 				if bk == nil {
 					return nil
@@ -133,8 +137,14 @@ func CacheGet(key string) ([]byte, error) {
 			}
 		}()
 	}
+	// Check if cleanup is needed and only spawn if not already running
 	if time.Since(time.Unix(0, mainCacheClearTime.Load())).Hours() > 30 {
-		go mainCacheClear()
+		if mainCacheClearRunning.CompareAndSwap(false, true) {
+			go func() {
+				defer mainCacheClearRunning.Store(false)
+				mainCacheClear()
+			}()
+		}
 	}
 	return rt, err
 }
@@ -173,6 +183,7 @@ func CacheFlush() error {
 }
 
 var mainCacheClearTime atomic.Int64 // stores UnixNano timestamp of last cache clear
+var mainCacheClearRunning atomic.Bool // prevents concurrent cleanup goroutines
 
 func mainCacheClear() {
 	defer util.RecoverLog("mainCacheClear")

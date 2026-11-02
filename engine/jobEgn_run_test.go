@@ -233,7 +233,11 @@ func TestJobEngineRmExecConcurrent(t *testing.T) {
 			tms:   time.Now().Add(-5 * time.Minute),
 			jobwt: list.New(),
 		}
+		// Hold write lock while inserting into the map to avoid racing
+		// with the goroutines below that call rmExec (which acquires the lock).
+		c.exelk.Lock()
 		c.execs[name] = ex
+		c.exelk.Unlock()
 		wg.Add(1)
 		go func(n string, e *executer) {
 			defer wg.Done()

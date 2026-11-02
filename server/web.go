@@ -74,11 +74,15 @@ func runWeb() {
 		IdleTimeout:       120 * time.Second,
 	}
 
+	// Capture the host value before spawning the goroutine to avoid a data race
+	// where the caller might mutate comm.WebHost while the goroutine is reading it.
+	listenAddr := comm.WebHost
+
 	// Start server in a goroutine so we can handle graceful shutdown
 	errCh := make(chan error, 1)
 	go func() {
 		defer util.RecoverLog("Web.ListenAndServe")
-		logrus.Infof("Web server listening on %s", comm.WebHost)
+		logrus.Infof("Web server listening on %s", listenAddr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
