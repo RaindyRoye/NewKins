@@ -521,7 +521,7 @@ func TestCacheConcurrentCleanupPrevention(t *testing.T) {
 		// Cleanup might still be running, wait a bit
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	// The atomic flag should have prevented multiple spawns
 	t.Log("concurrent cleanup prevention verified")
 }

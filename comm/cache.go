@@ -182,7 +182,7 @@ func CacheFlush() error {
 	return nil
 }
 
-var mainCacheClearTime atomic.Int64 // stores UnixNano timestamp of last cache clear
+var mainCacheClearTime atomic.Int64   // stores UnixNano timestamp of last cache clear
 var mainCacheClearRunning atomic.Bool // prevents concurrent cleanup goroutines
 
 func mainCacheClear() {
