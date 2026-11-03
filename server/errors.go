@@ -10,4 +10,8 @@ var (
 	ErrInvalidPath = errors.New("invalid path")
 	// ErrFileNotFound is returned when a requested file cannot be found.
 	ErrFileNotFound = errors.New("file not found")
+	// ErrWebServerTimeout is returned when the web server fails to start within the timeout period.
+	ErrWebServerTimeout = errors.New("web server did not start within 10 seconds")
+	// ErrCacheInit is returned when the cache database fails to initialize.
+	ErrCacheInit = errors.New("cache initialization failed")
 )

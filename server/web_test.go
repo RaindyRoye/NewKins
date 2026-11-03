@@ -327,3 +327,52 @@ func TestMidUiHandle_FileFound(t *testing.T) {
 		t.Errorf("expected status 200, got %d", w.Code)
 	}
 }
+
+func TestMidUiHandle_404RedirectWhenInstalled(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+
+	origInstalled := comm.Installed
+	origStaticPkg := comm.StaticPkg
+	defer func() {
+		comm.Installed = origInstalled
+		comm.StaticPkg = origStaticPkg
+	}()
+	comm.Installed = true
+	comm.StaticPkg = "" // No static package
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/nonexistent", nil)
+	router.ServeHTTP(w, req)
+
+	// Should redirect to / when file not found and installed
+	if w.Code != http.StatusFound {
+		t.Errorf("expected status 302 (redirect), got %d", w.Code)
+	}
+}
+
+func TestMidUiHandle_ExistingRoute(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+	router.GET("/api/test", func(c *gin.Context) {
+		c.String(http.StatusOK, "api response")
+	})
+
+	origInstalled := comm.Installed
+	defer func() { comm.Installed = origInstalled }()
+	comm.Installed = true
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/api/test", nil)
+	router.ServeHTTP(w, req)
+
+	// Should return 200 from the handler, not try to serve static file
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w.Code)
+	}
+	if w.Body.String() != "api response" {
+		t.Errorf("expected 'api response', got %q", w.Body.String())
+	}
+}
