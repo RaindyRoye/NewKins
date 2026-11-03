@@ -246,7 +246,6 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 		// Use the task's own context (which has a timeout) instead of the global
 		// comm.Ctx, so that step waits are properly bounded by the build deadline.
 		for c.ctx.Err() == nil {
-			time.Sleep(time.Millisecond * 100)
 			if c.stopd() {
 				job.status(common.BuildStatusCancel, "")
 				return
@@ -273,6 +272,14 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 			}
 			if waitln <= 0 {
 				break
+			}
+			// Wait for a job to complete or context to be cancelled
+			select {
+			case <-c.ctx.Done():
+				job.status(common.BuildStatusCancel, "context cancelled while waiting for dependencies")
+				return
+			case <-time.After(100 * time.Millisecond):
+				// Periodic check for completion
 			}
 		}
 	}
@@ -302,7 +309,16 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 			job.status(common.BuildStatusCancel, "cancel")
 			break
 		}
-		time.Sleep(time.Millisecond * 10)
+		// Wait for job completion signal or context cancellation
+		select {
+		case <-c.ctx.Done():
+			job.status(common.BuildStatusCancel, "context cancelled while waiting for job completion")
+			break
+		case <-job.doneCh:
+			// Job completed, will check status on next iteration
+		case <-time.After(10 * time.Millisecond):
+			// Periodic check for cancellation
+		}
 	}
 }
 

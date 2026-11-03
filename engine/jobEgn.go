@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gokins/core/common"
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
@@ -45,6 +46,8 @@ type jobSync struct {
 	runjb *runners.RunJob
 	cmdmp map[string]*cmdSync
 	ended bool
+	// doneCh is closed when this job completes, replacing time.Sleep polling
+	doneCh chan struct{}
 }
 
 func (c *jobSync) status(stat, errs string, event ...string) {
@@ -54,6 +57,15 @@ func (c *jobSync) status(stat, errs string, event ...string) {
 	c.step.Error = errs
 	if len(event) > 0 {
 		c.step.Event = event[0]
+	}
+	// Signal completion when job reaches a terminal state
+	if common.BuildStatusEnded(stat) && c.doneCh != nil {
+		select {
+		case <-c.doneCh:
+			// Already closed
+		default:
+			close(c.doneCh)
+		}
 	}
 }
 
