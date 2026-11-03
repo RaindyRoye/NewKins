@@ -225,20 +225,30 @@ func TestJobEngineRmExecConcurrent(t *testing.T) {
 		jobs:  make(map[string]*jobSync),
 	}
 
-	var wg sync.WaitGroup
+	// Phase 1: populate all entries without concurrency to avoid
+	// racing map writes against the concurrent rmExec goroutines.
+	names := make([]string, 10)
+	exes := make([]*executer, 10)
 	for i := 0; i < 10; i++ {
 		name := "plugin-concurrent-" + string(rune('a'+i))
+		names[i] = name
 		ex := &executer{
 			plug:  name,
 			tms:   time.Now().Add(-5 * time.Minute),
 			jobwt: list.New(),
 		}
+		exes[i] = ex
 		c.execs[name] = ex
+	}
+
+	// Phase 2: launch concurrent rmExec calls after setup is complete.
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func(n string, e *executer) {
 			defer wg.Done()
 			c.rmExec(n, e)
-		}(name, ex)
+		}(names[i], exes[i])
 	}
 	wg.Wait()
 

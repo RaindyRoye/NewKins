@@ -74,15 +74,18 @@ func runWeb() {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	// Start server in a goroutine so we can handle graceful shutdown
+	// Start server in a goroutine so we can handle graceful shutdown.
+	// innerDone is closed when the ListenAndServe goroutine has fully exited,
+	// ensuring no reads of comm.WebHost or other globals leak past runWeb's return.
+	innerDone := make(chan struct{})
 	errCh := make(chan error, 1)
 	go func() {
 		defer util.RecoverLog("Web.ListenAndServe")
+		defer close(innerDone)
 		logrus.Infof("Web server listening on %s", comm.WebHost)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
-		close(errCh)
 	}()
 
 	// Wait for context cancellation or server error
@@ -99,6 +102,11 @@ func runWeb() {
 			logrus.Errorf("Web err:%v", err)
 		}
 	}
+
+	// Wait for the ListenAndServe goroutine to fully exit before returning.
+	// This prevents data races on shared globals (e.g. comm.WebHost) that
+	// callers or tests may modify after runWeb returns.
+	<-innerDone
 
 	comm.Cancel()
 }
