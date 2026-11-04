@@ -15,9 +15,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TimerEngine manages scheduled trigger execution. It uses a ticker-based
+// run loop (instead of busy-wait polling) and executes trigger callbacks
+// outside the lock to avoid contention.
 type TimerEngine struct {
 	tasklk sync.RWMutex
 	tasks  map[string]*timerExec
+	// wakeCh signals the run loop to check timers immediately (e.g. after Refresh).
+	// Buffered with capacity 1 so senders never block.
+	wakeCh chan struct{}
+	// stopCh is closed to signal the run loop to exit.
+	stopCh chan struct{}
+	// stopOnce ensures Stop is idempotent.
+	stopOnce sync.Once
 }
 type timerExec struct {
 	tt   *model.TTrigger
@@ -28,57 +38,119 @@ type timerExec struct {
 
 func StartTimerEngine() *TimerEngine {
 	c := &TimerEngine{
-		tasks: make(map[string]*timerExec),
+		tasks:  make(map[string]*timerExec),
+		wakeCh: make(chan struct{}, 1),
+		stopCh: make(chan struct{}),
 	}
 	go func() {
 		defer util.RecoverLog("TimerEngine.main")
 		c.refresh()
-		for comm.Ctx.Err() == nil {
+		ticker := time.NewTicker(time.Second * 10)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-c.stopCh:
+				return
+			case <-comm.Ctx.Done():
+				return
+			case <-c.wakeCh:
+				// Drain any stale signal
+				select {
+				case <-c.wakeCh:
+				default:
+				}
+			case <-ticker.C:
+			}
 			c.run()
-			time.Sleep(time.Millisecond * 10)
 		}
 	}()
 	return c
 }
+
+// Stop signals the timer run loop to exit. Safe to call multiple times.
+func (c *TimerEngine) Stop() {
+	c.stopOnce.Do(func() {
+		close(c.stopCh)
+	})
+}
+
+// Wake signals the run loop to check timers immediately.
+// Non-blocking; drops the signal if one is already pending.
+func (c *TimerEngine) Wake() {
+	select {
+	case c.wakeCh <- struct{}{}:
+	default:
+	}
+}
+
 func (c *TimerEngine) run() {
 	defer util.RecoverLog("TimerEngine.run")
 
-	c.tasklk.Lock()
-	defer c.tasklk.Unlock()
-	for _, v := range c.tasks {
-		c.execItem(v)
+	// Phase 1: collect due timers under read lock.
+	type dueItem struct {
+		tt  *model.TTrigger
+		typ int64
+		id  string
+	}
+	var due []dueItem
+	func() {
+		c.tasklk.RLock()
+		defer c.tasklk.RUnlock()
+		now := time.Now()
+		for _, v := range c.tasks {
+			if now.After(v.tick) {
+				due = append(due, dueItem{tt: v.tt, typ: v.typ, id: v.tt.Id})
+			}
+		}
+	}()
+
+	// Phase 2: process due timers outside the lock to avoid contention.
+	for _, item := range due {
+		c.execItem(item.tt, item.typ, item.id)
 	}
 }
-func (c *TimerEngine) execItem(v *timerExec) {
-	defer util.RecoverLog("TimerEngine.execItem")
-	if time.Since(v.tick) > 0 {
-		now := time.Now()
-		logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", v.tt.Name, v.typ, now.Format(common.TimeFmt), v.tick.Format(common.TimeFmt))
-		switch v.typ {
-		case 0:
-			go func(id string) {
-				defer util.RecoverLog("TimerEngine.delete")
-				c.Delete(id)
-			}(v.tt.Id)
-			time.Sleep(time.Millisecond * 10)
-		case 1:
-			v.tick = now.Add(time.Minute)
-		case 2:
-			v.tick = now.Add(time.Hour)
-		case 3:
-			v.tick = now.Add(time.Hour * 24)
-		case 4:
-			v.tick = now.Add(time.Hour * 24 * 7)
-		case 5:
-			v.tick = now.Add(time.Hour * 24 * 30)
-		}
 
-		rb, err := service.TriggerTimer(comm.Ctx, v.tt)
-		if err != nil {
-			logrus.Errorf("TriggerTimer err:%v", err)
-		} else {
-			Mgr.BuildEgn().Put(rb)
-		}
+func (c *TimerEngine) execItem(tt *model.TTrigger, typ int64, id string) {
+	defer util.RecoverLog("TimerEngine.execItem")
+
+	now := time.Now()
+	logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", tt.Name, typ, now.Format(common.TimeFmt), tt.Id)
+
+	// Update next tick time or schedule deletion under write lock.
+	switch typ {
+	case 0:
+		// One-shot timer: delete after firing
+		go func() {
+			defer util.RecoverLog("TimerEngine.delete")
+			c.Delete(id)
+		}()
+	case 1:
+		c.setTick(id, now.Add(time.Minute))
+	case 2:
+		c.setTick(id, now.Add(time.Hour))
+	case 3:
+		c.setTick(id, now.Add(time.Hour*24))
+	case 4:
+		c.setTick(id, now.Add(time.Hour*24*7))
+	case 5:
+		c.setTick(id, now.Add(time.Hour*24*30))
+	}
+
+	// Trigger execution outside the lock
+	rb, err := service.TriggerTimer(comm.Ctx, tt)
+	if err != nil {
+		logrus.Errorf("TriggerTimer err:%v", err)
+	} else {
+		Mgr.BuildEgn().Put(rb)
+	}
+}
+
+// setTick updates the tick time for a timer under write lock.
+func (c *TimerEngine) setTick(id string, nextTick time.Time) {
+	c.tasklk.Lock()
+	defer c.tasklk.Unlock()
+	if t, ok := c.tasks[id]; ok {
+		t.tick = nextTick
 	}
 }
 

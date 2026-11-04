@@ -243,36 +243,34 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 			}
 			ls = append(ls, e)
 		}
-		// Use the task's own context (which has a timeout) instead of the global
-		// comm.Ctx, so that step waits are properly bounded by the build deadline.
-		for c.ctx.Err() == nil {
-			time.Sleep(time.Millisecond * 100)
-			if c.stopd() {
-				job.status(common.BuildStatusCancel, "")
-				return
-			}
-			waitln := len(ls)
-			for _, v := range ls {
+		// Wait for dependency jobs using their doneCh for immediate notification
+		// instead of polling with time.Sleep.
+		for _, v := range ls {
+			select {
+			case <-v.doneCh:
 				v.Lock()
 				vStats := v.step.Status
+				vIgn := v.step.ErrIgnore
 				v.Unlock()
 				switch vStats {
 				case common.BuildStatusOk:
-					waitln--
+					// dependency completed successfully
 				case common.BuildStatusCancel:
 					job.status(common.BuildStatusCancel, "")
 					return
 				case common.BuildStatusError:
-					if v.step.ErrIgnore {
-						waitln--
-					} else {
+					if !vIgn {
 						job.status(common.BuildStatusError, fmt.Sprintf("wait on %s is err", v.step.Name))
 						return
 					}
 				}
-			}
-			if waitln <= 0 {
-				break
+			case <-c.ctx.Done():
+				if c.stopd() {
+					job.status(common.BuildStatusCancel, "")
+				} else {
+					job.status(common.BuildStatusCancel, "context canceled")
+				}
+				return
 			}
 		}
 	}
@@ -289,20 +287,14 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 		return
 	}
 	logrus.Debugf("BuildTask put step:%s", job.step.Name)
-	// Use the task's own context (with timeout) instead of the global comm.Ctx
-	// so that the polling loop respects the build deadline.
-	for c.ctx.Err() == nil {
-		job.Lock()
-		stats := job.step.Status
-		job.Unlock()
-		if common.BuildStatusEnded(stats) {
-			break
-		}
-		if c.stopd() && time.Since(c.ctrlendtm).Seconds() > 3 {
-			job.status(common.BuildStatusCancel, "cancel")
-			break
-		}
-		time.Sleep(time.Millisecond * 10)
+	// Wait for the job to complete or be canceled, using select on doneCh
+	// for immediate response instead of busy-wait polling.
+	select {
+	case <-job.doneCh:
+		// Job reached terminal status
+	case <-c.ctx.Done():
+		// Build context timed out or canceled
+		job.status(common.BuildStatusCancel, "context canceled")
 	}
 }
 
@@ -381,10 +373,9 @@ func (c *BuildTask) UpJob(job *jobSync, stat, errs string, code int) {
 		return
 	}
 	job.Lock()
-	job.step.Status = stat
-	job.step.Error = errs
 	job.step.ExitCode = code
 	job.Unlock()
+	job.status(stat, errs)
 	go c.updateStep(job)
 }
 func (c *BuildTask) UpJobCmd(cmd *cmdSync, fs, code int) {

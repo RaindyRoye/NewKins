@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gokins/core/common"
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
@@ -40,11 +41,13 @@ type cmdSync struct {
 }
 type jobSync struct {
 	sync.RWMutex
-	task  *BuildTask
-	step  *runtime.Step
-	runjb *runners.RunJob
-	cmdmp map[string]*cmdSync
-	ended bool
+	task     *BuildTask
+	step     *runtime.Step
+	runjb    *runners.RunJob
+	cmdmp    map[string]*cmdSync
+	ended    bool
+	doneCh   chan struct{} // closed when job reaches terminal status
+	doneOnce sync.Once     // ensures doneCh is closed exactly once
 }
 
 func (c *jobSync) status(stat, errs string, event ...string) {
@@ -54,6 +57,10 @@ func (c *jobSync) status(stat, errs string, event ...string) {
 	c.step.Error = errs
 	if len(event) > 0 {
 		c.step.Event = event[0]
+	}
+	// Signal completion on terminal statuses
+	if common.BuildStatusEnded(stat) && c.doneCh != nil {
+		c.doneOnce.Do(func() { close(c.doneCh) })
 	}
 }
 

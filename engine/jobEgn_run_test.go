@@ -233,7 +233,9 @@ func TestJobEngineRmExecConcurrent(t *testing.T) {
 			tms:   time.Now().Add(-5 * time.Minute),
 			jobwt: list.New(),
 		}
+		c.exelk.Lock()
 		c.execs[name] = ex
+		c.exelk.Unlock()
 		wg.Add(1)
 		go func(n string, e *executer) {
 			defer wg.Done()

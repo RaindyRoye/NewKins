@@ -99,9 +99,10 @@ func (c *BuildTask) check() bool {
 				return false
 			}
 			job := &jobSync{
-				task:  c,
-				step:  e,
-				cmdmp: make(map[string]*cmdSync),
+				task:   c,
+				step:   e,
+				cmdmp:  make(map[string]*cmdSync),
+				doneCh: make(chan struct{}),
 			}
 			err := c.genRunjob(v, job)
 			if err != nil {
