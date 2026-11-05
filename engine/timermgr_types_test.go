@@ -213,41 +213,59 @@ func TestTimerEngineResetOneUpdateExisting(t *testing.T) {
 	}
 }
 
-// TestTimerEngineExecItemPastTickOnce verifies execItem for a one-time timer
-// whose tick is in the past. Since it calls service.TriggerTimer which requires
-// a DB, we verify the deletion path is exercised (type 0 triggers a Delete goroutine).
-func TestTimerEngineExecItemOncePast(t *testing.T) {
+// TestTimerEngineExecItemOnceDelete verifies execItem for a one-shot (type=0)
+// timer triggers deletion via a goroutine. The service.TriggerTimer call will
+// fail without a DB, but util.RecoverLog should prevent a crash.
+func TestTimerEngineExecItemOnceDelete(t *testing.T) {
 	te := &TimerEngine{tasks: make(map[string]*timerExec)}
-	// type=0 timer with tick in the past → should trigger deletion goroutine
+	tt := &model.TTrigger{Id: "exec-once", Name: "test"}
 	te.tasks["exec-once"] = &timerExec{
-		tt:   &model.TTrigger{Id: "exec-once", Name: "test"},
+		tt:   tt,
 		typ:  0,
 		tick: time.Now().Add(-time.Second),
 	}
 
-	// This will attempt service.TriggerTimer which may fail (no DB), but the
-	// defer util.RecoverLog should catch any panic. We just verify no panic.
-	te.execItem(te.tasks["exec-once"])
+	// New signature: execItem(tt, typ, id)
+	te.execItem(tt, 0, "exec-once")
 
 	// Give the deletion goroutine time to run
-	time.Sleep(50 * time.Millisecond)
-	// The timer should have been deleted (or still exist if goroutine hasn't run yet)
-	_ = te.tasks["exec-once"]
+	time.Sleep(100 * time.Millisecond)
+	te.tasklk.RLock()
+	_, exists := te.tasks["exec-once"]
+	te.tasklk.RUnlock()
+	if exists {
+		t.Error("one-shot timer should have been deleted after execItem")
+	}
 }
 
-// TestTimerEngineExecItemFutureTick verifies execItem does nothing when tick is
-// in the future.
-func TestTimerEngineExecItemFutureTick(t *testing.T) {
-	te := &TimerEngine{tasks: make(map[string]*timerExec)}
-	te.tasks["future"] = &timerExec{
-		tt:   &model.TTrigger{Id: "future", Name: "test"},
-		typ:  1,
-		tick: time.Now().Add(time.Hour),
+// TestTimerEngineExecItemRepeatingTick verifies execItem for a repeating (type=1)
+// timer reschedules the next tick to approximately now+1 minute.
+func TestTimerEngineExecItemRepeatingTick(t *testing.T) {
+	te := &TimerEngine{
+		tasks:  make(map[string]*timerExec),
+		stopCh: make(chan struct{}),
+		wakeCh: make(chan struct{}, 1),
 	}
-	originalTick := te.tasks["future"].tick
-	te.execItem(te.tasks["future"])
-	// tick should not change
-	if !te.tasks["future"].tick.Equal(originalTick) {
-		t.Error("execItem should not modify tick when it is in the future")
+	tt := &model.TTrigger{Id: "repeat", Name: "test"}
+	te.tasks["repeat"] = &timerExec{
+		tt:   tt,
+		typ:  1,
+		tick: time.Now().Add(-time.Second),
+	}
+
+	before := time.Now()
+	te.execItem(tt, 1, "repeat")
+
+	te.tasklk.RLock()
+	task, ok := te.tasks["repeat"]
+	te.tasklk.RUnlock()
+	if !ok {
+		t.Fatal("repeating timer should still exist after execItem")
+	}
+	// Next tick should be ~now + 1 minute
+	nextExpected := before.Add(time.Minute)
+	diff := task.tick.Sub(nextExpected)
+	if diff < -2*time.Second || diff > 2*time.Second {
+		t.Errorf("expected next tick near %v, got %v (diff %v)", nextExpected, task.tick, diff)
 	}
 }

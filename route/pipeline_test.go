@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gokins/gokins/bean"
 	"github.com/gokins/gokins/comm"
 	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/service"
@@ -442,6 +443,129 @@ func TestPipelineVersion_NonexistentId(t *testing.T) {
 
 	if w.Code != http.StatusNotFound {
 		t.Errorf("expected 404 for nonexistent version, got %d", w.Code)
+	}
+}
+
+func TestPipelineVarSave_MissingParams(t *testing.T) {
+	setupPipelineTestDB(t)
+	ctrl := PipelineController{}
+	pv := &bean.PipelineVar{}
+	c, w := makePipelineTestContext(t, pv)
+	ctrl.varSave(c, pv)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for missing params, got %d", w.Code)
+	}
+}
+
+func TestPipelineVarSave_NonexistentPipeline(t *testing.T) {
+	setupPipelineTestDB(t)
+	ctrl := PipelineController{}
+	pv := &bean.PipelineVar{
+		PipelineId: "nonexistent-id",
+		Name:       "var1",
+		Value:      "value1",
+	}
+	c, w := makePipelineTestContext(t, pv)
+	ctrl.varSave(c, pv)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected 404 for nonexistent pipeline, got %d", w.Code)
+	}
+}
+
+func TestPipelinePipelineVersions_AdminPath(t *testing.T) {
+	setupPipelineTestDB(t)
+
+	// Insert a test user who is admin
+	_, err := comm.Db.Exec(`INSERT INTO t_user (id, name, nick, active) VALUES ('admin-user', 'admin', 'Admin', 1)`)
+	if err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
+
+	// Insert a pipeline version
+	_, err = comm.Db.Exec(`INSERT INTO t_pipeline_version (id, pipeline_id, number, deleted) VALUES ('pv-1', 'pipe-1', 1, 0)`)
+	if err != nil {
+		t.Fatalf("insert pipeline version: %v", err)
+	}
+
+	ctrl := PipelineController{}
+	m := &hbtp.Map{}
+	c, w := makePipelineTestContext(t, m)
+	// Set the user as admin
+	c.Set(service.LgUserKey, &model.TUser{
+		Id:     "admin-user",
+		Name:   "admin",
+		Nick:   "Admin",
+		Active: 1,
+	})
+	ctrl.pipelineVersions(c, m)
+
+	// Should succeed (200) or return empty results, not error
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200 for admin path, got %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestPipelinePipelineVersions_NonAdminWithPipelines(t *testing.T) {
+	setupPipelineTestDB(t)
+
+	// Insert a non-admin user
+	_, err := comm.Db.Exec(`INSERT INTO t_user (id, name, nick, active) VALUES ('user-1', 'user1', 'User 1', 1)`)
+	if err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
+
+	// Insert pipelines owned by this user
+	_, err = comm.Db.Exec(`INSERT INTO t_pipeline (id, uid, name, deleted) VALUES ('pipe-1', 'user-1', 'Test Pipe', 0)`)
+	if err != nil {
+		t.Fatalf("insert pipeline: %v", err)
+	}
+
+	_, err = comm.Db.Exec(`INSERT INTO t_pipeline_version (id, pipeline_id, number, deleted) VALUES ('pv-1', 'pipe-1', 1, 0)`)
+	if err != nil {
+		t.Fatalf("insert pipeline version: %v", err)
+	}
+
+	ctrl := PipelineController{}
+	m := &hbtp.Map{}
+	c, w := makePipelineTestContext(t, m)
+	// Set the user as non-admin
+	c.Set(service.LgUserKey, &model.TUser{
+		Id:     "user-1",
+		Name:   "user1",
+		Nick:   "User 1",
+		Active: 1,
+	})
+	ctrl.pipelineVersions(c, m)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200 for non-admin with pipelines, got %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestPipelinePipelineVersions_NonAdminNoPipelines(t *testing.T) {
+	setupPipelineTestDB(t)
+
+	// Insert a non-admin user with no pipelines
+	_, err := comm.Db.Exec(`INSERT INTO t_user (id, name, nick, active) VALUES ('user-2', 'user2', 'User 2', 1)`)
+	if err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
+
+	ctrl := PipelineController{}
+	m := &hbtp.Map{}
+	c, w := makePipelineTestContext(t, m)
+	c.Set(service.LgUserKey, &model.TUser{
+		Id:     "user-2",
+		Name:   "user2",
+		Nick:   "User 2",
+		Active: 1,
+	})
+	ctrl.pipelineVersions(c, m)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200 for non-admin with no pipelines, got %d", w.Code)
 	}
 }
 

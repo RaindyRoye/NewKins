@@ -56,9 +56,10 @@ func runWeb() {
 	defer close(webDoneCh)
 	defer util.RecoverLog("Web")
 
-	comm.WebEgn = gin.Default()
+	comm.WebEgn = gin.New()
 	comm.WebEgn.Use(middleware.MidRequestID())
 	comm.WebEgn.Use(middleware.MidSecurityHeaders())
+	comm.WebEgn.Use(middleware.MidAccessLog())
 	comm.WebEgn.Use(midUiHandle)
 
 	// Signal that the gin engine is initialized and ready for route registration.
