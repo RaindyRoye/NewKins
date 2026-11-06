@@ -149,6 +149,8 @@ func setupTestCache(t *testing.T) func() {
 	mainCacheClearTime.Store(time.Now().UnixNano())
 
 	return func() {
+		// Wait for any async cleanup goroutines to finish before closing db
+		time.Sleep(150 * time.Millisecond)
 		_ = db.Close()
 		BCache = oldCache
 		_ = os.Remove(tmpFile.Name())

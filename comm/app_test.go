@@ -253,3 +253,59 @@ func TestCtx_Cancellation(t *testing.T) {
 	err = Ctx.Err()
 	assert.ErrorIs(t, err, context.Canceled, "context should be canceled")
 }
+
+func TestSyncGlobals_ConcurrentSafety(t *testing.T) {
+	// Test that concurrent sync operations don't cause race conditions.
+	// We use SetGlobals (which holds the mutex) to modify globals safely
+	// from multiple goroutines alongside SyncGlobals/SyncToGlobals.
+	originalWorkPath := WorkPath
+	originalWebHost := WebHost
+	originalIsMySQL := IsMySQL
+	defer func() {
+		appMu.Lock()
+		WorkPath = originalWorkPath
+		WebHost = originalWebHost
+		IsMySQL = originalIsMySQL
+		appMu.Unlock()
+	}()
+
+	var wg sync.WaitGroup
+	iterations := 100
+
+	for i := 0; i < iterations; i++ {
+		wg.Add(3)
+
+		// Goroutine 1: atomically modify globals and sync to App
+		go func(id int) {
+			defer wg.Done()
+			SetGlobals(
+				"/path-"+string(rune('0'+id%10)),
+				"host-"+string(rune('0'+id%10)),
+				id%2 == 0,
+			)
+		}(i)
+
+		// Goroutine 2: sync App to globals
+		go func() {
+			defer wg.Done()
+			SyncToGlobals()
+		}()
+
+		// Goroutine 3: sync globals to App
+		go func() {
+			defer wg.Done()
+			SyncGlobals()
+		}()
+	}
+
+	wg.Wait()
+
+	// Read with full lock to ensure no race
+	appMu.Lock()
+	app := GetApp()
+	_ = app.WorkPath
+	_ = app.WebHost
+	appMu.Unlock()
+	
+	assert.NotNil(t, app, "App should still be accessible after concurrent syncs")
+}

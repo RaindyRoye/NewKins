@@ -82,6 +82,9 @@ var (
 // globals. It enables a gradual migration path to dependency injection.
 var defaultApp = &App{}
 
+// appMu protects concurrent access to defaultApp during sync operations.
+var appMu sync.RWMutex
+
 // GetApp returns the default App instance. This is the entry point for code
 // that wants to use dependency injection instead of global variables.
 func GetApp() *App {
@@ -91,7 +94,10 @@ func GetApp() *App {
 // SyncGlobals copies the package-level globals into the default App instance.
 // Call this after initializing the globals (e.g., after database setup) to
 // ensure the App struct reflects the current state.
+// Thread-safe: can be called from multiple goroutines.
 func SyncGlobals() {
+	appMu.Lock()
+	defer appMu.Unlock()
 	defaultApp.Cfg = Cfg
 	defaultApp.Db = Db
 	defaultApp.BCache = BCache
@@ -107,7 +113,10 @@ func SyncGlobals() {
 // SyncToGlobals copies the App struct fields back to the package-level globals.
 // This is useful during migration when some code uses the App struct while
 // other code still references the globals directly.
+// Thread-safe: can be called from multiple goroutines.
 func SyncToGlobals() {
+	appMu.Lock()
+	defer appMu.Unlock()
 	Cfg = defaultApp.Cfg
 	Db = defaultApp.Db
 	BCache = defaultApp.BCache
@@ -118,6 +127,21 @@ func SyncToGlobals() {
 	NotUpPass = defaultApp.NotUpPass
 	WorkPath = defaultApp.WorkPath
 	WebHost = defaultApp.WebHost
+}
+
+// SetGlobals atomically sets the package-level globals and syncs them into
+// the default App. Use this when multiple goroutines may be updating state
+// concurrently; it avoids the data races that would occur from directly
+// assigning to package-level variables.
+func SetGlobals(workPath, webHost string, isMySQL bool) {
+	appMu.Lock()
+	defer appMu.Unlock()
+	WorkPath = workPath
+	WebHost = webHost
+	IsMySQL = isMySQL
+	defaultApp.WorkPath = workPath
+	defaultApp.WebHost = webHost
+	defaultApp.IsMySQL = isMySQL
 }
 
 func init() {
