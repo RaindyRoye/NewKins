@@ -307,10 +307,87 @@ func TestGetIdOrAidE_IntegFindById(t *testing.T) {
 
 // --- BatchOrgPipeCounts / BatchOrgUserCounts with real data ---
 
+func setupBatchOrgTestDB(t *testing.T) *xorm.Engine {
+	t.Helper()
+	eng, err := xorm.NewEngine("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatalf("failed to create test database: %v", err)
+	}
+	oldDb := comm.Db
+	comm.Db = eng
+	t.Cleanup(func() {
+		comm.Db = oldDb
+		_ = eng.Close()
+	})
+	if err := eng.Sync2(&model.TOrgPipe{}, &model.TUserOrg{}); err != nil {
+		t.Fatalf("failed to sync schema: %v", err)
+	}
+	return eng
+}
+
 func TestBatchOrgPipeCounts_WithRealData(t *testing.T) {
-	t.Skip("Skipping: BatchOrgPipeCounts uses raw SQL with IN (?) which requires MySQL/PostgreSQL array parameter support")
+	eng := setupBatchOrgTestDB(t)
+	ctx := context.Background()
+
+	// Insert test org-pipe relationships
+	orgPipes := []model.TOrgPipe{
+		{Aid: 1, OrgId: "org1", PipeId: "pipe1"},
+		{Aid: 2, OrgId: "org1", PipeId: "pipe2"},
+		{Aid: 3, OrgId: "org1", PipeId: "pipe3"},
+		{Aid: 4, OrgId: "org2", PipeId: "pipe4"},
+		{Aid: 5, OrgId: "org2", PipeId: "pipe5"},
+	}
+	for _, op := range orgPipes {
+		if _, err := eng.Insert(&op); err != nil {
+			t.Fatalf("failed to insert org-pipe: %v", err)
+		}
+	}
+
+	result, err := BatchOrgPipeCounts(ctx, []string{"org1", "org2", "org3"})
+	if err != nil {
+		t.Fatalf("BatchOrgPipeCounts failed: %v", err)
+	}
+
+	if result["org1"] != 3 {
+		t.Errorf("org1 count = %d, want 3", result["org1"])
+	}
+	if result["org2"] != 2 {
+		t.Errorf("org2 count = %d, want 2", result["org2"])
+	}
+	if _, exists := result["org3"]; exists {
+		t.Error("org3 should not exist in result (no pipes)")
+	}
 }
 
 func TestBatchOrgUserCounts_WithRealData(t *testing.T) {
-	t.Skip("Skipping: BatchOrgUserCounts uses raw SQL with IN (?) which requires MySQL/PostgreSQL array parameter support")
+	eng := setupBatchOrgTestDB(t)
+	ctx := context.Background()
+
+	// Insert test user-org relationships
+	userOrgs := []model.TUserOrg{
+		{Aid: 1, Uid: "user1", OrgId: "org1"},
+		{Aid: 2, Uid: "user2", OrgId: "org1"},
+		{Aid: 3, Uid: "user3", OrgId: "org1"},
+		{Aid: 4, Uid: "user4", OrgId: "org2"},
+	}
+	for _, uo := range userOrgs {
+		if _, err := eng.Insert(&uo); err != nil {
+			t.Fatalf("failed to insert user-org: %v", err)
+		}
+	}
+
+	result, err := BatchOrgUserCounts(ctx, []string{"org1", "org2", "org3"})
+	if err != nil {
+		t.Fatalf("BatchOrgUserCounts failed: %v", err)
+	}
+
+	if result["org1"] != 3 {
+		t.Errorf("org1 count = %d, want 3", result["org1"])
+	}
+	if result["org2"] != 1 {
+		t.Errorf("org2 count = %d, want 1", result["org2"])
+	}
+	if _, exists := result["org3"]; exists {
+		t.Error("org3 should not exist in result (no users)")
+	}
 }

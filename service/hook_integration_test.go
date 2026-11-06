@@ -230,3 +230,220 @@ func TestParseHookInteg_CaseInsensitive(t *testing.T) {
 		}
 	}
 }
+
+// --- TriggerWeb additional tests ---
+
+func TestTriggerWeb_NoSecret(t *testing.T) {
+	eng := setupHookTestDB(t)
+
+	// Create pipeline and user so permission check passes
+	pipe := &model.TPipeline{Id: "pipe-1", Name: "test-pipeline", Uid: "user-1"}
+	if _, err := eng.Insert(pipe); err != nil {
+		t.Fatalf("insert pipeline: %v", err)
+	}
+
+	user := &model.TUser{Id: "user-1", Aid: 1, Name: "admin", Active: 1}
+	if _, err := eng.Insert(user); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
+
+	trigger := &model.TTrigger{
+		Id:         "trigger-1",
+		Uid:        "user-1",
+		PipelineId: "pipe-1",
+		Params:     `{"hookType":"github","secret":"mysecret"}`,
+	}
+
+	ctx := context.Background()
+	_, err := TriggerWeb(ctx, trigger, "wrongsecret")
+	if !errors.Is(err, ErrTriggerSecretMismatch) {
+		t.Errorf("expected ErrTriggerSecretMismatch, got: %v", err)
+	}
+}
+
+func TestTriggerWeb_MissingSecretInParams(t *testing.T) {
+	eng := setupHookTestDB(t)
+
+	// Create pipeline and user so permission check passes
+	pipe := &model.TPipeline{Id: "pipe-1", Name: "test-pipeline", Uid: "user-1"}
+	if _, err := eng.Insert(pipe); err != nil {
+		t.Fatalf("insert pipeline: %v", err)
+	}
+
+	user := &model.TUser{Id: "user-1", Aid: 1, Name: "admin", Active: 1}
+	if _, err := eng.Insert(user); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
+
+	trigger := &model.TTrigger{
+		Id:         "trigger-1",
+		Uid:        "user-1",
+		PipelineId: "pipe-1",
+		Params:     `{"hookType":"github"}`,
+	}
+
+	ctx := context.Background()
+	_, err := TriggerWeb(ctx, trigger, "secret")
+	if !errors.Is(err, ErrTriggerNoSecret) {
+		t.Errorf("expected ErrTriggerNoSecret, got: %v", err)
+	}
+}
+
+// --- TriggerTimer additional tests ---
+
+func TestTriggerTimer_SuccessPath(t *testing.T) {
+	eng := setupHookTestDB(t)
+
+	// Create a valid pipeline and user
+	pipe := &model.TPipeline{Id: "pipe-1", Name: "test-pipeline", Uid: "user-1"}
+	if _, err := eng.Insert(pipe); err != nil {
+		t.Fatalf("insert pipeline: %v", err)
+	}
+
+	user := &model.TUser{Id: "user-1", Aid: 1, Name: "admin", Active: 1}
+	if _, err := eng.Insert(user); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
+
+	trigger := &model.TTrigger{
+		Id:         "trigger-1",
+		Uid:        "user-1",
+		PipelineId: "pipe-1",
+		Params:     "",
+	}
+
+	ctx := context.Background()
+	// This will fail at Run() because we don't have full pipeline config,
+	// but it should pass the permission check
+	_, err := TriggerTimer(ctx, trigger)
+	// We expect an error from Run() since pipeline config doesn't exist
+	if err == nil {
+		t.Error("expected error from Run() due to missing pipeline config")
+	}
+	if !strings.Contains(err.Error(), "run pipeline") {
+		t.Errorf("error should mention 'run pipeline', got: %v", err)
+	}
+}
+
+func TestTriggerTimer_PermissionDenied(t *testing.T) {
+	eng := setupHookTestDB(t)
+
+	// Create pipeline but user doesn't have write permission
+	pipe := &model.TPipeline{Id: "pipe-1", Name: "test-pipeline", Uid: "other-user"}
+	if _, err := eng.Insert(pipe); err != nil {
+		t.Fatalf("insert pipeline: %v", err)
+	}
+
+	user := &model.TUser{Id: "user-1", Aid: 1, Name: "regular", Active: 1}
+	if _, err := eng.Insert(user); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
+
+	trigger := &model.TTrigger{
+		Id:         "trigger-1",
+		Uid:        "user-1",
+		PipelineId: "pipe-1",
+		Params:     "",
+	}
+
+	ctx := context.Background()
+	_, err := TriggerTimer(ctx, trigger)
+	if !errors.Is(err, ErrPermissionDenied) {
+		t.Errorf("expected ErrPermissionDenied, got: %v", err)
+	}
+}
+
+// --- TriggerHookCtx additional coverage tests ---
+
+func TestTriggerHookCtx_MissingHookType(t *testing.T) {
+	eng := setupHookTestDB(t)
+
+	// Create pipeline and user so permission check passes
+	pipe := &model.TPipeline{Id: "pipe-1", Name: "test-pipeline", Uid: "user-1"}
+	if _, err := eng.Insert(pipe); err != nil {
+		t.Fatalf("insert pipeline: %v", err)
+	}
+
+	user := &model.TUser{Id: "user-1", Aid: 1, Name: "admin", Active: 1}
+	if _, err := eng.Insert(user); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
+
+	trigger := &model.TTrigger{
+		Id:         "trigger-1",
+		Uid:        "user-1",
+		PipelineId: "pipe-1",
+		Params:     `{"secret":"test"}`,
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", nil)
+	ctx := context.Background()
+
+	_, err := TriggerHookCtx(ctx, trigger, req)
+	if !errors.Is(err, ErrHookTypeEmpty) {
+		t.Errorf("expected ErrHookTypeEmpty, got: %v", err)
+	}
+}
+
+func TestTriggerHookCtx_WebhookParseFailed(t *testing.T) {
+	eng := setupHookTestDB(t)
+
+	// Create pipeline and user
+	pipe := &model.TPipeline{Id: "pipe-1", Name: "test-pipeline", Uid: "user-1"}
+	if _, err := eng.Insert(pipe); err != nil {
+		t.Fatalf("insert pipeline: %v", err)
+	}
+
+	user := &model.TUser{Id: "user-1", Aid: 1, Name: "admin", Active: 1}
+	if _, err := eng.Insert(user); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
+
+	trigger := &model.TTrigger{
+		Id:         "trigger-1",
+		Uid:        "user-1",
+		PipelineId: "pipe-1",
+		Params:     `{"hookType":"unknown-type"}`,
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", nil)
+	ctx := context.Background()
+
+	_, err := TriggerHookCtx(ctx, trigger, req)
+	if err == nil {
+		t.Error("expected error for unknown webhook type")
+	}
+	if !errors.Is(err, ErrUnknownWebhookType) {
+		t.Errorf("expected ErrUnknownWebhookType, got: %v", err)
+	}
+}
+
+func TestTriggerHookCtx_PermissionDenied(t *testing.T) {
+	eng := setupHookTestDB(t)
+
+	// Create pipeline owned by different user
+	pipe := &model.TPipeline{Id: "pipe-1", Name: "test-pipeline", Uid: "other-user"}
+	if _, err := eng.Insert(pipe); err != nil {
+		t.Fatalf("insert pipeline: %v", err)
+	}
+
+	user := &model.TUser{Id: "user-1", Aid: 1, Name: "regular", Active: 1}
+	if _, err := eng.Insert(user); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
+
+	trigger := &model.TTrigger{
+		Id:         "trigger-1",
+		Uid:        "user-1",
+		PipelineId: "pipe-1",
+		Params:     `{"hookType":"github"}`,
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", nil)
+	ctx := context.Background()
+
+	_, err := TriggerHookCtx(ctx, trigger, req)
+	if !errors.Is(err, ErrPermissionDenied) {
+		t.Errorf("expected ErrPermissionDenied, got: %v", err)
+	}
+}
