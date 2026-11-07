@@ -1,6 +1,7 @@
 package migrates
 
 import (
+	"context"
 	"database/sql"
 	"os"
 	"path/filepath"
@@ -22,7 +23,7 @@ func TestInitSqliteMigrate_Success(t *testing.T) {
 	comm.WorkPath = tmpDir
 
 	// Run migration
-	rtul, err := InitSqliteMigrate()
+	rtul, err := InitSqliteMigrate(context.Background())
 	if err != nil {
 		t.Fatalf("InitSqliteMigrate() error = %v", err)
 	}
@@ -66,7 +67,7 @@ func TestInitSqliteMigrate_InvalidWorkPath(t *testing.T) {
 	// Use a path that cannot be written (non-existent parent directory)
 	comm.WorkPath = "/nonexistent/directory/that/does/not/exist"
 
-	_, err := InitSqliteMigrate()
+	_, err := InitSqliteMigrate(context.Background())
 	if err == nil {
 		t.Skip("skipping: migration succeeded unexpectedly (possibly running as root)")
 	}
@@ -87,13 +88,13 @@ func TestUpSqliteMigrate_Success(t *testing.T) {
 	t.Cleanup(func() { comm.WorkPath = origWorkPath })
 	comm.WorkPath = tmpDir
 
-	_, err := InitSqliteMigrate()
+	_, err := InitSqliteMigrate(context.Background())
 	if err != nil {
 		t.Fatalf("InitSqliteMigrate() error = %v", err)
 	}
 
 	// Now run UpSqliteMigrate on the same database
-	err = UpSqliteMigrate(dbPath)
+	err = UpSqliteMigrate(context.Background(), dbPath)
 	if err != nil {
 		t.Errorf("UpSqliteMigrate() error = %v", err)
 	}
@@ -109,13 +110,13 @@ func TestSqliteMigrationIdempotency(t *testing.T) {
 	comm.WorkPath = tmpDir
 
 	// First migration
-	_, err := InitSqliteMigrate()
+	_, err := InitSqliteMigrate(context.Background())
 	if err != nil {
 		t.Fatalf("first InitSqliteMigrate() error = %v", err)
 	}
 
 	// Second migration should be idempotent (no change)
-	err = UpSqliteMigrate(dbPath)
+	err = UpSqliteMigrate(context.Background(), dbPath)
 	if err != nil {
 		t.Errorf("second UpSqliteMigrate() should be idempotent, error = %v", err)
 	}
@@ -130,7 +131,7 @@ func TestSqliteMigrationCreatesExpectedTables(t *testing.T) {
 	t.Cleanup(func() { comm.WorkPath = origWorkPath })
 	comm.WorkPath = tmpDir
 
-	_, err := InitSqliteMigrate()
+	_, err := InitSqliteMigrate(context.Background())
 	if err != nil {
 		t.Fatalf("InitSqliteMigrate() error = %v", err)
 	}
@@ -200,12 +201,12 @@ func TestSqliteMigrationErrorWrapping(t *testing.T) {
 	}{
 		{
 			"UpSqliteMigrate empty",
-			func() error { return UpSqliteMigrate("") },
+			func() error { return UpSqliteMigrate(context.Background(), "") },
 			"database config not found",
 		},
 		{
 			"UpSqliteMigrate invalid path",
-			func() error { return UpSqliteMigrate("/nonexistent/sqlite/test.db") },
+			func() error { return UpSqliteMigrate(context.Background(), "/nonexistent/sqlite/test.db") },
 			"sqlite",
 		},
 	}

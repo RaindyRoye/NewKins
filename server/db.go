@@ -25,11 +25,11 @@ func initDb() error {
 	if !comm.Installed {
 		switch dvs {
 		case comm.DatasourceDriverMySQL:
-			err = migrates.UpMysqlMigrate(ul)
+			err = migrates.UpMysqlMigrate(comm.Ctx, ul)
 		case comm.DatasourceDriverPostgres:
-			err = migrates.UpPostgresMigrate(ul)
+			err = migrates.UpPostgresMigrate(comm.Ctx, ul)
 		default:
-			err = migrates.UpSqliteMigrate(ul)
+			err = migrates.UpSqliteMigrate(comm.Ctx, ul)
 		}
 	}
 	if err != nil {

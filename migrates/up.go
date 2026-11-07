@@ -17,7 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func UpMysqlMigrate(ul string) error {
+func UpMysqlMigrate(ctx context.Context, ul string) error {
 	if ul == "" {
 		return fmt.Errorf("%w: mysql connection string is empty", ErrDatabaseConfigMissing)
 	}
@@ -27,7 +27,7 @@ func UpMysqlMigrate(ul string) error {
 		return fmt.Errorf("open mysql database: %w", err)
 	}
 	defer func() { _ = db.Close() }()
-	err = db.PingContext(context.Background())
+	err = db.PingContext(ctx)
 	if err != nil {
 		logrus.Errorf("mysql ping failed: %v", err)
 		return fmt.Errorf("ping mysql database: %w", err)
@@ -71,7 +71,7 @@ func UpMysqlMigrate(ul string) error {
 	return nil
 }
 
-func UpPostgresMigrate(ul string) error {
+func UpPostgresMigrate(ctx context.Context, ul string) error {
 	if ul == "" {
 		return fmt.Errorf("%w: postgres connection string is empty", ErrDatabaseConfigMissing)
 	}
@@ -81,7 +81,7 @@ func UpPostgresMigrate(ul string) error {
 		return fmt.Errorf("open postgres database: %w", err)
 	}
 	defer func() { _ = db.Close() }()
-	err = db.PingContext(context.Background())
+	err = db.PingContext(ctx)
 	if err != nil {
 		logrus.Errorf("postgres ping failed: %v", err)
 		return fmt.Errorf("ping postgres database: %w", err)
@@ -124,7 +124,7 @@ func UpPostgresMigrate(ul string) error {
 
 	return nil
 }
-func UpSqliteMigrate(ul string) error {
+func UpSqliteMigrate(ctx context.Context, ul string) error {
 	if ul == "" {
 		return fmt.Errorf("%w: sqlite connection string is empty", ErrDatabaseConfigMissing)
 	}
@@ -134,7 +134,7 @@ func UpSqliteMigrate(ul string) error {
 		return fmt.Errorf("open sqlite database: %w", err)
 	}
 	defer func() { _ = db.Close() }()
-	err = db.PingContext(context.Background())
+	err = db.PingContext(ctx)
 	if err != nil {
 		logrus.Errorf("sqlite ping failed: %v", err)
 		return fmt.Errorf("ping sqlite database: %w", err)
