@@ -3,17 +3,12 @@ package migrates
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
-	"strings"
 
-	"github.com/gokins/gokins/comm"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,17 +35,7 @@ func UpMysqlMigrate(ul string) error {
 		return fmt.Errorf("init mysql migration driver: %w", err)
 	}
 	defer func() { _ = driver.Close() }()
-	var nms []string
-	tms := comm.AssetNames()
-	for _, v := range tms {
-		if strings.HasPrefix(v, "mysql") {
-			nms = append(nms, strings.Replace(v, "mysql/", "", 1))
-		}
-	}
-	s := bindata.Resource(nms, func(name string) ([]byte, error) {
-		return comm.Asset("mysql/" + name)
-	})
-	sc, err := bindata.WithInstance(s)
+	sc, err := newBindataSource("mysql")
 	if err != nil {
 		return fmt.Errorf("init mysql bindata source: %w", err)
 	}
@@ -62,9 +47,8 @@ func UpMysqlMigrate(ul string) error {
 		return fmt.Errorf("create mysql migrate instance: %w", err)
 	}
 	defer func() { _, _ = mgt.Close() }()
-	err = mgt.Up()
-	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		_ = mgt.Down()
+	err = runMigration(mgt)
+	if err != nil {
 		return fmt.Errorf("run mysql migration: %w", err)
 	}
 
@@ -94,17 +78,7 @@ func UpPostgresMigrate(ul string) error {
 		return fmt.Errorf("init postgres migration driver: %w", err)
 	}
 	defer func() { _ = driver.Close() }()
-	var nms []string
-	tms := comm.AssetNames()
-	for _, v := range tms {
-		if strings.HasPrefix(v, "postgres") {
-			nms = append(nms, strings.Replace(v, "postgres/", "", 1))
-		}
-	}
-	s := bindata.Resource(nms, func(name string) ([]byte, error) {
-		return comm.Asset("postgres/" + name)
-	})
-	sc, err := bindata.WithInstance(s)
+	sc, err := newBindataSource("postgres")
 	if err != nil {
 		return fmt.Errorf("init postgres bindata source: %w", err)
 	}
@@ -116,9 +90,8 @@ func UpPostgresMigrate(ul string) error {
 		return fmt.Errorf("create postgres migrate instance: %w", err)
 	}
 	defer func() { _, _ = mgt.Close() }()
-	err = mgt.Up()
-	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		_ = mgt.Down()
+	err = runMigration(mgt)
+	if err != nil {
 		return fmt.Errorf("run postgres migration: %w", err)
 	}
 
@@ -147,17 +120,7 @@ func UpSqliteMigrate(ul string) error {
 		return fmt.Errorf("init sqlite migration driver: %w", err)
 	}
 	defer func() { _ = driver.Close() }()
-	var nms []string
-	tms := comm.AssetNames()
-	for _, v := range tms {
-		if strings.HasPrefix(v, "sqlite") {
-			nms = append(nms, strings.Replace(v, "sqlite/", "", 1))
-		}
-	}
-	s := bindata.Resource(nms, func(name string) ([]byte, error) {
-		return comm.Asset("sqlite/" + name)
-	})
-	sc, err := bindata.WithInstance(s)
+	sc, err := newBindataSource("sqlite")
 	if err != nil {
 		return fmt.Errorf("init sqlite bindata source: %w", err)
 	}
@@ -169,9 +132,8 @@ func UpSqliteMigrate(ul string) error {
 		return fmt.Errorf("create sqlite migrate instance: %w", err)
 	}
 	defer func() { _, _ = mgt.Close() }()
-	err = mgt.Up()
-	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		_ = mgt.Down()
+	err = runMigration(mgt)
+	if err != nil {
 		return fmt.Errorf("run sqlite migration: %w", err)
 	}
 

@@ -13,10 +13,47 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+	"github.com/golang-migrate/migrate/v4/source"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
 	"github.com/sirupsen/logrus"
 )
+
+// filterAssetNames returns asset names from comm.AssetNames() that start with
+// the given prefix, stripping the prefix and trailing slash from each name.
+// For example, with prefix "mysql" and assets ["mysql/001_init.up.sql", "sqlite/001_init.up.sql"],
+// it returns ["001_init.up.sql"].
+func filterAssetNames(prefix string) []string {
+	var names []string
+	for _, v := range comm.AssetNames() {
+		if strings.HasPrefix(v, prefix) {
+			names = append(names, strings.Replace(v, prefix+"/", "", 1))
+		}
+	}
+	return names
+}
+
+// newBindataSource creates a bindata source instance for the given database prefix.
+// It reads migration SQL files embedded in the binary via comm.Asset.
+// Returns a source.Driver suitable for use with migrate.NewWithInstance.
+func newBindataSource(prefix string) (source.Driver, error) {
+	names := filterAssetNames(prefix)
+	s := bindata.Resource(names, func(name string) ([]byte, error) {
+		return comm.Asset(prefix + "/" + name)
+	})
+	return bindata.WithInstance(s)
+}
+
+// runMigration executes an Up migration and handles the ErrNoChange sentinel.
+// If the migration fails with a non-sentinel error, it attempts to roll back.
+func runMigration(mgt *migrate.Migrate) error {
+	err := mgt.Up()
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		_ = mgt.Down()
+		return fmt.Errorf("run migration: %w", err)
+	}
+	return nil
+}
 
 func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, errs error) {
 	wait = false
@@ -74,17 +111,7 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 		return
 	}
 	defer func() { _ = driver.Close() }()
-	var nms []string
-	tms := comm.AssetNames()
-	for _, v := range tms {
-		if strings.HasPrefix(v, "mysql") {
-			nms = append(nms, strings.Replace(v, "mysql/", "", 1))
-		}
-	}
-	s := bindata.Resource(nms, func(name string) ([]byte, error) {
-		return comm.Asset("mysql/" + name)
-	})
-	sc, err := bindata.WithInstance(s)
+	sc, err := newBindataSource("mysql")
 	if err != nil {
 		errs = fmt.Errorf("init mysql bindata source: %w", err)
 		return
@@ -98,9 +125,8 @@ func InitMysqlMigrate(host, dbs, user, pass string) (wait bool, rtul string, err
 		return
 	}
 	defer func() { _, _ = mgt.Close() }()
-	err = mgt.Up()
-	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		_ = mgt.Down()
+	err = runMigration(mgt)
+	if err != nil {
 		errs = fmt.Errorf("run mysql migration: %w", err)
 		return
 	}
@@ -125,17 +151,7 @@ func InitSqliteMigrate() (rtul string, errs error) {
 		return
 	}
 	defer func() { _ = driver.Close() }()
-	var nms []string
-	tms := comm.AssetNames()
-	for _, v := range tms {
-		if strings.HasPrefix(v, "sqlite") {
-			nms = append(nms, strings.Replace(v, "sqlite/", "", 1))
-		}
-	}
-	s := bindata.Resource(nms, func(name string) ([]byte, error) {
-		return comm.Asset("sqlite/" + name)
-	})
-	sc, err := bindata.WithInstance(s)
+	sc, err := newBindataSource("sqlite")
 	if err != nil {
 		errs = fmt.Errorf("init sqlite bindata source: %w", err)
 		return
@@ -149,9 +165,8 @@ func InitSqliteMigrate() (rtul string, errs error) {
 		return
 	}
 	defer func() { _, _ = mgt.Close() }()
-	err = mgt.Up()
-	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		_ = mgt.Down()
+	err = runMigration(mgt)
+	if err != nil {
 		errs = fmt.Errorf("run sqlite migration: %w", err)
 		return
 	}
@@ -189,17 +204,7 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 		return
 	}
 	defer func() { _ = driver.Close() }()
-	var nms []string
-	tms := comm.AssetNames()
-	for _, v := range tms {
-		if strings.HasPrefix(v, "postgres") {
-			nms = append(nms, strings.Replace(v, "postgres/", "", 1))
-		}
-	}
-	s := bindata.Resource(nms, func(name string) ([]byte, error) {
-		return comm.Asset("postgres/" + name)
-	})
-	sc, err := bindata.WithInstance(s)
+	sc, err := newBindataSource("postgres")
 	if err != nil {
 		errs = fmt.Errorf("init postgres bindata source: %w", err)
 		return
@@ -213,9 +218,8 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 		return
 	}
 	defer func() { _, _ = mgt.Close() }()
-	err = mgt.Up()
-	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		_ = mgt.Down()
+	err = runMigration(mgt)
+	if err != nil {
 		errs = fmt.Errorf("run postgres migration: %w", err)
 		return
 	}
