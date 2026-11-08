@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -56,7 +57,7 @@ func Run() error {
 	case <-comm.Ctx.Done():
 		return fmt.Errorf("shutdown before web server ready: %w", comm.Ctx.Err())
 	case <-time.After(10 * time.Second):
-		return fmt.Errorf("web server did not start within 10 seconds")
+		return fmt.Errorf("web server startup timeout: %w", context.DeadlineExceeded)
 	}
 
 	err := parseConfig()
