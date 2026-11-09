@@ -43,10 +43,31 @@ func StartTimerEngine() *TimerEngine {
 func (c *TimerEngine) run() {
 	defer util.RecoverLog("TimerEngine.run")
 
-	c.tasklk.Lock()
-	defer c.tasklk.Unlock()
+	c.tasklk.RLock()
+	n := len(c.tasks)
+	toExec := make([]*timerExec, 0, n)
+	toDelete := make([]string, 0, n)
 	for _, v := range c.tasks {
+		if v.typ == 0 {
+			// One-time timers: collect for deletion after processing
+			toDelete = append(toDelete, v.tt.Id)
+		}
+		toExec = append(toExec, v)
+	}
+	c.tasklk.RUnlock()
+
+	// Process timers without holding the lock
+	for _, v := range toExec {
 		c.execItem(v)
+	}
+
+	// Delete one-time timers
+	if len(toDelete) > 0 {
+		c.tasklk.Lock()
+		for _, id := range toDelete {
+			delete(c.tasks, id)
+		}
+		c.tasklk.Unlock()
 	}
 }
 func (c *TimerEngine) execItem(v *timerExec) {
@@ -56,11 +77,7 @@ func (c *TimerEngine) execItem(v *timerExec) {
 		logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", v.tt.Name, v.typ, now.Format(common.TimeFmt), v.tick.Format(common.TimeFmt))
 		switch v.typ {
 		case 0:
-			go func(id string) {
-				defer util.RecoverLog("TimerEngine.delete")
-				c.Delete(id)
-			}(v.tt.Id)
-			time.Sleep(time.Millisecond * 10)
+			// One-time timer: deletion is handled by run() after processing
 		case 1:
 			v.tick = now.Add(time.Minute)
 		case 2:

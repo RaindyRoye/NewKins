@@ -119,10 +119,12 @@ func CacheGet(key string) ([]byte, error) {
 		err = fmt.Errorf("cache get key %q: %w", key, err)
 	}
 	// Delete expired keys in a separate write transaction (View is read-only).
+	// Capture the db reference to avoid racing with test cleanup that may set BCache to nil.
 	if expired {
+		db := BCache
 		go func() {
 			defer util.RecoverLog("CacheGet.expired-cleanup")
-			if err := BCache.Update(func(tx *bolt.Tx) error {
+			if err := db.Update(func(tx *bolt.Tx) error {
 				bk := tx.Bucket(mainCacheBucket)
 				if bk == nil {
 					return nil

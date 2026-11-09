@@ -308,9 +308,75 @@ func TestGetIdOrAidE_IntegFindById(t *testing.T) {
 // --- BatchOrgPipeCounts / BatchOrgUserCounts with real data ---
 
 func TestBatchOrgPipeCounts_WithRealData(t *testing.T) {
-	t.Skip("Skipping: BatchOrgPipeCounts uses raw SQL with IN (?) which requires MySQL/PostgreSQL array parameter support")
+	eng := setupDBTest(t)
+	ctx := context.Background()
+
+	// Sync t_org_pipe schema
+	if err := eng.Sync2(&model.TOrgPipe{}); err != nil {
+		t.Fatalf("sync TOrgPipe: %v", err)
+	}
+
+	// Insert test data
+	rows := []model.TOrgPipe{
+		{OrgId: "org-1", PipeId: "pipe-1", Created: time.Now()},
+		{OrgId: "org-1", PipeId: "pipe-2", Created: time.Now()},
+		{OrgId: "org-1", PipeId: "pipe-3", Created: time.Now()},
+		{OrgId: "org-2", PipeId: "pipe-4", Created: time.Now()},
+		{OrgId: "org-2", PipeId: "pipe-5", Created: time.Now()},
+		{OrgId: "org-3", PipeId: "pipe-6", Created: time.Now()},
+	}
+	for i := range rows {
+		if _, err := eng.Insert(&rows[i]); err != nil {
+			t.Fatalf("insert TOrgPipe: %v", err)
+		}
+	}
+
+	// Query only org-1 and org-2
+	result, err := BatchOrgPipeCounts(ctx, []string{"org-1", "org-2"})
+	if err != nil {
+		t.Fatalf("BatchOrgPipeCounts error: %v", err)
+	}
+	if len(result) != 2 {
+		t.Errorf("expected 2 entries, got %d: %+v", len(result), result)
+	}
+	if result["org-1"] != 3 {
+		t.Errorf("org-1 count = %d, want 3", result["org-1"])
+	}
+	if result["org-2"] != 2 {
+		t.Errorf("org-2 count = %d, want 2", result["org-2"])
+	}
 }
 
 func TestBatchOrgUserCounts_WithRealData(t *testing.T) {
-	t.Skip("Skipping: BatchOrgUserCounts uses raw SQL with IN (?) which requires MySQL/PostgreSQL array parameter support")
+	eng := setupDBTest(t)
+	ctx := context.Background()
+
+	// Sync t_user_org schema
+	if err := eng.Sync2(&model.TUserOrg{}); err != nil {
+		t.Fatalf("sync TUserOrg: %v", err)
+	}
+
+	// Insert test data
+	rows := []model.TUserOrg{
+		{Uid: "user-1", OrgId: "org-1", Created: time.Now()},
+		{Uid: "user-2", OrgId: "org-1", Created: time.Now()},
+		{Uid: "user-3", OrgId: "org-2", Created: time.Now()},
+	}
+	for i := range rows {
+		if _, err := eng.Insert(&rows[i]); err != nil {
+			t.Fatalf("insert TUserOrg: %v", err)
+		}
+	}
+
+	// Query only org-1
+	result, err := BatchOrgUserCounts(ctx, []string{"org-1"})
+	if err != nil {
+		t.Fatalf("BatchOrgUserCounts error: %v", err)
+	}
+	if len(result) != 1 {
+		t.Errorf("expected 1 entry, got %d: %+v", len(result), result)
+	}
+	if result["org-1"] != 2 {
+		t.Errorf("org-1 count = %d, want 2", result["org-1"])
+	}
 }

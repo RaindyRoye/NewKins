@@ -77,6 +77,9 @@ func ensureIndexes() {
 		// t_org_pipe: composite index for WHERE org_id=? AND pipe_id=? lookups
 		{"t_org_pipe", "idx_orgpipe_org_pipe", "org_id, pipe_id"},
 
+		// t_user_org: used in BatchOrgUserCounts for GROUP BY org_id
+		{"t_user_org", "idx_userorg_org_id", "org_id"},
+
 		// t_artifact_version: queried by package_id
 		{"t_artifact_version", "idx_artver_package_id", "package_id"},
 

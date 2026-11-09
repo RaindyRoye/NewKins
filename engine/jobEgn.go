@@ -89,18 +89,34 @@ func (c *JobEngine) run() {
 	if !c.tmr.Tick() {
 		return
 	}
+	// Collect expired executors under read lock, then delete under write lock
 	func() {
 		c.exelk.RLock()
-		defer c.exelk.RUnlock()
+		var expired []string
 		for k, v := range c.execs {
 			v.RLock()
 			if time.Since(v.tms).Minutes() > 2 {
-				go func(key string, ex *executer) {
-					defer util.RecoverLog("JobEngine.rmExec.launch")
-					c.rmExec(key, ex)
-				}(k, v)
+				expired = append(expired, k)
 			}
 			v.RUnlock()
+		}
+		c.exelk.RUnlock()
+
+		// Delete expired entries under write lock
+		if len(expired) > 0 {
+			c.exelk.Lock()
+			for _, k := range expired {
+				if ex, ok := c.execs[k]; ok {
+					ex.Lock()
+					for e := ex.jobwt.Front(); e != nil; e = e.Next() {
+						job := e.Value.(*jobSync)
+						job.ended = true
+					}
+					ex.Unlock()
+					delete(c.execs, k)
+				}
+			}
+			c.exelk.Unlock()
 		}
 	}()
 	func() {

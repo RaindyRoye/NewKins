@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -128,10 +129,15 @@ func TestParseCacheData_BinaryData(t *testing.T) {
 
 // --- Integration tests with real bbolt DB ---
 
+var bcacheMu sync.Mutex
+
 // setupTestCache creates a temporary bbolt DB for testing and sets BCache.
 // Returns a cleanup function that must be deferred.
 func setupTestCache(t *testing.T) func() {
 	t.Helper()
+	bcacheMu.Lock()
+	defer bcacheMu.Unlock()
+
 	tmpFile, err := os.CreateTemp("", "cache_test_*.db")
 	if err != nil {
 		t.Fatalf("failed to create temp db: %v", err)
@@ -149,6 +155,8 @@ func setupTestCache(t *testing.T) func() {
 	mainCacheClearTime.Store(time.Now().UnixNano())
 
 	return func() {
+		bcacheMu.Lock()
+		defer bcacheMu.Unlock()
 		_ = db.Close()
 		BCache = oldCache
 		_ = os.Remove(tmpFile.Name())
