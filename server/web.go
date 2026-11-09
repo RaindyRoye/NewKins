@@ -296,7 +296,6 @@ func getFile(pth string) (*zip.File, error) {
 	if strings.Contains(cleaned, "..") || filepath.IsAbs(cleaned) {
 		return nil, fmt.Errorf("getFile: %w: %s", ErrInvalidPath, pth)
 	}
-	// println("getFile:" + pth)
 	r, err := getRdr()
 	if err != nil {
 		return nil, fmt.Errorf("getFile: %w", err)
