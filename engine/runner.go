@@ -21,6 +21,42 @@ import (
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 )
 
+// ErrPathTraversal is returned when a path contains directory traversal attempts
+// that would escape the allowed base directory.
+var ErrPathTraversal = fmt.Errorf("path traversal detected")
+
+// validatePath ensures that a file path does not escape its base directory
+// through directory traversal sequences like ".." or absolute paths.
+// It returns the cleaned, validated path or an error if traversal is detected.
+func validatePath(base, requested string) (string, error) {
+	// Clean the requested path to normalize it
+	cleaned := filepath.Clean(requested)
+	
+	// Reject absolute paths
+	if filepath.IsAbs(cleaned) {
+		return "", fmt.Errorf("%w: absolute paths not allowed: %s", ErrPathTraversal, requested)
+	}
+	
+	// Join with base directory
+	fullPath := filepath.Join(base, cleaned)
+	
+	// Clean the full path
+	fullPath = filepath.Clean(fullPath)
+	
+	// Ensure the result is still under the base directory
+	rel, err := filepath.Rel(base, fullPath)
+	if err != nil {
+		return "", fmt.Errorf("%w: cannot compute relative path: %v", ErrPathTraversal, err)
+	}
+	
+	// Check if the relative path tries to escape
+	if strings.HasPrefix(rel, "..") || rel == ".." {
+		return "", fmt.Errorf("%w: path escapes base directory: %s", ErrPathTraversal, requested)
+	}
+	
+	return fullPath, nil
+}
+
 type baseRunner struct{}
 
 func (c *baseRunner) ServerInfo() (*runners.ServerInfo, error) {
@@ -149,15 +185,25 @@ func (c *baseRunner) ReadDir(fs int, buildID string, pth string) ([]*runners.Dir
 	if !ok {
 		return nil, fmt.Errorf("readDir: %w: %q", ErrBuildNotFound, buildID)
 	}
-	pths := ""
+	base := ""
 	switch fs {
 	case 1:
-		pths = filepath.Join(build.repoPaths, pth)
+		base = build.repoPaths
 	case 2:
-		pths = filepath.Join(comm.WorkPath, common.PathArtifacts, pth)
+		base = filepath.Join(comm.WorkPath, common.PathArtifacts)
 	case 3:
-		pths = filepath.Join(build.buildPath, common.PathJobs, pth)
+		base = filepath.Join(build.buildPath, common.PathJobs)
 	}
+	if base == "" {
+		return nil, fmt.Errorf("readDir: %w", ErrInvalidFSType)
+	}
+	
+	// Validate path to prevent directory traversal
+	pths, err := validatePath(base, pth)
+	if err != nil {
+		return nil, fmt.Errorf("readDir: %w", err)
+	}
+	
 	fls, err := os.ReadDir(pths)
 	if err != nil {
 		if build.repoPath == "" {
@@ -187,18 +233,25 @@ func (c *baseRunner) ReadFile(fs int, buildID string, pth string, start int64) (
 	if !ok {
 		return 0, nil, fmt.Errorf("readFile: %w: %q", ErrBuildNotFound, buildID)
 	}
-	pths := ""
+	base := ""
 	switch fs {
 	case 1:
-		pths = filepath.Join(build.repoPaths, pth)
+		base = build.repoPaths
 	case 2:
-		pths = filepath.Join(comm.WorkPath, common.PathArtifacts, pth)
+		base = filepath.Join(comm.WorkPath, common.PathArtifacts)
 	case 3:
-		pths = filepath.Join(build.buildPath, common.PathJobs, pth)
+		base = filepath.Join(build.buildPath, common.PathJobs)
 	}
-	if pths == "" {
+	if base == "" {
 		return 0, nil, fmt.Errorf("readFile: %w", ErrInvalidFSType)
 	}
+	
+	// Validate path to prevent directory traversal
+	pths, err := validatePath(base, pth)
+	if err != nil {
+		return 0, nil, fmt.Errorf("readFile: %w", err)
+	}
+	
 	stat, err := os.Stat(pths)
 	if err != nil {
 		return 0, nil, fmt.Errorf("stat file %s: %w", pths, err)
@@ -278,18 +331,26 @@ func (c *baseRunner) StatFile(fs int, buildID, jobId string, dir, pth string) (*
 	if !ok {
 		return nil, fmt.Errorf("statFile: %w: %q in build %q", ErrJobNotFound, jobId, buildID)
 	}
-	pths := ""
+	base := ""
+	requestedPath := filepath.Join(dir, pth)
 	switch fs {
 	case 1:
-		pths = filepath.Join(comm.WorkPath, common.PathArtifacts, dir, pth)
+		base = filepath.Join(comm.WorkPath, common.PathArtifacts)
 	case 2:
-		pths = filepath.Join(job.task.buildPath, common.PathJobs, job.step.Id, common.PathArts, dir, pth)
+		base = filepath.Join(job.task.buildPath, common.PathJobs, job.step.Id, common.PathArts)
 	case 3:
-		pths = filepath.Join(build.repoPaths, dir, pth)
+		base = build.repoPaths
 	}
-	if pths == "" {
+	if base == "" {
 		return nil, fmt.Errorf("statFile: %w", ErrInvalidFSType)
 	}
+	
+	// Validate path to prevent directory traversal
+	pths, err := validatePath(base, requestedPath)
+	if err != nil {
+		return nil, fmt.Errorf("statFile: %w", err)
+	}
+	
 	stat, err := os.Stat(pths)
 	if err != nil {
 		return nil, fmt.Errorf("stat file %s: %w", pths, err)
@@ -312,18 +373,26 @@ func (c *baseRunner) UploadFile(fs int, buildID, jobId string, dir, pth string, 
 	if !ok {
 		return nil, fmt.Errorf("uploadFile: %w: %q in build %q", ErrJobNotFound, jobId, buildID)
 	}
-	pths := ""
+	base := ""
+	requestedPath := filepath.Join(dir, pth)
 	switch fs {
 	case 1:
-		pths = filepath.Join(comm.WorkPath, common.PathArtifacts, dir, pth)
+		base = filepath.Join(comm.WorkPath, common.PathArtifacts)
 	case 2:
-		pths = filepath.Join(job.task.buildPath, common.PathJobs, job.step.Id, common.PathArts, dir, pth)
+		base = filepath.Join(job.task.buildPath, common.PathJobs, job.step.Id, common.PathArts)
 	case 3:
-		pths = filepath.Join(build.repoPaths, dir, pth)
+		base = build.repoPaths
 	}
-	if pths == "" {
+	if base == "" {
 		return nil, fmt.Errorf("uploadFile: %w", ErrInvalidFSType)
 	}
+	
+	// Validate path to prevent directory traversal
+	pths, err := validatePath(base, requestedPath)
+	if err != nil {
+		return nil, fmt.Errorf("uploadFile: %w", err)
+	}
+	
 	dirs := filepath.Dir(pths)
 	if err := os.MkdirAll(dirs, 0750); err != nil {
 		return nil, fmt.Errorf("create upload dirs %s: %w", dirs, err)
