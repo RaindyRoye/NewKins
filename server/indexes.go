@@ -85,6 +85,24 @@ func ensureIndexes() {
 
 		// t_build: batch status updates filter by status columns
 		{"t_build", "idx_build_status", "status"},
+
+		// t_org: soft-delete filtering in org listings
+		{"t_org", "idx_org_deleted", "deleted"},
+
+		// t_pipeline_version: soft-delete filtering in version listings
+		{"t_pipeline_version", "idx_pipever_deleted", "deleted"},
+
+		// t_artifactory: composite index for org-scoped artifact queries
+		{"t_artifactory", "idx_artifactory_org_deleted", "org_id, deleted"},
+
+		// t_artifact_package: name-based lookups for artifact packages
+		{"t_artifact_package", "idx_artpkg_name", "name"},
+
+		// t_user_org: composite index for user membership lookups
+		{"t_user_org", "idx_userorg_uid_org", "uid, org_id"},
+
+		// t_pipeline: name-based search in pipeline listings
+		{"t_pipeline", "idx_pipeline_name", "name"},
 	}
 
 	for _, idx := range indexes {
