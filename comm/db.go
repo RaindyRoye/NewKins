@@ -36,6 +36,31 @@ func findCount(cds builder.Cond, data any) (int64, error) {
 	return 0, fmt.Errorf("%w, got %T", ErrFindCountNotSlice, data)
 }
 
+func findCountCtx(ctx context.Context, cds builder.Cond, data any) (int64, error) {
+	if data == nil {
+		return 0, fmt.Errorf("%w", ErrFindCountInvalidData)
+	}
+	of := reflect.TypeOf(data)
+	if of.Kind() == reflect.Pointer {
+		of = of.Elem()
+	}
+
+	if of.Kind() == reflect.Slice {
+		sty := of.Elem()
+		if sty.Kind() == reflect.Pointer {
+			sty = sty.Elem()
+		}
+		pv := reflect.New(sty)
+
+		ses := Db.NewSession()
+		defer func() { _ = ses.Close() }()
+		return ses.Context(ctx).Where(cds).Count(pv.Interface())
+	}
+	return 0, fmt.Errorf("%w, got %T", ErrFindCountNotSlice, data)
+}
+
+// FindPage executes a paginated query without context propagation.
+// Prefer FindPageCtx when a request context is available for cancellation/timeout support.
 func FindPage(ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
 	count, err := findCount(ses.Conds(), ls)
 	if err != nil {
@@ -43,11 +68,23 @@ func FindPage(ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page,
 	}
 	return findPages(ses, ls, count, page, size...)
 }
+
+// FindPageCtx executes a paginated query with context propagation.
+// The context is passed to both the count query and the data query,
+// enabling cancellation when the HTTP request times out or the client disconnects.
+func FindPageCtx(ctx context.Context, ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
+	count, err := findCountCtx(ctx, ses.Conds(), ls)
+	if err != nil {
+		return nil, err
+	}
+	dataSes := Db.Context(ctx).Where(ses.Conds())
+	return findPages(dataSes, ls, count, page, size...)
+}
+
 func findPages(ses *xorm.Session, ls any, count, page int64, size ...int64) (*bean.Page, error) {
 	var pageno int64 = 1
 	var sizeno int64 = 10
 	var pagesno int64
-	// var count=c.FindCount(pars)
 	if page > 0 {
 		pageno = page
 	}
@@ -73,6 +110,7 @@ func findPages(ses *xorm.Session, ls any, count, page int64, size ...int64) (*be
 		Data:  ls,
 	}, nil
 }
+
 func FindPages(gen *bean.PageGen, ls any, page int64, size ...int64) (*bean.Page, error) {
 	return FindPagesCtx(Ctx, gen, ls, page, size...)
 }
