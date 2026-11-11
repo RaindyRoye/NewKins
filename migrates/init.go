@@ -167,15 +167,18 @@ func InitPostgresMigrate(host, dbs, user, pass string) (wait bool, rtul string, 
 	}
 	wait = true
 	ul := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, pass, host, dbs)
+	// maskDSN redacts the password for safe logging (prevents credential leaks in error messages and logs)
+	maskDSN := fmt.Sprintf("postgres://%s:***@%s/%s?sslmode=disable", user, host, dbs)
+	rtul = maskDSN
 	db, err := sql.Open("postgres", ul)
 	if err != nil {
-		errs = fmt.Errorf("open postgres database: %w", err)
+		errs = fmt.Errorf("open postgres database (%s): %w", maskDSN, err)
 		return
 	}
 	err = db.PingContext(context.Background())
 	if err != nil {
 		_ = db.Close()
-		errs = fmt.Errorf("ping postgres database: %w", err)
+		errs = fmt.Errorf("ping postgres database (%s): %w", maskDSN, err)
 		return
 	}
 	defer func() { _ = db.Close() }()
