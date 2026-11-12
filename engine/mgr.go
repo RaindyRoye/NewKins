@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -22,7 +23,15 @@ type Manager struct {
 	timerEgn *TimerEngine
 }
 
+// Start initializes the build, job, and timer engines using the global comm.Ctx.
+// Prefer StartCtx when a specific context is available for cancellation/timeout control.
 func Start() error {
+	return StartCtx(comm.Ctx)
+}
+
+// StartCtx initializes all engines using the provided context for lifecycle management.
+// When ctx is canceled, all engines are stopped gracefully.
+func StartCtx(ctx context.Context) error {
 	Mgr.buildEgn = StartBuildEngine()
 	Mgr.jobEgn = StartJobEngine()
 	Mgr.timerEgn = StartTimerEngine()
@@ -38,7 +47,7 @@ func Start() error {
 	}, Mgr.brun)
 	go func() {
 		defer util.RecoverLog("shell runner goroutine")
-		err := Mgr.shellRun.Run(comm.Ctx)
+		err := Mgr.shellRun.Run(ctx)
 		if err != nil {
 			logrus.Errorf("runner err:%v", err)
 		}
@@ -48,8 +57,9 @@ func Start() error {
 		defer util.RecoverLog("shutdown goroutine")
 		_ = os.RemoveAll(filepath.Join(comm.WorkPath, common.PathTmp))
 		// Block until context is canceled instead of busy-waiting.
-		<-comm.Ctx.Done()
+		<-ctx.Done()
 		Mgr.buildEgn.Stop()
+		Mgr.timerEgn.Stop()
 		if Mgr.shellRun != nil {
 			Mgr.shellRun.Stop()
 		}

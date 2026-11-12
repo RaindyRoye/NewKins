@@ -18,6 +18,15 @@ import (
 type TimerEngine struct {
 	tasklk sync.RWMutex
 	tasks  map[string]*timerExec
+
+	// wakeCh is a buffered channel used to notify the run loop that new
+	// timers have been added or updated. Buffered with capacity 1 so that
+	// callers never block even if the run loop is busy processing.
+	wakeCh chan struct{}
+	// stopCh is closed by Stop to signal the run loop to exit immediately.
+	stopCh chan struct{}
+	// stopOnce ensures Stop is idempotent and safe to call multiple times.
+	stopOnce sync.Once
 }
 type timerExec struct {
 	tt   *model.TTrigger
@@ -28,18 +37,56 @@ type timerExec struct {
 
 func StartTimerEngine() *TimerEngine {
 	c := &TimerEngine{
-		tasks: make(map[string]*timerExec),
+		tasks:  make(map[string]*timerExec),
+		wakeCh: make(chan struct{}, 1),
+		stopCh: make(chan struct{}),
 	}
 	go func() {
 		defer util.RecoverLog("TimerEngine.main")
 		c.refresh()
-		for comm.Ctx.Err() == nil {
+		// Use a 1-second ticker as the maximum granularity for timer checks.
+		// The wakeCh allows immediate processing when timers are added/updated.
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-c.stopCh:
+				return
+			case <-c.wakeCh:
+				// Drain any pending notification to avoid stale signals
+				select {
+				case <-c.wakeCh:
+				default:
+				}
+			case <-ticker.C:
+			}
 			c.run()
-			time.Sleep(time.Millisecond * 10)
 		}
 	}()
 	return c
 }
+
+// Stop signals the run loop to exit. Safe to call multiple times
+// from concurrent goroutines.
+func (c *TimerEngine) Stop() {
+	if c.stopCh != nil {
+		c.stopOnce.Do(func() {
+			close(c.stopCh)
+		})
+	}
+}
+
+// wake signals the run loop to check timers immediately. Non-blocking
+// since wakeCh is buffered with capacity 1.
+func (c *TimerEngine) wake() {
+	if c.wakeCh != nil {
+		select {
+		case c.wakeCh <- struct{}{}:
+		default:
+		}
+	}
+}
+
 func (c *TimerEngine) run() {
 	defer util.RecoverLog("TimerEngine.run")
 
@@ -60,7 +107,6 @@ func (c *TimerEngine) execItem(v *timerExec) {
 				defer util.RecoverLog("TimerEngine.delete")
 				c.Delete(id)
 			}(v.tt.Id)
-			time.Sleep(time.Millisecond * 10)
 		case 1:
 			v.tick = now.Add(time.Minute)
 		case 2:
@@ -173,6 +219,8 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 		}
 		logrus.Debugf("Timer add(%s[%d]:%s) tick on:%s", tmr.Name, typ, tms.Format(common.TimeFmt), t.tick.Format(common.TimeFmt))
 	}
+	// Signal the run loop to check the new/updated timer immediately
+	c.wake()
 	return nil
 }
 func (c *TimerEngine) Refresh(tmrid string) error {
