@@ -9,6 +9,7 @@ import (
 
 	"github.com/gokins/gokins/comm"
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
@@ -17,163 +18,87 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func UpMysqlMigrate(ul string) error {
-	if ul == "" {
-		return fmt.Errorf("%w: mysql connection string is empty", ErrDatabaseConfigMissing)
+// newDriver returns a migrate database driver for the given driver name and
+// open database connection. It consolidates the per-database driver
+// construction that was previously duplicated across Up*Migrate functions.
+func newDriver(driverName string, db *sql.DB) (database.Driver, error) {
+	switch driverName {
+	case "mysql":
+		return mysql.WithInstance(db, &mysql.Config{})
+	case "postgres":
+		return postgres.WithInstance(db, &postgres.Config{})
+	case "sqlite3":
+		return sqlite3.WithInstance(db, &sqlite3.Config{})
+	default:
+		return nil, fmt.Errorf("%w: unsupported driver %q", ErrDatabaseConfigMissing, driverName)
 	}
-	db, err := sql.Open("mysql", ul)
+}
+
+// runMigrate is the shared core for Up*Migrate functions. It opens the
+// database, builds the bindata source, creates a migrate instance and runs
+// migrations up. On non-trivial errors it rolls back (Down) before returning.
+func runMigrate(ul, driverName, assetPrefix string) error {
+	if ul == "" {
+		return fmt.Errorf("%w: %s connection string is empty", ErrDatabaseConfigMissing, driverName)
+	}
+	db, err := sql.Open(driverName, ul)
 	if err != nil {
-		logrus.Errorf("mysql open db error: %v", err)
-		return fmt.Errorf("open mysql database: %w", err)
+		logrus.Errorf("%s open db error: %v", driverName, err)
+		return fmt.Errorf("open %s database: %w", driverName, err)
 	}
 	defer func() { _ = db.Close() }()
+
 	err = db.PingContext(context.Background())
 	if err != nil {
-		logrus.Errorf("mysql ping failed: %v", err)
-		return fmt.Errorf("ping mysql database: %w", err)
+		logrus.Errorf("%s ping failed: %v", driverName, err)
+		return fmt.Errorf("ping %s database: %w", driverName, err)
 	}
 
-	// Run migrations
-	driver, err := mysql.WithInstance(db, &mysql.Config{})
+	driver, err := newDriver(driverName, db)
 	if err != nil {
-		logrus.Errorf("mysql migration driver error: %v", err)
-		return fmt.Errorf("init mysql migration driver: %w", err)
+		logrus.Errorf("%s migration driver error: %v", driverName, err)
+		return fmt.Errorf("init %s migration driver: %w", driverName, err)
 	}
 	defer func() { _ = driver.Close() }()
+
 	var nms []string
 	tms := comm.AssetNames()
 	for _, v := range tms {
-		if strings.HasPrefix(v, "mysql") {
-			nms = append(nms, strings.Replace(v, "mysql/", "", 1))
+		if strings.HasPrefix(v, assetPrefix) {
+			nms = append(nms, strings.Replace(v, assetPrefix+"/", "", 1))
 		}
 	}
 	s := bindata.Resource(nms, func(name string) ([]byte, error) {
-		return comm.Asset("mysql/" + name)
+		return comm.Asset(assetPrefix + "/" + name)
 	})
 	sc, err := bindata.WithInstance(s)
 	if err != nil {
-		return fmt.Errorf("init mysql bindata source: %w", err)
+		return fmt.Errorf("init %s bindata source: %w", driverName, err)
 	}
 	defer func() { _ = sc.Close() }()
-	mgt, err := migrate.NewWithInstance(
-		"bindata", sc,
-		"mysql", driver)
+
+	mgt, err := migrate.NewWithInstance("bindata", sc, driverName, driver)
 	if err != nil {
-		return fmt.Errorf("create mysql migrate instance: %w", err)
+		return fmt.Errorf("create %s migrate instance: %w", driverName, err)
 	}
 	defer func() { _, _ = mgt.Close() }()
+
 	err = mgt.Up()
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		_ = mgt.Down()
-		return fmt.Errorf("run mysql migration: %w", err)
+		return fmt.Errorf("run %s migration: %w", driverName, err)
 	}
-
 	return nil
+}
+
+func UpMysqlMigrate(ul string) error {
+	return runMigrate(ul, "mysql", "mysql")
 }
 
 func UpPostgresMigrate(ul string) error {
-	if ul == "" {
-		return fmt.Errorf("%w: postgres connection string is empty", ErrDatabaseConfigMissing)
-	}
-	db, err := sql.Open("postgres", ul)
-	if err != nil {
-		logrus.Errorf("postgres open db error: %v", err)
-		return fmt.Errorf("open postgres database: %w", err)
-	}
-	defer func() { _ = db.Close() }()
-	err = db.PingContext(context.Background())
-	if err != nil {
-		logrus.Errorf("postgres ping failed: %v", err)
-		return fmt.Errorf("ping postgres database: %w", err)
-	}
-
-	// Run migrations
-	driver, err := postgres.WithInstance(db, &postgres.Config{})
-	if err != nil {
-		logrus.Errorf("postgres migration driver error: %v", err)
-		return fmt.Errorf("init postgres migration driver: %w", err)
-	}
-	defer func() { _ = driver.Close() }()
-	var nms []string
-	tms := comm.AssetNames()
-	for _, v := range tms {
-		if strings.HasPrefix(v, "postgres") {
-			nms = append(nms, strings.Replace(v, "postgres/", "", 1))
-		}
-	}
-	s := bindata.Resource(nms, func(name string) ([]byte, error) {
-		return comm.Asset("postgres/" + name)
-	})
-	sc, err := bindata.WithInstance(s)
-	if err != nil {
-		return fmt.Errorf("init postgres bindata source: %w", err)
-	}
-	defer func() { _ = sc.Close() }()
-	mgt, err := migrate.NewWithInstance(
-		"bindata", sc,
-		"postgres", driver)
-	if err != nil {
-		return fmt.Errorf("create postgres migrate instance: %w", err)
-	}
-	defer func() { _, _ = mgt.Close() }()
-	err = mgt.Up()
-	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		_ = mgt.Down()
-		return fmt.Errorf("run postgres migration: %w", err)
-	}
-
-	return nil
+	return runMigrate(ul, "postgres", "postgres")
 }
+
 func UpSqliteMigrate(ul string) error {
-	if ul == "" {
-		return fmt.Errorf("%w: sqlite connection string is empty", ErrDatabaseConfigMissing)
-	}
-	db, err := sql.Open("sqlite3", ul)
-	if err != nil {
-		logrus.Errorf("sqlite open db error: %v", err)
-		return fmt.Errorf("open sqlite database: %w", err)
-	}
-	defer func() { _ = db.Close() }()
-	err = db.PingContext(context.Background())
-	if err != nil {
-		logrus.Errorf("sqlite ping failed: %v", err)
-		return fmt.Errorf("ping sqlite database: %w", err)
-	}
-
-	// Run migrations
-	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
-	if err != nil {
-		logrus.Errorf("sqlite migration driver error: %v", err)
-		return fmt.Errorf("init sqlite migration driver: %w", err)
-	}
-	defer func() { _ = driver.Close() }()
-	var nms []string
-	tms := comm.AssetNames()
-	for _, v := range tms {
-		if strings.HasPrefix(v, "sqlite") {
-			nms = append(nms, strings.Replace(v, "sqlite/", "", 1))
-		}
-	}
-	s := bindata.Resource(nms, func(name string) ([]byte, error) {
-		return comm.Asset("sqlite/" + name)
-	})
-	sc, err := bindata.WithInstance(s)
-	if err != nil {
-		return fmt.Errorf("init sqlite bindata source: %w", err)
-	}
-	defer func() { _ = sc.Close() }()
-	mgt, err := migrate.NewWithInstance(
-		"bindata", sc,
-		"sqlite3", driver)
-	if err != nil {
-		return fmt.Errorf("create sqlite migrate instance: %w", err)
-	}
-	defer func() { _, _ = mgt.Close() }()
-	err = mgt.Up()
-	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		_ = mgt.Down()
-		return fmt.Errorf("run sqlite migration: %w", err)
-	}
-
-	return nil
+	return runMigrate(ul, "sqlite3", "sqlite")
 }
