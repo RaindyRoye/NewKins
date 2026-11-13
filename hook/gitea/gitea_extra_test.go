@@ -195,11 +195,11 @@ func TestParsePullRequestHook_SynchronizeAction(t *testing.T) {
 
 func TestParsePullRequestHook_UnsupportedAction(t *testing.T) {
 	payload := map[string]any{
-		"action":         "closed",
-		"number":         1,
-		"pull_request":   map[string]any{},
-		"repository":     map[string]any{},
-		"sender":         map[string]any{},
+		"action":       "closed",
+		"number":       1,
+		"pull_request": map[string]any{},
+		"repository":   map[string]any{},
+		"sender":       map[string]any{},
 	}
 
 	body, _ := json.Marshal(payload)
