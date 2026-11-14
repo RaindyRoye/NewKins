@@ -33,11 +33,11 @@ func initDb() error {
 		}
 	}
 	if err != nil {
-		return fmt.Errorf("database migration: %w", err)
+		return fmt.Errorf("%w: %v", ErrMigrationFailed, err)
 	}
 	db, err := xorm.NewEngine(dvs, comm.Cfg.Datasource.Url)
 	if err != nil {
-		return fmt.Errorf("open database (%s): %w", dvs, err)
+		return fmt.Errorf("%w (%s): %v", ErrDatabaseOpen, dvs, err)
 	}
 	db.ShowSQL(core.Debug)
 	comm.Db = db
@@ -50,7 +50,7 @@ func initCache() error {
 	db, err := bolt.Open(pth, 0640, nil)
 	if err != nil {
 		logrus.Errorf("InitCache err:%v", err)
-		return fmt.Errorf("open cache db at %s: %w", pth, err)
+		return fmt.Errorf("%w at %s: %v", ErrCacheOpen, pth, err)
 	}
 	comm.BCache = db
 	return nil
