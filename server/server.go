@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,6 +16,26 @@ import (
 	hbtp "github.com/mgr9525/HyperByte-Transfer-Protocol"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
+)
+
+// Sentinel errors for server startup and shutdown.
+// These errors can be checked using errors.Is() for programmatic handling.
+var (
+	// ErrStartupTimeout is returned when the web server fails to initialize
+	// within the allowed startup period (currently 10 seconds).
+	ErrStartupTimeout = errors.New("web server startup timeout: did not start within 10 seconds")
+
+	// ErrShutdownBeforeReady is returned when the application receives a shutdown
+	// signal before the web server has finished initializing.
+	ErrShutdownBeforeReady = errors.New("shutdown before web server ready")
+
+	// ErrShutdownDuringInstall is returned when the application receives a shutdown
+	// signal while waiting for the installation process to complete.
+	ErrShutdownDuringInstall = errors.New("shutdown during installation")
+
+	// ErrShutdownGracePeriodExceeded is logged (not returned) when background
+	// goroutines fail to finish within the shutdown grace period.
+	ErrShutdownGracePeriodExceeded = errors.New("shutdown grace period exceeded, forcing exit")
 )
 
 // shutdownGracePeriod is the maximum time allowed for background goroutines
@@ -54,9 +75,9 @@ func Run() error {
 	case <-webReadyCh:
 		// Web server is ready
 	case <-comm.Ctx.Done():
-		return fmt.Errorf("shutdown before web server ready: %w", comm.Ctx.Err())
+		return fmt.Errorf("%w: %w", ErrShutdownBeforeReady, comm.Ctx.Err())
 	case <-time.After(10 * time.Second):
-		return fmt.Errorf("web server startup timeout: did not start within 10 seconds")
+		return ErrStartupTimeout
 	}
 
 	err := parseConfig()
@@ -69,7 +90,7 @@ func Run() error {
 		case <-comm.InstalledCh:
 			// Installation completed
 		case <-comm.Ctx.Done():
-			return fmt.Errorf("shutdown during installation: %w", comm.Ctx.Err())
+			return fmt.Errorf("%w: %w", ErrShutdownDuringInstall, comm.Ctx.Err())
 		}
 	}
 
