@@ -18,6 +18,10 @@ import (
 type TimerEngine struct {
 	tasklk sync.RWMutex
 	tasks  map[string]*timerExec
+	// stopCh is closed by Stop to signal the run loop to exit immediately.
+	stopCh chan struct{}
+	// stopOnce ensures Stop is idempotent and safe to call multiple times.
+	stopOnce sync.Once
 }
 type timerExec struct {
 	tt   *model.TTrigger
@@ -28,17 +32,39 @@ type timerExec struct {
 
 func StartTimerEngine() *TimerEngine {
 	c := &TimerEngine{
-		tasks: make(map[string]*timerExec),
+		tasks:  make(map[string]*timerExec),
+		stopCh: make(chan struct{}),
 	}
 	go func() {
 		defer util.RecoverLog("TimerEngine.main")
 		c.refresh()
-		for comm.Ctx.Err() == nil {
-			c.run()
-			time.Sleep(time.Millisecond * 10)
+		// Use a 1-second ticker instead of busy-waiting with 10ms sleeps.
+		// Timer granularity (minute/hour/day/week/month) is far coarser than
+		// 1 second, so checking once per second is sufficient and reduces CPU
+		// usage by ~100x compared to the previous 10ms busy loop.
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-c.stopCh:
+				return
+			case <-comm.Ctx.Done():
+				return
+			case <-ticker.C:
+				c.run()
+			}
 		}
 	}()
 	return c
+}
+
+// Stop signals the timer engine run loop to exit. Safe to call multiple times.
+func (c *TimerEngine) Stop() {
+	if c.stopCh != nil {
+		c.stopOnce.Do(func() {
+			close(c.stopCh)
+		})
+	}
 }
 func (c *TimerEngine) run() {
 	defer util.RecoverLog("TimerEngine.run")

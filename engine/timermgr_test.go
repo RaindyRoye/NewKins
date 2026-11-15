@@ -289,3 +289,28 @@ func TestTimerEngineConcurrentReadsAndWrites(t *testing.T) {
 
 	wg.Wait()
 }
+
+func TestTimerEngineStopIdempotent(t *testing.T) {
+	te := &TimerEngine{
+		tasks:  make(map[string]*timerExec),
+		stopCh: make(chan struct{}),
+	}
+	// Stop multiple times should not panic
+	te.Stop()
+	te.Stop()
+	te.Stop()
+	// Channel should be closed
+	select {
+	case <-te.stopCh:
+	default:
+		t.Fatal("stopCh should be closed")
+	}
+}
+
+func TestTimerEngineStopNilChannel(t *testing.T) {
+	te := &TimerEngine{
+		tasks: make(map[string]*timerExec),
+	}
+	// Should not panic with nil stopCh
+	te.Stop()
+}

@@ -31,15 +31,34 @@ func (c *baseRunner) ServerInfo() (*runners.ServerInfo, error) {
 }
 
 func (c *baseRunner) PullJob(name string, plugs []string) (*runners.RunJob, error) {
-	tms := time.Now()
-	for time.Since(tms).Seconds() < 5 {
-		v := Mgr.jobEgn.Pull(name, plugs)
-		if v != nil {
-			return v, nil
-		}
-		time.Sleep(time.Millisecond * 100)
+	return c.PullJobCtx(context.Background(), name, plugs)
+}
+
+// PullJobCtx waits for a job to become available for the given runner and plugins.
+// It respects context cancellation and uses a ticker-based polling approach instead
+// of busy-waiting. The default timeout is 5 seconds if the context has no deadline.
+func (c *baseRunner) PullJobCtx(ctx context.Context, name string, plugs []string) (*runners.RunJob, error) {
+	// If context has no deadline, add a 5-second timeout
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
 	}
-	return nil, fmt.Errorf("no job found for runner %q with plugins %v after 5s: %w", name, plugs, ErrJobNotFound)
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("no job found for runner %q with plugins %v: %w", name, plugs, ErrJobNotFound)
+		case <-ticker.C:
+			v := Mgr.jobEgn.Pull(name, plugs)
+			if v != nil {
+				return v, nil
+			}
+		}
+	}
 }
 func (c *baseRunner) CheckCancel(buildID string) bool {
 	v, ok := Mgr.buildEgn.Get(buildID)

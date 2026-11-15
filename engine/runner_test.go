@@ -1,8 +1,14 @@
 package engine
 
 import (
+	"container/list"
+	"context"
 	"errors"
 	"testing"
+	"time"
+
+	"github.com/gokins/core/runtime"
+	"github.com/gokins/runner/runners"
 )
 
 func TestBaseRunner_ServerInfo(t *testing.T) {
@@ -138,5 +144,104 @@ func TestErrorWrapping(t *testing.T) {
 	wrapped := errors.Join(errors.New("context"), baseErr)
 	if !errors.Is(wrapped, baseErr) {
 		t.Error("errors.Is should find base error in chain")
+	}
+}
+
+func TestBaseRunner_PullJobCtx_Cancelled(t *testing.T) {
+	r := &baseRunner{}
+	// Initialize Mgr if needed
+	if Mgr == nil {
+		Mgr = &Manager{}
+	}
+	if Mgr.jobEgn == nil {
+		Mgr.jobEgn = &JobEngine{
+			execs: make(map[string]*executer),
+			jobs:  make(map[string]*jobSync),
+		}
+	}
+	
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+	
+	_, err := r.PullJobCtx(ctx, "test-runner", []string{"plugin1"})
+	if err == nil {
+		t.Error("PullJobCtx() with cancelled context should error")
+	}
+	if !errors.Is(err, ErrJobNotFound) {
+		t.Errorf("PullJobCtx() error = %v, want ErrJobNotFound", err)
+	}
+}
+
+func TestBaseRunner_PullJobCtx_Timeout(t *testing.T) {
+	r := &baseRunner{}
+	if Mgr == nil {
+		Mgr = &Manager{}
+	}
+	if Mgr.jobEgn == nil {
+		Mgr.jobEgn = &JobEngine{
+			execs: make(map[string]*executer),
+			jobs:  make(map[string]*jobSync),
+		}
+	}
+	
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	
+	start := time.Now()
+	_, err := r.PullJobCtx(ctx, "test-runner", []string{"plugin1"})
+	elapsed := time.Since(start)
+	
+	if err == nil {
+		t.Error("PullJobCtx() should timeout and error")
+	}
+	if elapsed > 200*time.Millisecond {
+		t.Errorf("PullJobCtx() took too long: %v", elapsed)
+	}
+}
+
+func TestBaseRunner_PullJob_DelegatesToPullJobCtx(t *testing.T) {
+	r := &baseRunner{}
+	if Mgr == nil {
+		Mgr = &Manager{}
+	}
+	if Mgr.jobEgn == nil {
+		Mgr.jobEgn = StartJobEngine()
+	}
+
+	// Put a job into the job engine so PullJob returns immediately
+	ex := &executer{
+		plug:  "test-plugin",
+		tms:   time.Now(),
+		jobwt: list.New(),
+	}
+	job := &jobSync{
+		task: &BuildTask{},
+		step: &runtime.Step{Id: "step-1", Step: "test-plugin"},
+		runjb: &runners.RunJob{
+			Id:   "step-1",
+			Step: "test-plugin",
+		},
+	}
+	ex.jobwt.PushBack(job)
+	Mgr.jobEgn.exelk.Lock()
+	Mgr.jobEgn.execs["test-plugin"] = ex
+	Mgr.jobEgn.exelk.Unlock()
+
+	start := time.Now()
+	got, err := r.PullJob("test-runner", []string{"test-plugin"})
+	elapsed := time.Since(start)
+
+	if err != nil {
+		t.Fatalf("PullJob() unexpected error: %v", err)
+	}
+	if got == nil {
+		t.Fatal("PullJob() returned nil job")
+	}
+	if got.Id != "step-1" {
+		t.Errorf("PullJob() job id = %q, want 'step-1'", got.Id)
+	}
+	// Should return almost immediately since the job is already queued
+	if elapsed > time.Second {
+		t.Errorf("PullJob() took too long: %v", elapsed)
 	}
 }
