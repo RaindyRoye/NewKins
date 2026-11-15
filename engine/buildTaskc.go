@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
 	"github.com/gokins/core/common"
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/core/utils"
@@ -214,6 +213,9 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 			} else {
 				cmd.Content = strings.ReplaceAll(cmd.Content, zs[0], vas)
 			}
+		}
+		if comm.Db == nil {
+			return fmt.Errorf("database not initialized, cannot insert cmd %s", cmd.Id)
 		}
 		_, err = comm.Db.Context(c.taskCtx()).InsertOne(cmd)
 		if err != nil {
