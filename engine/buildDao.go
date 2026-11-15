@@ -26,6 +26,10 @@ func (c *BuildTask) taskCtx() context.Context {
 func (c *BuildTask) updateBuild(build *runtime.Build) {
 	defer util.RecoverLog("BuildTask.updateBuild")
 
+	if comm.Db == nil {
+		logrus.Debug("BuildTask.updateBuild: comm.Db is nil, skipping db update")
+		return
+	}
 	ctx := c.taskCtx()
 
 	e := &model.TBuild{
@@ -81,6 +85,10 @@ func (c *BuildTask) updateBuild(build *runtime.Build) {
 func (c *BuildTask) updateStage(stage *runtime.Stage) {
 	defer util.RecoverLog("BuildTask.updateStage")
 
+	if comm.Db == nil {
+		logrus.Debug("BuildTask.updateStage: comm.Db is nil, skipping db update")
+		return
+	}
 	ctx := c.taskCtx()
 
 	e := &model.TStage{
@@ -114,6 +122,10 @@ func (c *BuildTask) updateStage(stage *runtime.Stage) {
 func (c *BuildTask) updateStep(job *jobSync) {
 	defer util.RecoverLog("BuildTask.updateStep")
 
+	if comm.Db == nil {
+		logrus.Debug("BuildTask.updateStep: comm.Db is nil, skipping db update")
+		return
+	}
 	ctx := c.taskCtx()
 
 	job.RLock()
@@ -150,6 +162,10 @@ func (c *BuildTask) updateStep(job *jobSync) {
 func (c *BuildTask) updateStepCmd(cmd *cmdSync) {
 	defer util.RecoverLog("BuildTask.updateStepCmd")
 
+	if comm.Db == nil {
+		logrus.Debug("BuildTask.updateStepCmd: comm.Db is nil, skipping db update")
+		return
+	}
 	ctx := c.taskCtx()
 
 	cmd.RLock()
