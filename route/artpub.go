@@ -1,11 +1,14 @@
 package route
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +18,19 @@ import (
 	"github.com/gokins/gokins/model"
 	"github.com/gokins/gokins/service"
 	"github.com/gokins/gokins/util"
-	"net/http"
+	"github.com/sirupsen/logrus"
+)
+
+// Sentinel errors for artifact download path validation.
+// These can be used with errors.Is() for programmatic error checking.
+var (
+	// ErrPathTraversal is returned when a path parameter contains directory
+	// traversal sequences (e.g., "../") that could escape the base directory.
+	ErrPathTraversal = errors.New("path traversal detected")
+
+	// ErrAbsolutePath is returned when a path parameter contains an absolute
+	// path, which is not allowed for security reasons.
+	ErrAbsolutePath = errors.New("absolute path not allowed")
 )
 
 type ArtPublicController struct{}
@@ -67,7 +82,13 @@ func (cs *ArtPublicController) down(c *gin.Context) {
 		c.String(http.StatusNotFound, "Not Found repo")
 		return
 	}
-	fls := filepath.Join(comm.WorkPath, common.PathArtifacts, artv.Id, pth)
+	baseDir := filepath.Join(comm.WorkPath, common.PathArtifacts, artv.Id)
+	fls, err := safeJoin(baseDir, pth)
+	if err != nil {
+		logrus.Warnf("artpub down: path traversal attempt for artifact %s: %v", id, err)
+		c.String(http.StatusForbidden, "invalid path")
+		return
+	}
 	cs.downFile(c, fls)
 }
 func (cs *ArtPublicController) downs(c *gin.Context) {
@@ -105,9 +126,55 @@ func (cs *ArtPublicController) downs(c *gin.Context) {
 		return
 	}
 	bdpth := filepath.Join(comm.WorkPath, common.PathBuild, job.BuildId)
-	fls := filepath.Join(bdpth, common.PathJobs, job.Id, common.PathArts, name, pth)
+	baseDir := filepath.Join(bdpth, common.PathJobs, job.Id, common.PathArts)
+	fls, err := safeJoin(baseDir, name, pth)
+	if err != nil {
+		logrus.Warnf("artpub downs: path traversal attempt for step %s: %v", id, err)
+		c.String(http.StatusForbidden, "invalid path")
+		return
+	}
 	cs.downFile(c, fls)
 }
+
+// sanitizePath validates that a user-supplied path segment does not escape
+// its intended base directory via directory traversal ("..") or absolute
+// paths. It cleans the path and rejects any dangerous components.
+//
+// This protects against attackers who craft URLs like
+// /api/art/pub/down/ID/../../../etc/passwd to read arbitrary server files.
+func sanitizePath(pth string) error {
+	if filepath.IsAbs(pth) {
+		return fmt.Errorf("sanitizePath: %w: %s", ErrAbsolutePath, pth)
+	}
+	// Check raw path segments before cleaning, as Clean() normalizes away ".."
+	for _, seg := range strings.Split(pth, string(filepath.Separator)) {
+		if seg == ".." {
+			return fmt.Errorf("sanitizePath: %w: %s", ErrPathTraversal, pth)
+		}
+	}
+	// Also check the cleaned result in case of encoded traversals
+	cleaned := filepath.Clean(pth)
+	for _, seg := range strings.Split(cleaned, string(filepath.Separator)) {
+		if seg == ".." {
+			return fmt.Errorf("sanitizePath: %w: %s", ErrPathTraversal, pth)
+		}
+	}
+	return nil
+}
+
+// safeJoin joins a base directory with one or more user-supplied path segments,
+// validating each segment against traversal attacks before joining.
+// Returns the joined path or an error if any segment is unsafe.
+func safeJoin(base string, parts ...string) (string, error) {
+	for _, p := range parts {
+		if err := sanitizePath(p); err != nil {
+			return "", err
+		}
+	}
+	all := append([]string{base}, parts...)
+	return filepath.Join(all...), nil
+}
+
 func (ArtPublicController) downFile(c *gin.Context, fls string) {
 	stat, err := os.Stat(fls)
 	if err != nil {

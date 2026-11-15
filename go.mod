@@ -2,11 +2,11 @@ module github.com/gokins/gokins
 
 go 1.26.0
 
-toolchain go1.26.4
+toolchain go1.26.11
 
 require (
 	github.com/gin-gonic/gin v1.12.0
-	github.com/go-git/go-git/v5 v5.19.0
+	github.com/go-git/go-git/v5 v5.19.2
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/gokins/core v0.0.0-20221114063511-e32796e39c37
 	github.com/gokins/runner v0.0.0-20230302104705-dbc0aeb397ce
@@ -65,7 +65,7 @@ require (
 	github.com/pjbgf/sha1cd v0.6.0 // indirect
 	github.com/pkg/sftp v1.13.5 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
-	github.com/quic-go/quic-go v0.59.0 // indirect
+	github.com/quic-go/quic-go v0.59.1 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
