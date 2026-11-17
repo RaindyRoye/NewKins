@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/gokins/gokins/comm"
 	"github.com/sirupsen/logrus"
@@ -78,10 +79,20 @@ func BatchOrgPipeCounts(ctx context.Context, orgIds []string) (map[string]int64,
 		Cnt   int64  `xorm:"cnt"`
 	}
 	var counts []orgCount
-	err := comm.Db.Context(ctx).SQL(
-		"SELECT org_id, COUNT(*) as cnt FROM t_org_pipe WHERE org_id IN (?) GROUP BY org_id",
-		orgIds,
-	).Find(&counts)
+	
+	// Build IN clause with proper placeholders for SQLite compatibility
+	placeholders := make([]string, len(orgIds))
+	args := make([]interface{}, len(orgIds))
+	for i, id := range orgIds {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+	
+	sql := fmt.Sprintf(
+		"SELECT org_id, COUNT(*) as cnt FROM t_org_pipe WHERE org_id IN (%s) GROUP BY org_id",
+		strings.Join(placeholders, ","),
+	)
+	err := comm.Db.Context(ctx).SQL(sql, args...).Find(&counts)
 	if err != nil {
 		return nil, fmt.Errorf("batch org pipe counts: %w", err)
 	}
@@ -103,10 +114,20 @@ func BatchOrgUserCounts(ctx context.Context, orgIds []string) (map[string]int64,
 		Cnt   int64  `xorm:"cnt"`
 	}
 	var counts []orgCount
-	err := comm.Db.Context(ctx).SQL(
-		"SELECT org_id, COUNT(*) as cnt FROM t_user_org WHERE org_id IN (?) GROUP BY org_id",
-		orgIds,
-	).Find(&counts)
+	
+	// Build IN clause with proper placeholders for SQLite compatibility
+	placeholders := make([]string, len(orgIds))
+	args := make([]interface{}, len(orgIds))
+	for i, id := range orgIds {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+	
+	sql := fmt.Sprintf(
+		"SELECT org_id, COUNT(*) as cnt FROM t_user_org WHERE org_id IN (%s) GROUP BY org_id",
+		strings.Join(placeholders, ","),
+	)
+	err := comm.Db.Context(ctx).SQL(sql, args...).Find(&counts)
 	if err != nil {
 		return nil, fmt.Errorf("batch org user counts: %w", err)
 	}

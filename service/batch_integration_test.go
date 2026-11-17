@@ -35,6 +35,7 @@ func setupBatchTestDB(t *testing.T) *xorm.Engine {
 		&model.TArtifactPackage{},
 		&model.TArtifactVersion{},
 		&model.TOrg{},
+		&model.TOrgPipe{},
 		&model.TUserOrg{},
 		&model.TPipeline{},
 		&model.TPipelineConf{},
@@ -250,5 +251,81 @@ func TestBatchCountArtifactVersions_WithData(t *testing.T) {
 	}
 	if _, exists := result["pkg3"]; exists {
 		t.Error("pkg3 should not exist in result")
+	}
+}
+
+func TestBatchOrgPipeCounts_Integration(t *testing.T) {
+	eng := setupBatchTestDB(t)
+	ctx := context.Background()
+
+	// Insert test org pipes
+	orgPipes := []model.TOrgPipe{
+		{Aid: 1, OrgId: "org1", PipeId: "pipe1", Created: time.Now()},
+		{Aid: 2, OrgId: "org1", PipeId: "pipe2", Created: time.Now()},
+		{Aid: 3, OrgId: "org1", PipeId: "pipe3", Created: time.Now()},
+		{Aid: 4, OrgId: "org2", PipeId: "pipe4", Created: time.Now()},
+		{Aid: 5, OrgId: "org3", PipeId: "pipe5", Created: time.Now()},
+		{Aid: 6, OrgId: "org3", PipeId: "pipe6", Created: time.Now()},
+	}
+	for _, op := range orgPipes {
+		if _, err := eng.Insert(&op); err != nil {
+			t.Fatalf("failed to insert org pipe: %v", err)
+		}
+	}
+
+	result, err := BatchOrgPipeCounts(ctx, []string{"org1", "org2", "org3", "org999"})
+	if err != nil {
+		t.Fatalf("BatchOrgPipeCounts failed: %v", err)
+	}
+
+	if result["org1"] != 3 {
+		t.Errorf("org1 count = %d, want 3", result["org1"])
+	}
+	if result["org2"] != 1 {
+		t.Errorf("org2 count = %d, want 1", result["org2"])
+	}
+	if result["org3"] != 2 {
+		t.Errorf("org3 count = %d, want 2", result["org3"])
+	}
+	if _, exists := result["org999"]; exists {
+		t.Error("org999 should not exist in result")
+	}
+}
+
+func TestBatchOrgUserCounts_Integration(t *testing.T) {
+	eng := setupBatchTestDB(t)
+	ctx := context.Background()
+
+	// Insert test user orgs
+	userOrgs := []model.TUserOrg{
+		{Aid: 1, Uid: "user1", OrgId: "org1", Created: time.Now()},
+		{Aid: 2, Uid: "user2", OrgId: "org1", Created: time.Now()},
+		{Aid: 3, Uid: "user3", OrgId: "org1", Created: time.Now()},
+		{Aid: 4, Uid: "user4", OrgId: "org2", Created: time.Now()},
+		{Aid: 5, Uid: "user5", OrgId: "org3", Created: time.Now()},
+		{Aid: 6, Uid: "user6", OrgId: "org3", Created: time.Now()},
+	}
+	for _, uo := range userOrgs {
+		if _, err := eng.Insert(&uo); err != nil {
+			t.Fatalf("failed to insert user org: %v", err)
+		}
+	}
+
+	result, err := BatchOrgUserCounts(ctx, []string{"org1", "org2", "org3", "org999"})
+	if err != nil {
+		t.Fatalf("BatchOrgUserCounts failed: %v", err)
+	}
+
+	if result["org1"] != 3 {
+		t.Errorf("org1 count = %d, want 3", result["org1"])
+	}
+	if result["org2"] != 1 {
+		t.Errorf("org2 count = %d, want 1", result["org2"])
+	}
+	if result["org3"] != 2 {
+		t.Errorf("org3 count = %d, want 2", result["org3"])
+	}
+	if _, exists := result["org999"]; exists {
+		t.Error("org999 should not exist in result")
 	}
 }
