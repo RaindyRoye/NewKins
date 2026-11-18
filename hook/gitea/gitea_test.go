@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
+	"crypto/sha1" //nolint:gosec // G505: SHA1 required for Gitea webhook signature verification
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -240,5 +241,294 @@ func TestParseInvalidJSON(t *testing.T) {
 	_, err := Parse(req, "")
 	if err == nil {
 		t.Fatal("expected error for invalid JSON")
+	}
+}
+
+func TestParseCommentHookNotPullRequest(t *testing.T) {
+	payload := map[string]any{
+		"is_pull": false,
+		"comment": map[string]any{
+			"id":   1,
+			"body": "nice work",
+		},
+		"repository": map[string]any{"id": 1},
+		"sender":     map[string]any{"login": "testuser"},
+	}
+
+	body, _ := json.Marshal(payload)
+	secret := testSecret
+	req := newGiteaRequest(hook.GiteaEventNote, body, secret)
+
+	_, err := Parse(req, secret)
+	if err == nil {
+		t.Fatal("expected error for comment not associated with PR")
+	}
+}
+
+func TestParseCommentHookInvalidJSON(t *testing.T) {
+	body := []byte(`{broken json`)
+	secret := testSecret
+	req := newGiteaRequest(hook.GiteaEventNote, body, secret)
+
+	_, err := Parse(req, secret)
+	if err == nil {
+		t.Fatal("expected error for invalid JSON in comment hook")
+	}
+}
+
+func TestParseCommentHookIsPull(t *testing.T) {
+	// convertPullRequestURL returns nil,nil (TODO), so convertCommentHook
+	// will panic on nil pointer access. The defer recover in Parse catches it.
+	payload := map[string]any{
+		"is_pull": true,
+		"issue": map[string]any{
+			"id":     10,
+			"number": 5,
+		},
+		"comment": map[string]any{
+			"id":   100,
+			"body": "LGTM",
+			"user": map[string]any{"login": "reviewer"},
+		},
+		"repository": map[string]any{
+			"id":        1,
+			"name":      "test-repo",
+			"full_name": "user/test-repo",
+			"clone_url": "https://gitea.example.com/user/test-repo.git",
+			"html_url":  "https://gitea.example.com/user/test-repo",
+			"ssh_url":   "git@gitea.example.com:user/test-repo.git",
+			"owner":     map[string]any{"login": "testuser"},
+		},
+		"sender": map[string]any{"login": "reviewer"},
+	}
+
+	body, _ := json.Marshal(payload)
+	secret := testSecret
+	req := newGiteaRequest(hook.GiteaEventNote, body, secret)
+
+	// This will trigger parseCommentHook → convertCommentHook → nil pointer panic
+	// caught by util.RecoverResult in Parse
+	_, err := Parse(req, secret)
+	if err == nil {
+		t.Fatal("expected error from convertCommentHook nil pointer (TODO not implemented)")
+	}
+}
+
+func TestParsePRWithSynchronizeAction(t *testing.T) {
+	payload := map[string]any{
+		"action": "synchronize",
+		"number": 42,
+		"pull_request": map[string]any{
+			"id":    1,
+			"title": "Sync PR",
+			"body":  "updated commits",
+			"user":  map[string]any{"login": "prauthor"},
+			"head": map[string]any{
+				"ref": "feature",
+				"sha": "headsha",
+				"repo": map[string]any{
+					"id":        2,
+					"name":      "fork-repo",
+					"full_name": "forker/test-repo",
+					"clone_url": "https://gitea.example.com/forker/test-repo.git",
+					"html_url":  "https://gitea.example.com/forker/test-repo",
+					"ssh_url":   "git@gitea.example.com:forker/test-repo.git",
+					"owner":     map[string]any{"login": "forker"},
+				},
+			},
+			"base": map[string]any{
+				"ref": "main",
+				"sha": "basesha",
+				"repo": map[string]any{
+					"id":        1,
+					"name":      "test-repo",
+					"full_name": "user/test-repo",
+					"clone_url": "https://gitea.example.com/user/test-repo.git",
+					"html_url":  "https://gitea.example.com/user/test-repo",
+					"ssh_url":   "git@gitea.example.com:user/test-repo.git",
+					"owner":     map[string]any{"login": "testuser"},
+				},
+			},
+		},
+		"repository": map[string]any{"id": 1},
+	}
+
+	body, _ := json.Marshal(payload)
+	secret := testSecret
+	req := newGiteaRequest(hook.GiteaEventPR, body, secret)
+
+	wh, err := Parse(req, secret)
+	if err != nil {
+		t.Fatalf("Parse PR with synchronize action failed: %v", err)
+	}
+
+	prHook, ok := wh.(*hook.PullRequestHook)
+	if !ok {
+		t.Fatal("expected *hook.PullRequestHook type")
+	}
+	if prHook.Action != hook.ActionUpdate {
+		t.Errorf("expected action '%s', got '%s'", hook.ActionUpdate, prHook.Action)
+	}
+	if prHook.PullRequest.Title != "Sync PR" {
+		t.Errorf("expected title 'Sync PR', got '%s'", prHook.PullRequest.Title)
+	}
+	if prHook.Repo.Branch != "feature" {
+		t.Errorf("expected branch 'feature', got '%s'", prHook.Repo.Branch)
+	}
+	if prHook.TargetRepo.Branch != "main" {
+		t.Errorf("expected target branch 'main', got '%s'", prHook.TargetRepo.Branch)
+	}
+}
+
+func TestParsePRUnsupportedAction(t *testing.T) {
+	payload := map[string]any{
+		"action": "closed",
+		"pull_request": map[string]any{
+			"head": map[string]any{"repo": map[string]any{}},
+			"base": map[string]any{"repo": map[string]any{}},
+		},
+		"repository": map[string]any{"id": 1},
+	}
+
+	body, _ := json.Marshal(payload)
+	secret := testSecret
+	req := newGiteaRequest(hook.GiteaEventPR, body, secret)
+
+	_, err := Parse(req, secret)
+	if err == nil {
+		t.Fatal("expected error for unsupported action 'closed'")
+	}
+}
+
+func TestParsePRInvalidJSON(t *testing.T) {
+	body := []byte(`{invalid`)
+	secret := testSecret
+	req := newGiteaRequest(hook.GiteaEventPR, body, secret)
+
+	_, err := Parse(req, secret)
+	if err == nil {
+		t.Fatal("expected error for invalid JSON in PR hook")
+	}
+}
+
+func TestValidatePrefixSHA1(t *testing.T) {
+	message := []byte("test body for sha1")
+	key := []byte("mysecret")
+
+	// SHA1 signature should be accepted when SHA256 fails
+	mac := hmac.New(sha1.New, key)
+	mac.Write(message)
+	sig1 := hex.EncodeToString(mac.Sum(nil))
+
+	if !validatePrefix(message, key, sig1) {
+		t.Error("validatePrefix should accept valid SHA1 signature")
+	}
+}
+
+func TestPushHookEmptyRef(t *testing.T) {
+	payload := map[string]any{
+		"ref":    "",
+		"before": "abc",
+		"after":  "def",
+		"commits": []map[string]any{
+			{"id": "def", "message": "msg", "url": "http://x"},
+		},
+		"repository": map[string]any{"id": 1, "name": "repo", "owner": map[string]any{"login": "u"}},
+		"sender":     map[string]any{"login": "u"},
+	}
+	body, _ := json.Marshal(payload)
+	secret := testSecret
+	req := newGiteaRequest(hook.GiteaEventPush, body, secret)
+
+	wh, err := Parse(req, secret)
+	if err != nil {
+		t.Fatalf("Parse push with empty ref failed: %v", err)
+	}
+	pushHook := wh.(*hook.PushHook)
+	if pushHook.Repo.Branch != "" {
+		t.Errorf("expected empty branch, got '%s'", pushHook.Repo.Branch)
+	}
+}
+
+func TestPushHookTagRef(t *testing.T) {
+	payload := map[string]any{
+		"ref":    "refs/tags/v1.0",
+		"before": "000",
+		"after":  "aaa",
+		"commits": []map[string]any{
+			{"id": "aaa", "message": "tag", "url": "http://x"},
+		},
+		"repository": map[string]any{"id": 1, "name": "repo", "owner": map[string]any{"login": "u"}},
+		"sender":     map[string]any{"login": "u"},
+	}
+	body, _ := json.Marshal(payload)
+	secret := testSecret
+	req := newGiteaRequest(hook.GiteaEventPush, body, secret)
+
+	wh, err := Parse(req, secret)
+	if err != nil {
+		t.Fatalf("Parse push with tag ref failed: %v", err)
+	}
+	pushHook := wh.(*hook.PushHook)
+	if pushHook.Repo.Branch != "v1.0" {
+		t.Errorf("expected branch 'v1.0', got '%s'", pushHook.Repo.Branch)
+	}
+}
+
+func TestValidateInvalidHex(t *testing.T) {
+	if Validate(sha256.New, []byte("msg"), []byte("key"), "zzz-not-hex") {
+		t.Error("Validate should return false for non-hex signature")
+	}
+}
+
+func TestPREmptyAction(t *testing.T) {
+	payload := map[string]any{
+		"action": "",
+		"number": 7,
+		"pull_request": map[string]any{
+			"id":    1,
+			"title": "Empty Action PR",
+			"user":  map[string]any{"login": "author"},
+			"head": map[string]any{
+				"ref": "feat",
+				"sha": "hsha",
+				"repo": map[string]any{
+					"id":        2,
+					"name":      "fork",
+					"full_name": "forker/repo",
+					"clone_url": "https://g.example.com/forker/repo.git",
+					"html_url":  "https://g.example.com/forker/repo",
+					"ssh_url":   "git@g.example.com:forker/repo.git",
+					"owner":     map[string]any{"login": "forker"},
+				},
+			},
+			"base": map[string]any{
+				"ref": "main",
+				"sha": "bsha",
+				"repo": map[string]any{
+					"id":        1,
+					"name":      "repo",
+					"full_name": "user/repo",
+					"clone_url": "https://g.example.com/user/repo.git",
+					"html_url":  "https://g.example.com/user/repo",
+					"ssh_url":   "git@g.example.com:user/repo.git",
+					"owner":     map[string]any{"login": "user"},
+				},
+			},
+		},
+		"repository": map[string]any{"id": 1},
+	}
+
+	body, _ := json.Marshal(payload)
+	secret := testSecret
+	req := newGiteaRequest(hook.GiteaEventPR, body, secret)
+
+	wh, err := Parse(req, secret)
+	if err != nil {
+		t.Fatalf("Parse PR with empty action failed: %v", err)
+	}
+	prHook := wh.(*hook.PullRequestHook)
+	if prHook.Action != "" {
+		t.Errorf("expected empty action, got '%s'", prHook.Action)
 	}
 }
