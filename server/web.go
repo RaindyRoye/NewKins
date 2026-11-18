@@ -94,6 +94,9 @@ func runWeb() {
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			logrus.Errorf("Web server forced shutdown: %v", err)
 		}
+		// Wait for the ListenAndServe goroutine to exit to avoid data races
+		// on comm.WebEgn when subsequent tests reassign it.
+		<-errCh
 	case err := <-errCh:
 		if err != nil {
 			logrus.Errorf("Web err:%v", err)

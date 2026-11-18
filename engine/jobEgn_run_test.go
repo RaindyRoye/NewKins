@@ -225,7 +225,12 @@ func TestJobEngineRmExecConcurrent(t *testing.T) {
 		jobs:  make(map[string]*jobSync),
 	}
 
-	var wg sync.WaitGroup
+	// Phase 1: Setup - add all executers to the map synchronously
+	type execInfo struct {
+		name string
+		ex   *executer
+	}
+	execList := make([]execInfo, 10)
 	for i := 0; i < 10; i++ {
 		name := "plugin-concurrent-" + string(rune('a'+i))
 		ex := &executer{
@@ -233,12 +238,20 @@ func TestJobEngineRmExecConcurrent(t *testing.T) {
 			tms:   time.Now().Add(-5 * time.Minute),
 			jobwt: list.New(),
 		}
+		c.exelk.Lock()
 		c.execs[name] = ex
+		c.exelk.Unlock()
+		execList[i] = execInfo{name: name, ex: ex}
+	}
+
+	// Phase 2: Launch concurrent rmExec operations
+	var wg sync.WaitGroup
+	for _, info := range execList {
 		wg.Add(1)
 		go func(n string, e *executer) {
 			defer wg.Done()
 			c.rmExec(n, e)
-		}(name, ex)
+		}(info.name, info.ex)
 	}
 	wg.Wait()
 
