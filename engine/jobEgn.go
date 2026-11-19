@@ -89,20 +89,32 @@ func (c *JobEngine) run() {
 	if !c.tmr.Tick() {
 		return
 	}
+	// Collect expired execs under RLock, then remove outside the read lock
+	// to avoid a lock-ordering hazard: rmExec needs the write lock, so it
+	// must not be called while holding RLock (which would deadlock if
+	// another writer is pending, and races with concurrent rmExec calls).
+	var expired []struct {
+		k  string
+		ex *executer
+	}
 	func() {
 		c.exelk.RLock()
 		defer c.exelk.RUnlock()
 		for k, v := range c.execs {
 			v.RLock()
-			if time.Since(v.tms).Minutes() > 2 {
-				go func(key string, ex *executer) {
-					defer util.RecoverLog("JobEngine.rmExec.launch")
-					c.rmExec(key, ex)
-				}(k, v)
-			}
+			aged := time.Since(v.tms).Minutes() > 2
 			v.RUnlock()
+			if aged {
+				expired = append(expired, struct {
+					k  string
+					ex *executer
+				}{k, v})
+			}
 		}
 	}()
+	for _, e := range expired {
+		c.rmExec(e.k, e.ex)
+	}
 	func() {
 		c.joblk.Lock()
 		defer c.joblk.Unlock()

@@ -213,7 +213,7 @@ func TestTimerEngineResetOneUpdateExisting(t *testing.T) {
 	}
 }
 
-// TestTimerEngineExecItemPastTickOnce verifies execItem for a one-time timer
+// TestTimerEngineExecItemOncePast verifies execItem for a one-time timer
 // whose tick is in the past. Since it calls service.TriggerTimer which requires
 // a DB, we verify the deletion path is exercised (type 0 triggers a Delete goroutine).
 func TestTimerEngineExecItemOncePast(t *testing.T) {
@@ -231,8 +231,12 @@ func TestTimerEngineExecItemOncePast(t *testing.T) {
 
 	// Give the deletion goroutine time to run
 	time.Sleep(50 * time.Millisecond)
+	// Check with lock to avoid race
+	te.tasklk.RLock()
+	_, exists := te.tasks["exec-once"]
+	te.tasklk.RUnlock()
 	// The timer should have been deleted (or still exist if goroutine hasn't run yet)
-	_ = te.tasks["exec-once"]
+	_ = exists
 }
 
 // TestTimerEngineExecItemFutureTick verifies execItem does nothing when tick is

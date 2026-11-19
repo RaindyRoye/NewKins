@@ -44,8 +44,16 @@ func (c *TimerEngine) run() {
 	defer util.RecoverLog("TimerEngine.run")
 
 	c.tasklk.Lock()
-	defer c.tasklk.Unlock()
+	// Collect tasks to process under lock, then release before executing
+	// to avoid lock-ordering issues: execItem may launch goroutines that
+	// call Delete() which needs the write lock.
+	tasks := make([]*timerExec, 0, len(c.tasks))
 	for _, v := range c.tasks {
+		tasks = append(tasks, v)
+	}
+	c.tasklk.Unlock()
+
+	for _, v := range tasks {
 		c.execItem(v)
 	}
 }
