@@ -225,7 +225,11 @@ func TestJobEngineRmExecConcurrent(t *testing.T) {
 		jobs:  make(map[string]*jobSync),
 	}
 
-	var wg sync.WaitGroup
+	// Set up all executers before starting goroutines
+	var execs []struct {
+		name string
+		ex   *executer
+	}
 	for i := 0; i < 10; i++ {
 		name := "plugin-concurrent-" + string(rune('a'+i))
 		ex := &executer{
@@ -233,12 +237,22 @@ func TestJobEngineRmExecConcurrent(t *testing.T) {
 			tms:   time.Now().Add(-5 * time.Minute),
 			jobwt: list.New(),
 		}
+		execs = append(execs, struct {
+			name string
+			ex   *executer
+		}{name, ex})
+		c.exelk.Lock()
 		c.execs[name] = ex
+		c.exelk.Unlock()
+	}
+
+	var wg sync.WaitGroup
+	for _, e := range execs {
 		wg.Add(1)
-		go func(n string, e *executer) {
+		go func(n string, ex *executer) {
 			defer wg.Done()
-			c.rmExec(n, e)
-		}(name, ex)
+			c.rmExec(n, ex)
+		}(e.name, e.ex)
 	}
 	wg.Wait()
 

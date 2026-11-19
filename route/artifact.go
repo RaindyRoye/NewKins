@@ -309,13 +309,13 @@ func (ArtifactController) versionList(c *gin.Context, m *hbtp.Map) {
 		return
 	}
 	/*for _, v := range ls {
-		usr, ok := service.GetUser(v.Uid)
+		usr, ok := service.GetUserCtx(ctx, v.Uid)
 		if ok {
 			v.Nick = usr.Nick
 			v.Avat = usr.Avatar
 		}
 		e := &model.TArtifactVersion{}
-		v.Verln, _ = comm.Db.Where("package_id=?", v.Id).Count(e)
+		v.Verln, _ = comm.Db.Context(ctx).Where("package_id=?", v.Id).Count(e)
 	}*/
 	c.JSON(http.StatusOK, page)
 }
