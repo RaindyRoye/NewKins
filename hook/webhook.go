@@ -24,6 +24,10 @@ var ErrUnsupportedEvent = errors.New("unsupported webhook event type")
 // when only "opened" and "synchronize" are supported).
 var ErrUnsupportedAction = errors.New("unsupported webhook action")
 
+// ErrPRDetailsUnavailable is returned when the pull request details
+// cannot be retrieved (e.g., the API lookup is not yet implemented).
+var ErrPRDetailsUnavailable = errors.New("pull request details unavailable")
+
 type (
 	WebHook interface {
 		Repository() Repository
