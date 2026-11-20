@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gokins/core/common"
 	"github.com/gokins/core/runtime"
 	"github.com/gokins/core/utils"
 	"github.com/gokins/gokins/comm"
@@ -23,6 +24,10 @@ type JobEngine struct {
 	// work has been enqueued via Put. Buffered with capacity 1 so that
 	// Put never blocks even if the run loop is busy processing.
 	wakeCh chan struct{}
+	// pullWakeCh is a buffered channel used to notify remote runners
+	// (via PullJob) that a new job is available. Buffered with capacity 1
+	// so Put never blocks.
+	pullWakeCh chan struct{}
 }
 type executer struct {
 	sync.RWMutex
@@ -45,6 +50,11 @@ type jobSync struct {
 	runjb *runners.RunJob
 	cmdmp map[string]*cmdSync
 	ended bool
+	// doneCh is closed when the job reaches a terminal status (ok/error/cancel)
+	// or is marked as ended. Used by BuildTask.runStep to block instead of
+	// busy-waiting on time.Sleep.
+	doneCh   chan struct{}
+	doneOnce sync.Once
 }
 
 func (c *jobSync) status(stat, errs string, event ...string) {
@@ -55,14 +65,42 @@ func (c *jobSync) status(stat, errs string, event ...string) {
 	if len(event) > 0 {
 		c.step.Event = event[0]
 	}
+	if common.BuildStatusEnded(stat) {
+		c.signalDoneLocked()
+	}
+}
+
+// initDoneCh ensures doneCh is allocated. Call before the job is shared
+// across goroutines or before waiting on it.
+func (c *jobSync) initDoneCh() {
+	if c.doneCh == nil {
+		c.doneCh = make(chan struct{})
+	}
+}
+
+// signalDone closes doneCh once, making it safe to call multiple times.
+func (c *jobSync) signalDone() {
+	c.Lock()
+	defer c.Unlock()
+	c.signalDoneLocked()
+}
+
+// signalDoneLocked is the non-locking variant; caller must hold c.Lock().
+func (c *jobSync) signalDoneLocked() {
+	c.doneOnce.Do(func() {
+		if c.doneCh != nil {
+			close(c.doneCh)
+		}
+	})
 }
 
 func StartJobEngine() *JobEngine {
 	c := &JobEngine{
-		tmr:    utils.NewTimer(time.Second * 30),
-		execs:  make(map[string]*executer),
-		jobs:   make(map[string]*jobSync),
-		wakeCh: make(chan struct{}, 1),
+		tmr:        utils.NewTimer(time.Second * 30),
+		execs:      make(map[string]*executer),
+		jobs:       make(map[string]*jobSync),
+		wakeCh:     make(chan struct{}, 1),
+		pullWakeCh: make(chan struct{}, 1),
 	}
 	go func() {
 		defer util.RecoverLog("JobEngine.goroutine")
@@ -123,6 +161,7 @@ func (c *JobEngine) rmExec(k string, ex *executer) {
 	for e := ex.jobwt.Front(); e != nil; e = e.Next() {
 		job := e.Value.(*jobSync)
 		job.ended = true
+		job.signalDone()
 	}
 	delete(c.execs, k)
 }
@@ -143,6 +182,13 @@ func (c *JobEngine) Put(job *jobSync) error {
 	if c.wakeCh != nil {
 		select {
 		case c.wakeCh <- struct{}{}:
+		default:
+		}
+	}
+	// Signal remote runners that a job is available
+	if c.pullWakeCh != nil {
+		select {
+		case c.pullWakeCh <- struct{}{}:
 		default:
 		}
 	}
