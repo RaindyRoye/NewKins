@@ -6,7 +6,7 @@ toolchain go1.26.4
 
 require (
 	github.com/gin-gonic/gin v1.12.0
-	github.com/go-git/go-git/v5 v5.19.0
+	github.com/go-git/go-git/v5 v5.19.1
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/gokins/core v0.0.0-20221114063511-e32796e39c37
 	github.com/gokins/runner v0.0.0-20230302104705-dbc0aeb397ce
