@@ -225,7 +225,7 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 	dendons := job.step.Waits
 	job.RUnlock()
 	if len(dendons) > 0 {
-		ls := make([]*jobSync, 0)
+		ls := make([]*jobSync, 0, len(dendons))
 		for _, v := range dendons {
 			if v == "" {
 				continue
@@ -243,36 +243,49 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 			}
 			ls = append(ls, e)
 		}
-		// Use the task's own context (which has a timeout) instead of the global
-		// comm.Ctx, so that step waits are properly bounded by the build deadline.
-		for c.ctx.Err() == nil {
-			time.Sleep(time.Millisecond * 100)
+		// Use event-driven waiting instead of busy-wait polling.
+		// Wait for all dependencies to complete by selecting on their doneCh
+		// and the task's context, avoiding CPU-wasting time.Sleep loops.
+		for _, v := range ls {
 			if c.stopd() {
 				job.status(common.BuildStatusCancel, "")
 				return
 			}
-			waitln := len(ls)
-			for _, v := range ls {
-				v.Lock()
-				vStats := v.step.Status
-				v.Unlock()
-				switch vStats {
-				case common.BuildStatusOk:
-					waitln--
-				case common.BuildStatusCancel:
+			// Check if already completed
+			v.RLock()
+			vStats := v.step.Status
+			v.RUnlock()
+			if common.BuildStatusEnded(vStats) {
+				if vStats == common.BuildStatusCancel {
 					job.status(common.BuildStatusCancel, "")
 					return
-				case common.BuildStatusError:
-					if v.step.ErrIgnore {
-						waitln--
-					} else {
-						job.status(common.BuildStatusError, fmt.Sprintf("wait on %s is err", v.step.Name))
-						return
-					}
 				}
+				if vStats == common.BuildStatusError && !v.step.ErrIgnore {
+					job.status(common.BuildStatusError, fmt.Sprintf("wait on %s is err", v.step.Name))
+					return
+				}
+				continue
 			}
-			if waitln <= 0 {
-				break
+			// Block until dependency completes or context expires
+			select {
+			case <-c.ctx.Done():
+				if c.stopd() {
+					job.status(common.BuildStatusCancel, "")
+				}
+				return
+			case <-v.doneCh:
+				// Check final status
+				v.RLock()
+				vStats = v.step.Status
+				v.RUnlock()
+				if vStats == common.BuildStatusCancel {
+					job.status(common.BuildStatusCancel, "")
+					return
+				}
+				if vStats == common.BuildStatusError && !v.step.ErrIgnore {
+					job.status(common.BuildStatusError, fmt.Sprintf("wait on %s is err", v.step.Name))
+					return
+				}
 			}
 		}
 	}
@@ -281,6 +294,7 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 	job.ended = false
 	job.step.Status = common.BuildStatusPreparation
 	job.step.Started = time.Now()
+	job.initDoneCh()
 	job.Unlock()
 	go c.updateStep(job)
 	err := Mgr.jobEgn.Put(job)
@@ -289,20 +303,19 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 		return
 	}
 	logrus.Debugf("BuildTask put step:%s", job.step.Name)
-	// Use the task's own context (with timeout) instead of the global comm.Ctx
-	// so that the polling loop respects the build deadline.
-	for c.ctx.Err() == nil {
-		job.Lock()
-		stats := job.step.Status
-		job.Unlock()
-		if common.BuildStatusEnded(stats) {
-			break
-		}
-		if c.stopd() && time.Since(c.ctrlendtm).Seconds() > 3 {
+	// Use event-driven waiting instead of busy-wait polling.
+	// Block until job completes or context expires, with grace period for cancellation.
+	select {
+	case <-c.ctx.Done():
+		// Context expired, wait up to 3 seconds for graceful shutdown
+		select {
+		case <-job.doneCh:
+			// Job finished naturally
+		case <-time.After(3 * time.Second):
 			job.status(common.BuildStatusCancel, "cancel")
-			break
 		}
-		time.Sleep(time.Millisecond * 10)
+	case <-job.doneCh:
+		// Job completed successfully or with error
 	}
 }
 
