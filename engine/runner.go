@@ -31,15 +31,27 @@ func (c *baseRunner) ServerInfo() (*runners.ServerInfo, error) {
 }
 
 func (c *baseRunner) PullJob(name string, plugs []string) (*runners.RunJob, error) {
-	tms := time.Now()
-	for time.Since(tms).Seconds() < 5 {
-		v := Mgr.jobEgn.Pull(name, plugs)
-		if v != nil {
-			return v, nil
-		}
-		time.Sleep(time.Millisecond * 100)
+	// First attempt: try to pull immediately
+	v := Mgr.jobEgn.Pull(name, plugs)
+	if v != nil {
+		return v, nil
 	}
-	return nil, fmt.Errorf("no job found for runner %q with plugins %v after 5s: %w", name, plugs, ErrJobNotFound)
+	// Use event-driven waiting instead of busy-wait polling.
+	// Wait up to 5 seconds for a job to become available.
+	timeout := time.NewTimer(5 * time.Second)
+	defer timeout.Stop()
+	for {
+		select {
+		case <-Mgr.jobEgn.pullWakeCh:
+			// Job became available, try to pull it
+			v := Mgr.jobEgn.Pull(name, plugs)
+			if v != nil {
+				return v, nil
+			}
+		case <-timeout.C:
+			return nil, fmt.Errorf("no job found for runner %q with plugins %v after 5s: %w", name, plugs, ErrJobNotFound)
+		}
+	}
 }
 func (c *baseRunner) CheckCancel(buildID string) bool {
 	v, ok := Mgr.buildEgn.Get(buildID)
