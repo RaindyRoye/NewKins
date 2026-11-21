@@ -215,10 +215,10 @@ func TestTimerEngineResetOneUpdateExisting(t *testing.T) {
 
 // TestTimerEngineExecItemPastTickOnce verifies execItem for a one-time timer
 // whose tick is in the past. Since it calls service.TriggerTimer which requires
-// a DB, we verify the deletion path is exercised (type 0 triggers a Delete goroutine).
+// a DB, we verify the deletion path is exercised (type 0 triggers a synchronous Delete).
 func TestTimerEngineExecItemOncePast(t *testing.T) {
 	te := &TimerEngine{tasks: make(map[string]*timerExec)}
-	// type=0 timer with tick in the past → should trigger deletion goroutine
+	// type=0 timer with tick in the past → should trigger synchronous deletion
 	te.tasks["exec-once"] = &timerExec{
 		tt:   &model.TTrigger{Id: "exec-once", Name: "test"},
 		typ:  0,
@@ -229,10 +229,13 @@ func TestTimerEngineExecItemOncePast(t *testing.T) {
 	// defer util.RecoverLog should catch any panic. We just verify no panic.
 	te.execItem(te.tasks["exec-once"])
 
-	// Give the deletion goroutine time to run
-	time.Sleep(50 * time.Millisecond)
-	// The timer should have been deleted (or still exist if goroutine hasn't run yet)
-	_ = te.tasks["exec-once"]
+	// The timer should have been deleted synchronously
+	te.tasklk.RLock()
+	_, exists := te.tasks["exec-once"]
+	te.tasklk.RUnlock()
+	if exists {
+		t.Error("expected one-shot timer to be deleted after execItem")
+	}
 }
 
 // TestTimerEngineExecItemFutureTick verifies execItem does nothing when tick is
