@@ -20,6 +20,7 @@ type TimerEngine struct {
 	tasks  map[string]*timerExec
 }
 type timerExec struct {
+	mu   sync.Mutex // protects typ, tms, tick
 	tt   *model.TTrigger
 	typ  int64
 	tms  time.Time
@@ -43,42 +44,63 @@ func StartTimerEngine() *TimerEngine {
 func (c *TimerEngine) run() {
 	defer util.RecoverLog("TimerEngine.run")
 
-	c.tasklk.Lock()
-	defer c.tasklk.Unlock()
+	// Collect tasks to execute while holding read lock
+	c.tasklk.RLock()
+	tasks := make([]*timerExec, 0, len(c.tasks))
 	for _, v := range c.tasks {
+		tasks = append(tasks, v)
+	}
+	c.tasklk.RUnlock()
+
+	// Execute tasks outside the lock to avoid blocking during DB operations
+	for _, v := range tasks {
 		c.execItem(v)
 	}
 }
 func (c *TimerEngine) execItem(v *timerExec) {
 	defer util.RecoverLog("TimerEngine.execItem")
-	if time.Since(v.tick) > 0 {
-		now := time.Now()
-		logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", v.tt.Name, v.typ, now.Format(common.TimeFmt), v.tick.Format(common.TimeFmt))
-		switch v.typ {
-		case 0:
-			go func(id string) {
-				defer util.RecoverLog("TimerEngine.delete")
-				c.Delete(id)
-			}(v.tt.Id)
-			time.Sleep(time.Millisecond * 10)
-		case 1:
-			v.tick = now.Add(time.Minute)
-		case 2:
-			v.tick = now.Add(time.Hour)
-		case 3:
-			v.tick = now.Add(time.Hour * 24)
-		case 4:
-			v.tick = now.Add(time.Hour * 24 * 7)
-		case 5:
-			v.tick = now.Add(time.Hour * 24 * 30)
-		}
 
-		rb, err := service.TriggerTimer(comm.Ctx, v.tt)
-		if err != nil {
-			logrus.Errorf("TriggerTimer err:%v", err)
-		} else {
-			Mgr.BuildEgn().Put(rb)
-		}
+	v.mu.Lock()
+	overdue := time.Since(v.tick) > 0
+	if !overdue {
+		v.mu.Unlock()
+		return
+	}
+
+	now := time.Now()
+	typ := v.typ
+	logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", v.tt.Name, typ, now.Format(common.TimeFmt), v.tick.Format(common.TimeFmt))
+
+	switch typ {
+	case 0:
+		v.mu.Unlock()
+		go func(id string) {
+			defer util.RecoverLog("TimerEngine.delete")
+			c.Delete(id)
+		}(v.tt.Id)
+		time.Sleep(time.Millisecond * 10)
+	case 1:
+		v.tick = now.Add(time.Minute)
+		v.mu.Unlock()
+	case 2:
+		v.tick = now.Add(time.Hour)
+		v.mu.Unlock()
+	case 3:
+		v.tick = now.Add(time.Hour * 24)
+		v.mu.Unlock()
+	case 4:
+		v.tick = now.Add(time.Hour * 24 * 7)
+		v.mu.Unlock()
+	case 5:
+		v.tick = now.Add(time.Hour * 24 * 30)
+		v.mu.Unlock()
+	}
+
+	rb, err := service.TriggerTimer(comm.Ctx, v.tt)
+	if err != nil {
+		logrus.Errorf("TriggerTimer err:%v", err)
+	} else {
+		Mgr.BuildEgn().Put(rb)
 	}
 }
 
@@ -128,10 +150,13 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 				}
 				c.tasks[tmr.Id] = t
 			}
+			t.mu.Lock()
 			t.typ = typ
 			t.tms = tms
 			t.tick = tms
-			logrus.Debugf("Timer add(%s[%d]:%s) tick on:%s", tmr.Name, typ, tms.Format(common.TimeFmt), t.tick.Format(common.TimeFmt))
+			tickStr := t.tick.Format(common.TimeFmt)
+			t.mu.Unlock()
+			logrus.Debugf("Timer add(%s[%d]:%s) tick on:%s", tmr.Name, typ, tms.Format(common.TimeFmt), tickStr)
 		}
 	case 1, 2, 3, 4, 5:
 		now := time.Now()
@@ -142,6 +167,7 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 			}
 			c.tasks[tmr.Id] = t
 		}
+		t.mu.Lock()
 		t.typ = typ
 		t.tms = tms
 		switch typ {
@@ -171,7 +197,9 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 				t.tick = t.tick.Add(time.Hour * 24 * 30)
 			}
 		}
-		logrus.Debugf("Timer add(%s[%d]:%s) tick on:%s", tmr.Name, typ, tms.Format(common.TimeFmt), t.tick.Format(common.TimeFmt))
+		tickStr := t.tick.Format(common.TimeFmt)
+		t.mu.Unlock()
+		logrus.Debugf("Timer add(%s[%d]:%s) tick on:%s", tmr.Name, typ, tms.Format(common.TimeFmt), tickStr)
 	}
 	return nil
 }

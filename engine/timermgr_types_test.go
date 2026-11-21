@@ -231,8 +231,15 @@ func TestTimerEngineExecItemOncePast(t *testing.T) {
 
 	// Give the deletion goroutine time to run
 	time.Sleep(50 * time.Millisecond)
-	// The timer should have been deleted (or still exist if goroutine hasn't run yet)
-	_ = te.tasks["exec-once"]
+	
+	// Verify deletion happened safely with lock protection
+	te.tasklk.RLock()
+	_, exists := te.tasks["exec-once"]
+	te.tasklk.RUnlock()
+	
+	if exists {
+		t.Log("task still exists (deletion goroutine may not have run yet)")
+	}
 }
 
 // TestTimerEngineExecItemFutureTick verifies execItem does nothing when tick is

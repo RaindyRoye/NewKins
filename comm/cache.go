@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -15,6 +16,9 @@ import (
 )
 
 var mainCacheBucket = []byte("mainCacheBucket")
+
+// cacheWg tracks in-flight async goroutines (for test synchronization).
+var cacheWg sync.WaitGroup
 
 // ErrCacheNotInit is returned when any cache operation is attempted
 // before the cache has been initialized.
@@ -120,9 +124,12 @@ func CacheGet(key string) ([]byte, error) {
 	}
 	// Delete expired keys in a separate write transaction (View is read-only).
 	if expired {
+		db := BCache // capture to avoid race if BCache changes concurrently
+		cacheWg.Add(1)
 		go func() {
+			defer cacheWg.Done()
 			defer util.RecoverLog("CacheGet.expired-cleanup")
-			if err := BCache.Update(func(tx *bolt.Tx) error {
+			if err := db.Update(func(tx *bolt.Tx) error {
 				bk := tx.Bucket(mainCacheBucket)
 				if bk == nil {
 					return nil
@@ -134,7 +141,11 @@ func CacheGet(key string) ([]byte, error) {
 		}()
 	}
 	if time.Since(time.Unix(0, mainCacheClearTime.Load())).Hours() > 30 {
-		go mainCacheClear()
+		cacheWg.Add(1)
+		go func() {
+			defer cacheWg.Done()
+			mainCacheClear()
+		}()
 	}
 	return rt, err
 }
