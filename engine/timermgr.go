@@ -43,9 +43,18 @@ func StartTimerEngine() *TimerEngine {
 func (c *TimerEngine) run() {
 	defer util.RecoverLog("TimerEngine.run")
 
-	c.tasklk.Lock()
-	defer c.tasklk.Unlock()
+	// Snapshot the tasks under a read lock, then release the lock before
+	// executing items. This prevents the map-iteration vs map-delete race
+	// that occurred when Delete was called from a goroutine spawned inside
+	// execItem while the caller still held the lock.
+	c.tasklk.RLock()
+	items := make([]*timerExec, 0, len(c.tasks))
 	for _, v := range c.tasks {
+		items = append(items, v)
+	}
+	c.tasklk.RUnlock()
+
+	for _, v := range items {
 		c.execItem(v)
 	}
 }
@@ -56,11 +65,10 @@ func (c *TimerEngine) execItem(v *timerExec) {
 		logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", v.tt.Name, v.typ, now.Format(common.TimeFmt), v.tick.Format(common.TimeFmt))
 		switch v.typ {
 		case 0:
-			go func(id string) {
-				defer util.RecoverLog("TimerEngine.delete")
-				c.Delete(id)
-			}(v.tt.Id)
-			time.Sleep(time.Millisecond * 10)
+			// For one-shot timers, delete synchronously before triggering.
+			// This avoids the race between the Delete goroutine and
+			// concurrent map readers/writers.
+			c.Delete(v.tt.Id)
 		case 1:
 			v.tick = now.Add(time.Minute)
 		case 2:
