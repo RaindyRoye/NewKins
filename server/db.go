@@ -35,7 +35,16 @@ func initDb() error {
 	if err != nil {
 		return fmt.Errorf("database migration: %w", err)
 	}
-	db, err := xorm.NewEngine(dvs, comm.Cfg.Datasource.Url)
+	// xorm uses the registered sql driver name, which differs from config names.
+	// "sqlite" in config → "sqlite3" driver; "postgres" → "postgres" driver.
+	xormDriver := dvs
+	if dvs == comm.DatasourceDriverSQLite {
+		xormDriver = "sqlite3"
+	}
+	if ul == "" {
+		return fmt.Errorf("database URL is empty for driver %q", dvs)
+	}
+	db, err := xorm.NewEngine(xormDriver, ul)
 	if err != nil {
 		return fmt.Errorf("open database (%s): %w", dvs, err)
 	}
