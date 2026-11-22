@@ -86,15 +86,6 @@ func (UserController) new(c *gin.Context, m *hbtp.Map) {
 		LoginTime: time.Now(),
 		Active:    1,
 	}
-	/*if pmUser{
-		ne.NewUser=1
-	}
-	if pmOrg{
-		ne.NewOrg=1
-	}
-	if pmPipe{
-		ne.NewPipe=1
-	}*/
 	_, err := comm.Db.Context(ctx).InsertOne(ne)
 	if err != nil {
 		util.RespInternalErr(c, "create user", err)

@@ -308,15 +308,6 @@ func (ArtifactController) versionList(c *gin.Context, m *hbtp.Map) {
 		util.RespInternalErr(c, "db operation", err)
 		return
 	}
-	/*for _, v := range ls {
-		usr, ok := service.GetUser(v.Uid)
-		if ok {
-			v.Nick = usr.Nick
-			v.Avat = usr.Avatar
-		}
-		e := &model.TArtifactVersion{}
-		v.Verln, _ = comm.Db.Where("package_id=?", v.Id).Count(e)
-	}*/
 	c.JSON(http.StatusOK, page)
 }
 func (ArtifactController) versionInfos(c *gin.Context, m *hbtp.Map) {

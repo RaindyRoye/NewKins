@@ -56,13 +56,6 @@ func (OrgController) list(c *gin.Context, m *hbtp.Map) {
 		where org.deleted!=1
 		`
 	if !service.IsAdmin(lgusr) {
-		/*gen.FindCols = "org.*,urg.perm_adm,urg.perm_rw,urg.perm_exec"
-		gen.SQL = `
-		select {{select}} from t_org org
-		LEFT JOIN t_user_org urg on urg.uid=? and urg.org_id=org.id
-		where org.deleted!=1
-		and (org.public=1 or org.uid=?)
-		`*/
 		gen.FindCols = "org.*"
 		gen.SQL = `
 			select {{select}} from t_org org

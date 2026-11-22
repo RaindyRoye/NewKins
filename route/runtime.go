@@ -107,16 +107,6 @@ func (RuntimeController) cmds(c *gin.Context, m *hbtp.Map) {
 		"stepId": stepId,
 		"cmds":   ls,
 	})
-	/*ids:=make([]string,0)
-	cmds := map[string]*model.TCmdLine{}
-	for _, v := range ls {
-		ids = append(ids, v.Id)
-		cmds[v.Id] = v
-	}
-	c.JSON(http.StatusOK, hbtp.Map{
-		//"ids":    ids,
-		"cmds": ls,
-	})*/
 }
 func (RuntimeController) build(c *gin.Context, m *hbtp.Map) {
 	bdid := m.GetString("buildId")
@@ -177,12 +167,6 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 		c.String(http.StatusBadRequest, "param err")
 		return
 	}
-	/*tstp := &model.TStep{}
-	ok, _ := comm.Db.Where("id=?", stepId).Get(tstp)
-	if !ok {
-		c.String(http.StatusNotFound, "Not Found")
-		return
-	}*/
 	dir := filepath.Join(comm.WorkPath, common.PathBuild, buildId, common.PathJobs, stepId)
 	logpth := filepath.Join(dir, "build.log")
 	//nolint:gosec // logpth is constructed from comm.WorkPath + DB-derived buildId/stepId, not raw user input
@@ -219,9 +203,6 @@ func (RuntimeController) logs(c *gin.Context, m *hbtp.Map) {
 			if b == '\n' {
 				e := &bean.LogOutJsonRes{}
 				if uerr := json.Unmarshal(linebuf.Bytes(), e); uerr == nil {
-					/*if e.Type == hbtpBean.TypeCmdLogLineSys {
-						continue
-					}*/
 					e.Offset = off - 1
 					ls = append(ls, e)
 					lastoff = e.Offset
