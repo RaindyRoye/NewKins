@@ -15,9 +15,9 @@ import (
 
 type JobEngine struct {
 	tmr   *utils.Timer
-	exelk sync.RWMutex
+	exelk sync.Mutex
 	execs map[string]*executer
-	joblk sync.RWMutex
+	joblk sync.Mutex
 	jobs  map[string]*jobSync
 	// wakeCh is a buffered channel used to notify the run loop that new
 	// work has been enqueued via Put. Buffered with capacity 1 so that
@@ -25,13 +25,13 @@ type JobEngine struct {
 	wakeCh chan struct{}
 }
 type executer struct {
-	sync.RWMutex
+	sync.Mutex
 	plug  string
 	tms   time.Time
 	jobwt *list.List
 }
 type cmdSync struct {
-	sync.RWMutex
+	sync.Mutex
 	cmd      *runners.CmdContent
 	code     int
 	status   string
@@ -39,7 +39,7 @@ type cmdSync struct {
 	finished time.Time
 }
 type jobSync struct {
-	sync.RWMutex
+	sync.Mutex
 	task  *BuildTask
 	step  *runtime.Step
 	runjb *runners.RunJob
@@ -89,20 +89,30 @@ func (c *JobEngine) run() {
 	if !c.tmr.Tick() {
 		return
 	}
-	func() {
-		c.exelk.RLock()
-		defer c.exelk.RUnlock()
-		for k, v := range c.execs {
-			v.RLock()
-			if time.Since(v.tms).Minutes() > 2 {
-				go func(key string, ex *executer) {
-					defer util.RecoverLog("JobEngine.rmExec.launch")
-					c.rmExec(key, ex)
-				}(k, v)
-			}
-			v.RUnlock()
+	// Collect expired executer keys under lock, then launch cleanup
+	// goroutines after releasing the lock. This avoids a deadlock where
+	// goroutines launched while the lock is held try to acquire it again.
+	var expired []string
+	c.exelk.Lock()
+	for k, v := range c.execs {
+		v.Lock()
+		if time.Since(v.tms).Minutes() > 2 {
+			expired = append(expired, k)
 		}
-	}()
+		v.Unlock()
+	}
+	c.exelk.Unlock()
+	for _, k := range expired {
+		c.exelk.Lock()
+		ex := c.execs[k]
+		c.exelk.Unlock()
+		if ex != nil {
+			go func(key string, ex *executer) {
+				defer util.RecoverLog("JobEngine.rmExec.launch")
+				c.rmExec(key, ex)
+			}(k, ex)
+		}
+	}
 	func() {
 		c.joblk.Lock()
 		defer c.joblk.Unlock()
@@ -117,22 +127,27 @@ func (c *JobEngine) rmExec(k string, ex *executer) {
 	defer util.RecoverLog("JobEngine.rmExec")
 
 	c.exelk.Lock()
-	defer c.exelk.Unlock()
+	exists := c.execs[k] == ex
+	if !exists {
+		c.exelk.Unlock()
+		return
+	}
 	ex.Lock()
-	defer ex.Unlock()
 	for e := ex.jobwt.Front(); e != nil; e = e.Next() {
 		job := e.Value.(*jobSync)
 		job.ended = true
 	}
 	delete(c.execs, k)
+	ex.Unlock()
+	c.exelk.Unlock()
 }
 func (c *JobEngine) Put(job *jobSync) error {
 	if job == nil || job.step.Step == "" {
 		return fmt.Errorf("step plugin empty: %w", ErrEmptyParams)
 	}
-	c.exelk.RLock()
+	c.exelk.Lock()
 	e, ok := c.execs[job.step.Step]
-	c.exelk.RUnlock()
+	c.exelk.Unlock()
 	if !ok {
 		return fmt.Errorf("%w: %q", ErrPluginNotFound, job.step.Step)
 	}
@@ -153,19 +168,17 @@ func (c *JobEngine) Pull(name string, plugs []string) *runners.RunJob {
 		if v == "" {
 			continue
 		}
-		c.exelk.RLock()
+		c.exelk.Lock()
 		ex, ok := c.execs[v]
-		c.exelk.RUnlock()
 		if !ok {
 			ex = &executer{
 				plug:  v,
 				tms:   time.Now(),
 				jobwt: list.New(),
 			}
-			c.exelk.Lock()
 			c.execs[v] = ex
-			c.exelk.Unlock()
 		}
+		c.exelk.Unlock()
 		var job *jobSync
 		ex.Lock()
 		ex.tms = time.Now()
@@ -186,9 +199,9 @@ func (c *JobEngine) Pull(name string, plugs []string) *runners.RunJob {
 }
 
 func (c *JobEngine) Plugins() []string {
+	c.exelk.Lock()
+	defer c.exelk.Unlock()
 	rts := make([]string, 0, len(c.execs))
-	c.exelk.RLock()
-	defer c.exelk.RUnlock()
 	for _, v := range c.execs {
 		rts = append(rts, v.plug)
 	}
@@ -199,8 +212,8 @@ func (c *JobEngine) Plugins() []string {
 	if id == "" {
 		return nil, false
 	}
-	c.joblk.RLock()
-	defer c.joblk.RUnlock()
+	c.joblk.Lock()
+	defer c.joblk.Unlock()
 	job, ok := c.jobs[id]
 	return job, ok
 }*/

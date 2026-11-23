@@ -170,19 +170,19 @@ func (c *BuildTask) runStage(stage *runtime.Stage) {
 	stage.Started = time.Now()
 	stage.Status = common.BuildStatusRunning
 	c.updateStage(stage)
-	c.staglk.RLock()
+	c.staglk.Lock()
 	stg, ok := c.stages[stage.Name]
-	c.staglk.RUnlock()
+	c.staglk.Unlock()
 	if !ok {
 		stg.status(common.BuildStatusError, fmt.Sprintf("not found stage?:%s", stage.Name))
 		return
 	}
 
-	c.staglk.RLock()
+	c.staglk.Lock()
 	for _, v := range stage.Steps {
-		stg.RLock()
+		stg.Lock()
 		jb, ok := stg.jobs[v.Name]
-		stg.RUnlock()
+		stg.Unlock()
 		if !ok {
 			jb.status(common.BuildStatusError, "")
 			break
@@ -193,14 +193,14 @@ func (c *BuildTask) runStage(stage *runtime.Stage) {
 			c.runStep(s, j)
 		}(stg, jb)
 	}
-	c.staglk.RUnlock()
+	c.staglk.Unlock()
 	stg.wg.Wait()
 	for _, v := range stg.jobs {
-		v.RLock()
+		v.Lock()
 		ign := v.step.ErrIgnore
 		status := v.step.Status
 		errs := v.step.Error
-		v.RUnlock()
+		v.Unlock()
 		if !ign && status == common.BuildStatusError {
 			stg.status(status, errs)
 			return
@@ -221,18 +221,18 @@ func (c *BuildTask) runStep(stage *taskStage, job *jobSync) {
 		util.RecoverLog("BuildTask.runStep")
 	}()
 
-	job.RLock()
+	job.Lock()
 	dendons := job.step.Waits
-	job.RUnlock()
+	job.Unlock()
 	if len(dendons) > 0 {
 		ls := make([]*jobSync, 0)
 		for _, v := range dendons {
 			if v == "" {
 				continue
 			}
-			stage.RLock()
+			stage.Lock()
 			e, ok := stage.jobs[v]
-			stage.RUnlock()
+			stage.Unlock()
 			if !ok {
 				job.status(common.BuildStatusError, fmt.Sprintf("wait on %s not found", v))
 				return
@@ -424,7 +424,7 @@ func (c *BuildTask) Show() (*runtime.BuildShow, bool) {
 	if c.stopd() {
 		return nil, false
 	}
-	c.bdlk.RLock()
+	c.bdlk.Lock()
 	rtbd := &runtime.BuildShow{
 		Id:         c.build.Id,
 		PipelineId: c.build.PipelineId,
@@ -436,15 +436,15 @@ func (c *BuildTask) Show() (*runtime.BuildShow, bool) {
 		Created:    c.build.Created,
 		Updated:    c.build.Updated,
 	}
-	c.bdlk.RUnlock()
+	c.bdlk.Unlock()
 	for _, v := range c.build.Stages {
-		c.staglk.RLock()
+		c.staglk.Lock()
 		stg, ok := c.stages[v.Name]
-		c.staglk.RUnlock()
+		c.staglk.Unlock()
 		if !ok {
 			continue
 		}
-		stg.RLock()
+		stg.Lock()
 		rtstg := &runtime.StageShow{
 			Id:       stg.stage.Id,
 			BuildId:  stg.stage.BuildId,
@@ -457,16 +457,16 @@ func (c *BuildTask) Show() (*runtime.BuildShow, bool) {
 			Created:  stg.stage.Created,
 			Updated:  stg.stage.Updated,
 		}
-		stg.RUnlock()
+		stg.Unlock()
 		rtbd.Stages = append(rtbd.Stages, rtstg)
 		for _, st := range v.Steps {
-			c.staglk.RLock()
+			c.staglk.Lock()
 			job, ok := stg.jobs[st.Name]
-			c.staglk.RUnlock()
+			c.staglk.Unlock()
 			if !ok {
 				continue
 			}
-			job.RLock()
+			job.Lock()
 			rtstp := &runtime.StepShow{
 				Id:       job.step.Id,
 				StageId:  job.step.StageId,
@@ -488,7 +488,7 @@ func (c *BuildTask) Show() (*runtime.BuildShow, bool) {
 					Finished: cmd.finished,
 				})
 			}
-			job.RUnlock()
+			job.Unlock()
 		}
 	}
 	return rtbd, true
@@ -498,8 +498,8 @@ func (c *BuildTask) GetJob(id string) (*jobSync, bool) {
 	if id == "" {
 		return nil, false
 	}
-	c.joblk.RLock()
-	defer c.joblk.RUnlock()
+	c.joblk.Lock()
+	defer c.joblk.Unlock()
 	job, ok := c.jobs[id]
 	return job, ok
 }

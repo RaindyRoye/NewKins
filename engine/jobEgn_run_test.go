@@ -2,6 +2,7 @@ package engine
 
 import (
 	"container/list"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -61,9 +62,9 @@ func TestJobEngineRunRemExecExpired(t *testing.T) {
 	// Give the goroutine time to complete rmExec
 	time.Sleep(time.Millisecond * 200)
 
-	c.exelk.RLock()
+	c.exelk.Lock()
 	_, stillExists := c.execs["expired-plugin"]
-	c.exelk.RUnlock()
+	c.exelk.Unlock()
 	if stillExists {
 		t.Error("expected expired executer to be removed")
 	}
@@ -90,9 +91,9 @@ func TestJobEngineRmExec(t *testing.T) {
 	c.rmExec("test-plugin", ex)
 
 	// Executer should be removed
-	c.exelk.RLock()
+	c.exelk.Lock()
 	_, exists := c.execs["test-plugin"]
-	c.exelk.RUnlock()
+	c.exelk.Unlock()
 	if exists {
 		t.Error("expected executer to be removed after rmExec")
 	}
@@ -137,9 +138,9 @@ func TestJobEnginePullWithQueuedJob(t *testing.T) {
 	}
 
 	// Verify job was moved from executer to jobs map
-	c.joblk.RLock()
+	c.joblk.Lock()
 	_, inJobs := c.jobs["step-1"]
-	c.joblk.RUnlock()
+	c.joblk.Unlock()
 	if !inJobs {
 		t.Error("expected job to be in jobs map after Pull")
 	}
@@ -171,9 +172,9 @@ func TestJobEnginePullUpdatesExecuterTimestamp(t *testing.T) {
 
 	c.Pull("runner-1", []string{"plugin-y"})
 
-	ex.RLock()
+	ex.Lock()
 	updated := ex.tms
-	ex.RUnlock()
+	ex.Unlock()
 	if updated.Equal(oldTime) {
 		t.Error("expected Pull to update executer timestamp")
 	}
@@ -225,26 +226,39 @@ func TestJobEngineRmExecConcurrent(t *testing.T) {
 		jobs:  make(map[string]*jobSync),
 	}
 
-	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
-		name := "plugin-concurrent-" + string(rune('a'+i))
+	// Populate all execs under the lock BEFORE launching goroutines,
+	// otherwise the unprotected map write races with concurrent map
+	// reads/deletes inside rmExec.
+	const n = 10
+	names := make([]string, n)
+	execs := make([]*executer, n)
+	c.exelk.Lock()
+	for i := 0; i < n; i++ {
+		name := fmt.Sprintf("plugin-concurrent-%c", 'a'+i)
 		ex := &executer{
 			plug:  name,
 			tms:   time.Now().Add(-5 * time.Minute),
 			jobwt: list.New(),
 		}
 		c.execs[name] = ex
+		names[i] = name
+		execs[i] = ex
+	}
+	c.exelk.Unlock()
+
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
 		wg.Add(1)
-		go func(n string, e *executer) {
+		go func(idx int) {
 			defer wg.Done()
-			c.rmExec(n, e)
-		}(name, ex)
+			c.rmExec(names[idx], execs[idx])
+		}(i)
 	}
 	wg.Wait()
 
-	c.exelk.RLock()
+	c.exelk.Lock()
 	remaining := len(c.execs)
-	c.exelk.RUnlock()
+	c.exelk.Unlock()
 	if remaining != 0 {
 		t.Errorf("expected all executers removed, got %d", remaining)
 	}

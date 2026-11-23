@@ -70,8 +70,8 @@ func (c *BuildEngine) Stop() {
 			close(c.stopCh)
 		})
 	}
-	c.tskslk.RLock()
-	defer c.tskslk.RUnlock()
+	c.tskslk.Lock()
+	defer c.tskslk.Unlock()
 	for _, v := range c.tasks {
 		v.stop()
 	}
@@ -107,16 +107,16 @@ func (c *BuildEngine) init() {
 func (c *BuildEngine) run() {
 	defer util.RecoverLog("BuildEngine.run")
 
-	c.tskwlk.RLock()
+	c.tskwlk.Lock()
 	ln1 := c.taskw.Len()
-	c.tskwlk.RUnlock()
-	c.tskslk.RLock()
+	c.tskwlk.Unlock()
+	c.tskslk.Lock()
 	ln2 := len(c.tasks)
-	c.tskslk.RUnlock()
+	c.tskslk.Unlock()
 	if ln1 > 0 && ln2 < comm.Cfg.Server.RunLimit {
-		c.tskwlk.RLock()
+		c.tskwlk.Lock()
 		e := c.taskw.Front()
-		c.tskwlk.RUnlock()
+		c.tskwlk.Unlock()
 		if e == nil {
 			return
 		}
@@ -155,8 +155,8 @@ func (c *BuildEngine) Get(buildid string) (*BuildTask, bool) {
 	if c == nil || buildid == "" {
 		return nil, false
 	}
-	c.tskslk.RLock()
-	defer c.tskslk.RUnlock()
+	c.tskslk.Lock()
+	defer c.tskslk.Unlock()
 	v, ok := c.tasks[buildid]
 	return v, ok
 }

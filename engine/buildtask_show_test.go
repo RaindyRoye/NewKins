@@ -177,8 +177,8 @@ func TestUpJobCmd_RunningStatus(t *testing.T) {
 	}
 	// fs=1 means running
 	bt.UpJobCmd(cmd, 1, 0)
-	cmd.RLock()
-	defer cmd.RUnlock()
+	cmd.Lock()
+	defer cmd.Unlock()
 	if cmd.status != common.BuildStatusRunning {
 		t.Errorf("status = %q, want %q", cmd.status, common.BuildStatusRunning)
 	}
@@ -196,8 +196,8 @@ func TestUpJobCmd_OkStatus_ZeroCode(t *testing.T) {
 	}
 	// fs=2 means ok
 	bt.UpJobCmd(cmd, 2, 0)
-	cmd.RLock()
-	defer cmd.RUnlock()
+	cmd.Lock()
+	defer cmd.Unlock()
 	if cmd.status != common.BuildStatusOk {
 		t.Errorf("status = %q, want %q", cmd.status, common.BuildStatusOk)
 	}
@@ -217,8 +217,8 @@ func TestUpJobCmd_OkStatus_NonZeroCode(t *testing.T) {
 	}
 	// fs=2 with non-zero code should become error
 	bt.UpJobCmd(cmd, 2, 1)
-	cmd.RLock()
-	defer cmd.RUnlock()
+	cmd.Lock()
+	defer cmd.Unlock()
 	if cmd.status != common.BuildStatusError {
 		t.Errorf("status = %q, want %q", cmd.status, common.BuildStatusError)
 	}
@@ -235,8 +235,8 @@ func TestUpJobCmd_CancelStatus(t *testing.T) {
 	}
 	// fs=3 means cancel
 	bt.UpJobCmd(cmd, 3, 137)
-	cmd.RLock()
-	defer cmd.RUnlock()
+	cmd.Lock()
+	defer cmd.Unlock()
 	if cmd.status != common.BuildStatusCancel {
 		t.Errorf("status = %q, want %q", cmd.status, common.BuildStatusCancel)
 	}
@@ -256,8 +256,8 @@ func TestUpJobCmd_ErrorStatus(t *testing.T) {
 	}
 	// fs=-1 means error
 	bt.UpJobCmd(cmd, -1, 127)
-	cmd.RLock()
-	defer cmd.RUnlock()
+	cmd.Lock()
+	defer cmd.Unlock()
 	if cmd.status != common.BuildStatusError {
 		t.Errorf("status = %q, want %q", cmd.status, common.BuildStatusError)
 	}
@@ -278,8 +278,8 @@ func TestUpJobCmd_UnknownFs(t *testing.T) {
 	}
 	// fs=99 is unknown, should be a no-op (default branch returns)
 	bt.UpJobCmd(cmd, 99, 0)
-	cmd.RLock()
-	defer cmd.RUnlock()
+	cmd.Lock()
+	defer cmd.Unlock()
 	if cmd.status != common.BuildStatusRunning {
 		t.Errorf("status should remain %q for unknown fs, got %q", common.BuildStatusRunning, cmd.status)
 	}
@@ -297,8 +297,8 @@ func TestUpJob_SetsStatusAndCode(t *testing.T) {
 		cmdmp: make(map[string]*cmdSync),
 	}
 	bt.UpJob(job, common.BuildStatusError, "something failed", 1)
-	job.RLock()
-	defer job.RUnlock()
+	job.Lock()
+	defer job.Unlock()
 	if job.step.Status != common.BuildStatusError {
 		t.Errorf("status = %q, want %q", job.step.Status, common.BuildStatusError)
 	}
@@ -324,8 +324,8 @@ func TestUpJob_EmptyStatusNoOp(t *testing.T) {
 	}
 	// Empty status is a no-op
 	bt.UpJob(job, "", "", 0)
-	job.RLock()
-	defer job.RUnlock()
+	job.Lock()
+	defer job.Unlock()
 	if job.step.Status != common.BuildStatusRunning {
 		t.Errorf("status should remain %q, got %q", common.BuildStatusRunning, job.step.Status)
 	}

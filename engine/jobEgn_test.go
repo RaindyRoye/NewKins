@@ -125,9 +125,9 @@ func TestJobEnginePullCreatesExecuter(t *testing.T) {
 	je := newTestJobEngine()
 	// Pull should create a new executer for unknown plugins
 	je.Pull("runner1", []string{"newplugin"})
-	je.exelk.RLock()
+	je.exelk.Lock()
 	_, ok := je.execs["newplugin"]
-	je.exelk.RUnlock()
+	je.exelk.Unlock()
 	if !ok {
 		t.Error("expected Pull to create executer for new plugin")
 	}
@@ -162,9 +162,9 @@ func TestJobEngineConcurrentPutAndPlugins(t *testing.T) {
 	wg.Wait()
 
 	// Verify all jobs were added
-	je.exelk.RLock()
+	je.exelk.Lock()
 	cnt := je.execs["p1"].jobwt.Len()
-	je.exelk.RUnlock()
+	je.exelk.Unlock()
 	if cnt != 20 {
 		t.Errorf("expected 20 jobs in p1 queue, got %d", cnt)
 	}
