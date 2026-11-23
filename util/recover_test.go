@@ -171,6 +171,59 @@ func TestRecoverResult_StringPanic(t *testing.T) {
 	}
 }
 
+// TestRecoverResult_StringPanicIsWrappable verifies that string panics are wrapped with %w
+// so that errors.Unwrap and errors.Is work on the resulting error.
+func TestRecoverResult_StringPanicIsWrappable(t *testing.T) {
+	var err error
+	func() {
+		defer RecoverResult(&err, "test-string-unwrap")
+		panic("something broke")
+	}()
+	if err == nil {
+		t.Fatal("RecoverResult should set error when there is a panic")
+	}
+	// The wrapped inner error should be retrievable via errors.Unwrap
+	inner := errors.Unwrap(err)
+	if inner == nil {
+		t.Fatal("RecoverResult should wrap string panics so errors.Unwrap returns the inner error")
+	}
+	if inner.Error() != "something broke" {
+		t.Errorf("inner error = %q, want %q", inner.Error(), "something broke")
+	}
+}
+
+// TestRecoverResult_ErrorPanicIsWrappable verifies that error panics are wrapped with %w.
+func TestRecoverResult_ErrorPanicIsWrappable(t *testing.T) {
+	sentinel := errors.New("sentinel")
+	var err error
+	func() {
+		defer RecoverResult(&err, "test-error-unwrap")
+		panic(sentinel)
+	}()
+	if err == nil {
+		t.Fatal("RecoverResult should set error when there is a panic")
+	}
+	if !errors.Is(err, sentinel) {
+		t.Error("RecoverResult should wrap error panics so errors.Is finds the sentinel")
+	}
+}
+
+// TestRecoverResult_IntPanicFallback verifies that non-error/non-string panics
+// fall back to %v formatting (not wrappable, but still recorded).
+func TestRecoverResult_IntPanicFallback(t *testing.T) {
+	var err error
+	func() {
+		defer RecoverResult(&err, "test-int-fallback")
+		panic(42)
+	}()
+	if err == nil {
+		t.Fatal("RecoverResult should set error when there is a panic")
+	}
+	if !strings.Contains(err.Error(), "42") {
+		t.Errorf("error should contain panic value, got: %v", err)
+	}
+}
+
 // TestRecoverResult_ErrorPanic verifies that RecoverResult correctly handles an error type panic
 func TestRecoverResult_ErrorPanic(t *testing.T) {
 	// Capture log output

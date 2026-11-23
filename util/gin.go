@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -109,9 +110,12 @@ func RecoverResult(errp *error, label string) {
 	}
 	logrus.Warnf("%s panic: %+v", label, r)
 	logrus.Warnf("%s stack:\n%s", label, string(debug.Stack()))
-	if e, ok := r.(error); ok {
-		*errp = fmt.Errorf("%s: panic: %w", label, e)
-	} else {
+	switch v := r.(type) {
+	case error:
+		*errp = fmt.Errorf("%s: panic: %w", label, v)
+	case string:
+		*errp = fmt.Errorf("%s: panic: %w", label, errors.New(v))
+	default:
 		*errp = fmt.Errorf("%s: panic: %v", label, r)
 	}
 }
