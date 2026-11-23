@@ -70,9 +70,9 @@ func (c *baseRunner) UpdateCmd(buildID, jobId, cmdId string, fs, code int) error
 	if !ok {
 		return fmt.Errorf("updateCmd: %w: %q in build %q", ErrJobNotFound, jobId, buildID)
 	}
-	job.RLock()
+	job.Lock()
 	cmd, ok := job.cmdmp[cmdId]
-	job.RUnlock()
+	job.Unlock()
 	if !ok {
 		return fmt.Errorf("updateCmd: %w: %q in job %q", ErrCmdNotFound, cmdId, jobId)
 	}
@@ -125,14 +125,14 @@ func (c *baseRunner) FindJobId(buildID, stgNm, stpNm string) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	build.staglk.RLock()
-	defer build.staglk.RUnlock()
+	build.staglk.Lock()
+	defer build.staglk.Unlock()
 	stg, ok := build.stages[stgNm]
 	if !ok {
 		return "", false
 	}
-	stg.RLock()
-	defer stg.RUnlock()
+	stg.Lock()
+	defer stg.Unlock()
 	for _, v := range stg.jobs {
 		if v.step.Name == stpNm {
 			return v.step.Id, true

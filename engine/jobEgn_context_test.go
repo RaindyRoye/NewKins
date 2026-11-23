@@ -54,9 +54,9 @@ func TestJobEnginePutWakesRunLoop(t *testing.T) {
 	}
 
 	// Verify job was enqueued
-	ex.RLock()
+	ex.Lock()
 	ln := ex.jobwt.Len()
-	ex.RUnlock()
+	ex.Unlock()
 	if ln != 1 {
 		t.Fatalf("expected 1 job in queue, got %d", ln)
 	}
@@ -100,9 +100,9 @@ func TestJobEnginePutDoesNotBlockWhenFull(t *testing.T) {
 		t.Fatal("Put blocked when wakeCh buffer was full")
 	}
 
-	ex.RLock()
+	ex.Lock()
 	ln := ex.jobwt.Len()
-	ex.RUnlock()
+	ex.Unlock()
 	if ln != 5 {
 		t.Fatalf("expected 5 jobs, got %d", ln)
 	}
@@ -136,9 +136,9 @@ func TestJobEngineConcurrentPut(t *testing.T) {
 	}
 	wg.Wait()
 
-	ex.RLock()
+	ex.Lock()
 	ln := ex.jobwt.Len()
-	ex.RUnlock()
+	ex.Unlock()
 	if ln != 50 {
 		t.Fatalf("expected 50 jobs, got %d", ln)
 	}

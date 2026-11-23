@@ -116,8 +116,8 @@ func (c *BuildTask) updateStep(job *jobSync) {
 
 	ctx := c.taskCtx()
 
-	job.RLock()
-	defer job.RUnlock()
+	job.Lock()
+	defer job.Unlock()
 	e := &model.TStep{
 		Status:   job.step.Status,
 		Event:    job.step.Event,
@@ -152,8 +152,8 @@ func (c *BuildTask) updateStepCmd(cmd *cmdSync) {
 
 	ctx := c.taskCtx()
 
-	cmd.RLock()
-	defer cmd.RUnlock()
+	cmd.Lock()
+	defer cmd.Unlock()
 	cmde := &model.TCmdLine{
 		Status: cmd.status,
 		Code:   cmd.code,
