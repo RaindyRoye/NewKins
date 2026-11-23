@@ -327,3 +327,85 @@ func TestMidUiHandle_FileFound(t *testing.T) {
 		t.Errorf("expected status 200, got %d", w.Code)
 	}
 }
+
+func TestMidUiHandle_NotInstalled_InstallPath(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+	router.GET("/install", func(c *gin.Context) {
+		c.String(http.StatusOK, "install page")
+	})
+
+	origInstalled := comm.Installed
+	defer func() { comm.Installed = origInstalled }()
+	comm.Installed = false
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/install", nil)
+	router.ServeHTTP(w, req)
+
+	// Should return 200 for /install path even when not installed
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200 for /install, got %d", w.Code)
+	}
+}
+
+func TestMidUiHandle_NotInstalled_GokinsUIPath(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+
+	origInstalled := comm.Installed
+	origStaticPkg := comm.StaticPkg
+	defer func() {
+		comm.Installed = origInstalled
+		comm.StaticPkg = origStaticPkg
+	}()
+	comm.Installed = false
+	comm.StaticPkg = ""
+
+	// Reset zip reader
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/gokinsui/test.js", nil)
+	router.ServeHTTP(w, req)
+
+	// Should NOT redirect to /install for /gokinsui/ paths even when not installed.
+	// Instead, it falls through to getFile (which fails), then redirects to / (not /install).
+	body := w.Body.String()
+	if strings.Contains(body, "/install") {
+		t.Error("should not redirect to /install for /gokinsui/ paths")
+	}
+}
+
+func TestMidUiHandle_404WithNoStatic(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(midUiHandle)
+
+	origInstalled := comm.Installed
+	origStaticPkg := comm.StaticPkg
+	defer func() {
+		comm.Installed = origInstalled
+		comm.StaticPkg = origStaticPkg
+	}()
+	comm.Installed = true
+	comm.StaticPkg = ""
+
+	// Reset zip reader to ensure clean state
+	rder = nil
+	rderOnce = sync.Once{}
+	rderErr = nil
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "/nonexistent", nil)
+	router.ServeHTTP(w, req)
+
+	// Should redirect to / when file not found
+	if w.Code != http.StatusFound {
+		t.Errorf("expected status 302 (redirect), got %d", w.Code)
+	}
+}
