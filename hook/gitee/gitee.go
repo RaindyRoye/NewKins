@@ -147,10 +147,8 @@ func convertPullRequestHook(gp *giteePRHook) *hook.PullRequestHook {
 }
 func convertPushHook(gp *giteePushHook) *hook.PushHook {
 	branch := ""
-	if gp.Ref != "" {
-		if len(strings.Split(gp.Ref, "/")) > 2 {
-			branch = strings.Split(gp.Ref, "/")[2]
-		}
+	if gp.Ref != "" && strings.HasPrefix(gp.Ref, "refs/heads/") {
+		branch = strings.TrimPrefix(gp.Ref, "refs/heads/")
 	}
 	return &hook.PushHook{
 		Ref: gp.Ref,

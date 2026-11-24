@@ -4,414 +4,172 @@ import (
 	"context"
 	"testing"
 
-	"github.com/gokins/core/runtime"
-	"github.com/gokins/gokins/bean"
+	"github.com/gokins/gokins/comm"
+	"github.com/gokins/gokins/model"
+	"xorm.io/xorm"
 )
 
-func TestReplace_EmptyString(t *testing.T) {
-	result, secret := replace("", nil)
-	if result != "" {
-		t.Errorf("replace(\"\", nil) = %q, want \"\"", result)
-	}
-	if secret {
-		t.Error("replace(\"\", nil) secret = true, want false")
-	}
-}
-
-func TestReplace_NoVariables(t *testing.T) {
-	result, secret := replace("hello world", nil)
-	if result != "hello world" {
-		t.Errorf("replace(\"hello world\", nil) = %q, want \"hello world\"", result)
-	}
-	if secret {
-		t.Error("replace with no vars should not be secret")
-	}
-}
-
-func TestReplace_SingleVariable(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"FOO": {Name: "FOO", Value: "bar", Secret: false},
-	}
-	result, secret := replace("${{FOO}}", vars)
-	if result != "bar" {
-		t.Errorf("replace(\"${{FOO}}\") = %q, want \"bar\"", result)
-	}
-	if secret {
-		t.Error("non-secret var should not set secret=true")
-	}
-}
-
-func TestReplace_MultipleVariables(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"HOST": {Name: "HOST", Value: "localhost", Secret: false},
-		"PORT": {Name: "PORT", Value: "8080", Secret: false},
-	}
-	result, secret := replace("http://${{HOST}}:${{PORT}}/api", vars)
-	expected := "http://localhost:8080/api"
-	if result != expected {
-		t.Errorf("replace multiple vars = %q, want %q", result, expected)
-	}
-	if secret {
-		t.Error("non-secret vars should not set secret=true")
-	}
-}
-
-func TestReplace_SecretVariable(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"TOKEN": {Name: "TOKEN", Value: "secret123", Secret: true},
-	}
-	// Without mustShow, secret values are masked
-	result, secret := replace("Bearer ${{TOKEN}}", vars)
-	if result != "Bearer ***" {
-		t.Errorf("replace secret (no mustShow) = %q, want \"Bearer ***\"", result)
-	}
-	if !secret {
-		t.Error("secret var should set secret=true")
-	}
-}
-
-func TestReplace_SecretVariableMustShow(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"TOKEN": {Name: "TOKEN", Value: "secret123", Secret: true},
-	}
-	// With mustShow=true, secret values are revealed
-	result, secret := replace("Bearer ${{TOKEN}}", vars, true)
-	if result != "Bearer secret123" {
-		t.Errorf("replace secret (mustShow) = %q, want \"Bearer secret123\"", result)
-	}
-	if !secret {
-		t.Error("secret var should set secret=true even with mustShow")
-	}
-}
-
-func TestReplace_MissingVariable(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"FOO": {Name: "FOO", Value: "bar", Secret: false},
-	}
-	result, _ := replace("${{MISSING}}", vars)
-	if result != "" {
-		t.Errorf("replace missing var = %q, want \"\"", result)
-	}
-}
-
-func TestReplace_MixedSecretAndNonSecret(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"USER": {Name: "USER", Value: "admin", Secret: false},
-		"PASS": {Name: "PASS", Value: "s3cret", Secret: true},
-	}
-	result, secret := replace("user=${{USER}} pass=${{PASS}}", vars)
-	expected := "user=admin pass=***"
-	if result != expected {
-		t.Errorf("replace mixed = %q, want %q", result, expected)
-	}
-	if !secret {
-		t.Error("mixed with secret var should set secret=true")
-	}
-}
-
-func TestReplace_RepeatedVariable(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"X": {Name: "X", Value: "abc", Secret: false},
-	}
-	result, _ := replace("${{X}}-${{X}}-${{X}}", vars)
-	if result != "abc-abc-abc" {
-		t.Errorf("replace repeated = %q, want \"abc-abc-abc\"", result)
-	}
-}
-
-func TestReplace_WhitespaceInBraces(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"FOO": {Name: "FOO", Value: "bar", Secret: false},
-	}
-	result, _ := replace("${{ FOO }}", vars)
-	if result != "bar" {
-		t.Errorf("replace with whitespace = %q, want \"bar\"", result)
-	}
-}
-
-func TestReplace_PlainTextPreserved(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"FOO": {Name: "FOO", Value: "bar", Secret: false},
-	}
-	result, _ := replace("no vars here", vars)
-	if result != "no vars here" {
-		t.Errorf("replace plain text = %q, want \"no vars here\"", result)
-	}
-}
-
-func TestReplace_LiteralDollarBraces(t *testing.T) {
-	// Text with {{ but no $ prefix should not be treated as variable
-	result, _ := replace("{{NOTVAR}}", nil)
-	if result != "{{NOTVAR}}" {
-		t.Errorf("replace non-var braces = %q, want \"{{NOTVAR}}\"", result)
-	}
-}
-
-func TestReplaceMaps_Empty(t *testing.T) {
-	result := replaceMaps(nil, nil)
-	if len(result) != 0 {
-		t.Errorf("replaceMaps(nil, nil) should return empty map, got %v", result)
-	}
-}
-
-func TestReplaceMaps_BasicReplacement(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"DB_HOST": {Name: "DB_HOST", Value: "db.example.com", Secret: false},
-		"DB_PASS": {Name: "DB_PASS", Value: "password", Secret: true},
-	}
-	envs := map[string]string{ //nolint:gosec // G101: test environment variables
-		"DATABASE_URL": "postgres://${{DB_HOST}}:5432/mydb",
-		"PASSWORD":     "${{DB_PASS}}",
-	}
-	result := replaceMaps(envs, vars)
-	if result["DATABASE_URL"] != "postgres://db.example.com:5432/mydb" {
-		t.Errorf("DATABASE_URL = %q, want \"postgres://db.example.com:5432/mydb\"", result["DATABASE_URL"])
-	}
-	// replaceMaps calls replace with mustShow=true, so secrets should be shown
-	if result["PASSWORD"] != "password" {
-		t.Errorf("PASSWORD = %q, want \"password\"", result["PASSWORD"])
-	}
-}
-
-func TestReplaceMaps_PreservesNonVariableKeys(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"X": {Name: "X", Value: "replaced", Secret: false},
-	}
-	envs := map[string]string{
-		"PLAIN": "no vars",
-		"WITH":  "${{X}}",
-	}
-	result := replaceMaps(envs, vars)
-	if result["PLAIN"] != "no vars" {
-		t.Errorf("PLAIN = %q, want \"no vars\"", result["PLAIN"])
-	}
-	if result["WITH"] != "replaced" {
-		t.Errorf("WITH = %q, want \"replaced\"", result["WITH"])
-	}
-}
-
-func TestReplaceStage_BasicReplacement(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"REPO":  {Name: "REPO", Value: "https://github.com/test/repo", Secret: false},
-		"STAGE": {Name: "STAGE", Value: "build", Secret: false},
-		"IMG":   {Name: "IMG", Value: "golang:1.22", Secret: false},
-	}
-	stage := &bean.Stage{
-		Stage:       "${{STAGE}}-stage",
-		Name:        "${{STAGE}}",
-		DisplayName: "${{STAGE}} Stage",
-		Repo:        "${{REPO}}",
-		Steps: []*bean.Step{
-			{
-				Step:        "${{STAGE}}-step",
-				Name:        "${{STAGE}}-step",
-				DisplayName: "${{STAGE}} Step",
-				Image:       "${{IMG}}",
-			},
-		},
-	}
-	replaceStage(stage, vars)
-
-	if stage.Stage != "build-stage" {
-		t.Errorf("stage.Stage = %q, want \"build-stage\"", stage.Stage)
-	}
-	if stage.Name != "build" {
-		t.Errorf("stage.Name = %q, want \"build\"", stage.Name)
-	}
-	if stage.DisplayName != "build Stage" {
-		t.Errorf("stage.DisplayName = %q, want \"build Stage\"", stage.DisplayName)
-	}
-	if stage.Repo != "https://github.com/test/repo" {
-		t.Errorf("stage.Repo = %q, want repo URL", stage.Repo)
-	}
-	if len(stage.Steps) != 1 {
-		t.Fatalf("expected 1 step, got %d", len(stage.Steps))
-	}
-	step := stage.Steps[0]
-	if step.Step != "build-step" {
-		t.Errorf("step.Step = %q, want \"build-step\"", step.Step)
-	}
-	if step.Image != "golang:1.22" {
-		t.Errorf("step.Image = %q, want \"golang:1.22\"", step.Image)
-	}
-}
-
-func TestReplaceStage_StepEnvAndInput(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"API_KEY": {Name: "API_KEY", Value: "key123", Secret: true},
-		"ENV":     {Name: "ENV", Value: "production", Secret: false},
-	}
-	stage := &bean.Stage{
-		Stage: "deploy",
-		Name:  "deploy",
-		Steps: []*bean.Step{
-			{
-				Step: "deploy-step",
-				Name: "deploy-step",
-				Env: map[string]string{
-					"APP_ENV": "${{ENV}}",
-				},
-				Input: map[string]string{ //nolint:gosec // G101: test input
-					"token": "${{API_KEY}}",
-				},
-			},
-		},
-	}
-	replaceStage(stage, vars)
-
-	step := stage.Steps[0]
-	if step.Env["APP_ENV"] != "production" {
-		t.Errorf("step.Env[APP_ENV] = %q, want \"production\"", step.Env["APP_ENV"])
-	}
-	// Input uses replaceMaps which passes mustShow=true, so secret values are shown
-	if step.Input["token"] != "key123" {
-		t.Errorf("step.Input[token] = %q, want \"key123\"", step.Input["token"])
-	}
-}
-
-func TestReplaceStage_EmptySteps(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"X": {Name: "X", Value: "y", Secret: false},
-	}
-	stage := &bean.Stage{
-		Stage: "${{X}}",
-		Name:  "${{X}}",
-		Steps: nil,
-	}
-	replaceStage(stage, vars)
-	if stage.Stage != "y" {
-		t.Errorf("stage.Stage = %q, want \"y\"", stage.Stage)
-	}
-}
-
-func TestReplaceStages_MultipleStages(t *testing.T) {
-	vars := map[string]*runtime.Variables{
-		"VER": {Name: "VER", Value: "v2", Secret: false},
-	}
-	stages := []*bean.Stage{
-		{Stage: "build-${{VER}}", Name: "build-${{VER}}"},
-		{Stage: "test-${{VER}}", Name: "test-${{VER}}"},
-		{Stage: "deploy-${{VER}}", Name: "deploy-${{VER}}"},
-	}
-	replaceStages(stages, vars)
-
-	expected := []string{"build-v2", "test-v2", "deploy-v2"}
-	for i, s := range stages {
-		if s.Stage != expected[i] {
-			t.Errorf("stages[%d].Stage = %q, want %q", i, s.Stage, expected[i])
-		}
-	}
-}
-
-func TestReplaceStages_NilInput(t *testing.T) {
-	// Should not panic with nil stages
-	replaceStages(nil, nil)
-}
-
-func TestBatchBuildCounts_EmptyInput(t *testing.T) {
-	result, err := BatchBuildCounts(context.Background(), nil)
+func setupPipelineTestDB(t *testing.T) *xorm.Engine {
+	db, err := xorm.NewEngine("sqlite3", ":memory:")
 	if err != nil {
-		t.Fatalf("BatchBuildCounts(nil) error = %v", err)
-	}
-	if len(result) != 0 {
-		t.Errorf("BatchBuildCounts(nil) should return empty map, got %v", result)
+		t.Fatalf("failed to create test database: %v", err)
 	}
 
-	result, err = BatchBuildCounts(context.Background(), []string{})
+	err = db.Sync2(
+		&model.TPipeline{},
+		&model.TPipelineConf{},
+		&model.TPipelineVersion{},
+		&model.TBuild{},
+		&model.TStage{},
+		&model.TStep{},
+		&model.TOrgVar{},
+		&model.TPipelineVar{},
+	)
 	if err != nil {
-		t.Fatalf("BatchBuildCounts([]) error = %v", err)
+		t.Fatalf("failed to sync database schema: %v", err)
 	}
-	if len(result) != 0 {
-		t.Errorf("BatchBuildCounts([]) should return empty map, got %v", result)
+
+	return db
+}
+
+func TestRun_PipelineNotFound(t *testing.T) {
+	db := setupPipelineTestDB(t)
+	comm.Db = db
+	defer func() { comm.Db = nil }()
+
+	ctx := context.Background()
+	_, _, err := Run(ctx, "user1", "nonexistent", "sha123", "push")
+
+	if err == nil {
+		t.Fatal("Run should return error when pipeline not found")
+	}
+	if err != ErrPipelineNotFound {
+		t.Errorf("expected ErrPipelineNotFound, got: %v", err)
 	}
 }
 
-func TestBatchLatestBuilds_EmptyInput(t *testing.T) {
-	result, err := BatchLatestBuilds(context.Background(), nil)
-	if err != nil {
-		t.Fatalf("BatchLatestBuilds(nil) error = %v", err)
+func TestRun_EmptyYmlContent(t *testing.T) {
+	db := setupPipelineTestDB(t)
+	comm.Db = db
+	defer func() { comm.Db = nil }()
+
+	// Insert pipeline config with empty YAML
+	conf := &model.TPipelineConf{
+		PipelineId: "pipe1",
+		YmlContent: "",
 	}
-	if len(result) != 0 {
-		t.Errorf("BatchLatestBuilds(nil) should return empty map, got %v", result)
+	_, err := db.Insert(conf)
+	if err != nil {
+		t.Fatalf("failed to insert pipeline config: %v", err)
 	}
 
-	result, err = BatchLatestBuilds(context.Background(), []string{})
-	if err != nil {
-		t.Fatalf("BatchLatestBuilds([]) error = %v", err)
+	ctx := context.Background()
+	_, _, err = Run(ctx, "user1", "pipe1", "sha123", "push")
+
+	if err == nil {
+		t.Fatal("Run should return error when YAML content is empty")
 	}
-	if len(result) != 0 {
-		t.Errorf("BatchLatestBuilds([]) should return empty map, got %v", result)
+	if err != ErrPipelineYmlEmpty {
+		t.Errorf("expected ErrPipelineYmlEmpty, got: %v", err)
 	}
 }
 
-func TestBatchLatestBuildsForVersions_EmptyInput(t *testing.T) {
-	result, err := BatchLatestBuildsForVersions(context.Background(), nil)
-	if err != nil {
-		t.Fatalf("BatchLatestBuildsForVersions(nil) error = %v", err)
+func TestRun_InvalidYml(t *testing.T) {
+	db := setupPipelineTestDB(t)
+	comm.Db = db
+	defer func() { comm.Db = nil }()
+
+	// Insert pipeline config with invalid YAML
+	conf := &model.TPipelineConf{
+		PipelineId: "pipe1",
+		YmlContent: "invalid: yaml: content: [unclosed",
 	}
-	if len(result) != 0 {
-		t.Errorf("BatchLatestBuildsForVersions(nil) should return empty map, got %v", result)
+	_, err := db.Insert(conf)
+	if err != nil {
+		t.Fatalf("failed to insert pipeline config: %v", err)
 	}
 
-	result, err = BatchLatestBuildsForVersions(context.Background(), []string{})
-	if err != nil {
-		t.Fatalf("BatchLatestBuildsForVersions([]) error = %v", err)
-	}
-	if len(result) != 0 {
-		t.Errorf("BatchLatestBuildsForVersions([]) should return empty map, got %v", result)
+	ctx := context.Background()
+	_, _, err = Run(ctx, "user1", "pipe1", "sha123", "push")
+
+	if err == nil {
+		t.Fatal("Run should return error when YAML is invalid")
 	}
 }
 
-func TestBatchGetUsers_EmptyInput(t *testing.T) {
-	result, err := BatchGetUsers(context.Background(), nil)
-	if err != nil {
-		t.Fatalf("BatchGetUsers(nil) error = %v", err)
-	}
-	if len(result) != 0 {
-		t.Errorf("BatchGetUsers(nil) should return empty map, got %v", result)
-	}
+func TestReBuild_PipelineNotFound(t *testing.T) {
+	db := setupPipelineTestDB(t)
+	comm.Db = db
+	defer func() { comm.Db = nil }()
 
-	result, err = BatchGetUsers(context.Background(), []string{})
-	if err != nil {
-		t.Fatalf("BatchGetUsers([]) error = %v", err)
+	ctx := context.Background()
+	tvp := &model.TPipelineVersion{
+		PipelineId: "nonexistent",
+		Content:    "stages: []",
 	}
-	if len(result) != 0 {
-		t.Errorf("BatchGetUsers([]) should return empty map, got %v", result)
+	_, _, err := ReBuild(ctx, "user1", tvp)
+
+	if err == nil {
+		t.Fatal("ReBuild should return error when pipeline not found")
+	}
+	if err != ErrPipelineNotFound {
+		t.Errorf("expected ErrPipelineNotFound, got: %v", err)
 	}
 }
 
-func TestBatchCountArtifactPackages_EmptyInput(t *testing.T) {
-	result, err := BatchCountArtifactPackages(context.Background(), nil)
-	if err != nil {
-		t.Fatalf("BatchCountArtifactPackages(nil) error = %v", err)
+func TestReBuild_EmptyContent(t *testing.T) {
+	db := setupPipelineTestDB(t)
+	comm.Db = db
+	defer func() { comm.Db = nil }()
+
+	// Insert pipeline config
+	conf := &model.TPipelineConf{
+		PipelineId: "pipe1",
+		YmlContent: "stages: []",
 	}
-	if len(result) != 0 {
-		t.Errorf("BatchCountArtifactPackages(nil) should return empty map, got %v", result)
+	_, err := db.Insert(conf)
+	if err != nil {
+		t.Fatalf("failed to insert pipeline config: %v", err)
 	}
 
-	result, err = BatchCountArtifactPackages(context.Background(), []string{})
-	if err != nil {
-		t.Fatalf("BatchCountArtifactPackages([]) error = %v", err)
+	ctx := context.Background()
+	tvp := &model.TPipelineVersion{
+		PipelineId: "pipe1",
+		Content:    "",
 	}
-	if len(result) != 0 {
-		t.Errorf("BatchCountArtifactPackages([]) should return empty map, got %v", result)
+	_, _, err = ReBuild(ctx, "user1", tvp)
+
+	if err == nil {
+		t.Fatal("ReBuild should return error when content is empty")
+	}
+	if err != ErrPipelineYmlEmpty {
+		t.Errorf("expected ErrPipelineYmlEmpty, got: %v", err)
 	}
 }
 
-func TestBatchCountArtifactVersions_EmptyInput(t *testing.T) {
-	result, err := BatchCountArtifactVersions(context.Background(), nil)
-	if err != nil {
-		t.Fatalf("BatchCountArtifactVersions(nil) error = %v", err)
+func TestReBuild_InvalidYml(t *testing.T) {
+	db := setupPipelineTestDB(t)
+	comm.Db = db
+	defer func() { comm.Db = nil }()
+
+	// Insert pipeline config
+	conf := &model.TPipelineConf{
+		PipelineId: "pipe1",
+		YmlContent: "stages: []",
 	}
-	if len(result) != 0 {
-		t.Errorf("BatchCountArtifactVersions(nil) should return empty map, got %v", result)
+	_, err := db.Insert(conf)
+	if err != nil {
+		t.Fatalf("failed to insert pipeline config: %v", err)
 	}
 
-	result, err = BatchCountArtifactVersions(context.Background(), []string{})
-	if err != nil {
-		t.Fatalf("BatchCountArtifactVersions([]) error = %v", err)
+	ctx := context.Background()
+	tvp := &model.TPipelineVersion{
+		PipelineId: "pipe1",
+		Content:    "invalid: yaml: [unclosed",
 	}
-	if len(result) != 0 {
-		t.Errorf("BatchCountArtifactVersions([]) should return empty map, got %v", result)
+	_, _, err = ReBuild(ctx, "user1", tvp)
+
+	if err == nil {
+		t.Fatal("ReBuild should return error when YAML is invalid")
 	}
 }

@@ -115,10 +115,8 @@ func parsePushHook(data []byte) (*hook.PushHook, error) {
 }
 func convertPushHook(gp *giteaPushHook) *hook.PushHook {
 	branch := ""
-	if gp.Ref != "" {
-		if len(strings.Split(gp.Ref, "/")) > 2 {
-			branch = strings.Split(gp.Ref, "/")[2]
-		}
+	if gp.Ref != "" && strings.HasPrefix(gp.Ref, "refs/heads/") {
+		branch = strings.TrimPrefix(gp.Ref, "refs/heads/")
 	}
 	return &hook.PushHook{
 		Ref: gp.Ref,
@@ -144,10 +142,15 @@ func convertPushHook(gp *giteaPushHook) *hook.PushHook {
 		},
 		Before: gp.Before,
 		After:  gp.After,
-		Commit: hook.Commit{
-			Message: gp.Commits[0].Message,
-			Link:    gp.Commits[0].Url,
-		},
+		Commit: func() hook.Commit {
+			if len(gp.Commits) > 0 {
+				return hook.Commit{
+					Message: gp.Commits[0].Message,
+					Link:    gp.Commits[0].Url,
+				}
+			}
+			return hook.Commit{}
+		}(),
 		Sender: hook.User{
 			UserName: gp.Sender.Login,
 		},
@@ -250,6 +253,33 @@ func convertCommentHook(gp *giteaCommentHook) (*hook.PullRequestCommentHook, err
 	pullRequestHook, err := convertPullRequestURL(gp)
 	if err != nil {
 		return nil, fmt.Errorf("gitea: convert comment hook: %w", err)
+	}
+	if pullRequestHook == nil {
+		// convertPullRequestURL is not yet implemented (TODO).
+		// Return a minimal comment hook with available data instead of panicking.
+		return &hook.PullRequestCommentHook{
+			Action: hook.EventsTypeComment,
+			Repo: hook.Repository{
+				Name:       gp.Repository.Name,
+				FullName:   gp.Repository.FullName,
+				CloneURL:   gp.Repository.CloneUrl,
+				HtmlURL:    gp.Repository.HtmlUrl,
+				SshURL:     gp.Repository.SshUrl,
+				Private:    gp.Repository.Private,
+				Owner:      gp.Repository.Owner.Login,
+				RepoType:   "gitea",
+				RepoOpenid: strconv.Itoa(gp.Repository.Id),
+			},
+			Comment: hook.Comment{
+				Body: gp.Comment.Body,
+				Author: hook.User{
+					UserName: gp.Comment.User.Login,
+				},
+			},
+			Sender: hook.User{
+				UserName: gp.Sender.Login,
+			},
+		}, nil
 	}
 	return &hook.PullRequestCommentHook{
 		Action: hook.EventsTypeComment,
