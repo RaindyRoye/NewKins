@@ -15,9 +15,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// timerRefreshInterval is the fallback polling interval used by the timer
+// engine when no tasks are scheduled. It also bounds the maximum latency
+// before a newly added timer is picked up by the run loop.
+const timerRefreshInterval = 30 * time.Second
+
 type TimerEngine struct {
 	tasklk sync.RWMutex
 	tasks  map[string]*timerExec
+	// wakeCh is a buffered channel used to notify the run loop that a new
+	// timer has been added or an existing one refreshed. Buffered with
+	// capacity 1 so that Wake never blocks even if the run loop is busy.
+	wakeCh chan struct{}
+	// stopCh is closed by Stop to signal the run loop to exit immediately.
+	stopCh chan struct{}
+	// stopOnce ensures Stop is idempotent and safe to call multiple times.
+	stopOnce sync.Once
 }
 type timerExec struct {
 	tt   *model.TTrigger
@@ -26,60 +39,171 @@ type timerExec struct {
 	tick time.Time
 }
 
+// StartTimerEngine creates a new TimerEngine and launches its background run
+// loop. The loop uses a dynamic ticker that adjusts to the nearest scheduled
+// task, eliminating the previous busy-wait pattern that polled every 10ms.
 func StartTimerEngine() *TimerEngine {
 	c := &TimerEngine{
-		tasks: make(map[string]*timerExec),
+		tasks:  make(map[string]*timerExec),
+		wakeCh: make(chan struct{}, 1),
+		stopCh: make(chan struct{}),
 	}
 	go func() {
 		defer util.RecoverLog("TimerEngine.main")
 		c.refresh()
-		for comm.Ctx.Err() == nil {
-			c.run()
-			time.Sleep(time.Millisecond * 10)
-		}
+		c.eventLoop()
 	}()
 	return c
 }
+
+// eventLoop is the main run loop. It rebuilds a ticker after every wake-up so
+// the interval adapts to the nearest pending task. When no tasks are scheduled
+// it falls back to timerRefreshInterval to keep the loop alive for refreshes.
+func (c *TimerEngine) eventLoop() {
+	for comm.Ctx.Err() == nil {
+		interval := c.nextInterval()
+		ticker := time.NewTicker(interval)
+		select {
+		case <-c.stopCh:
+			ticker.Stop()
+			return
+		case <-comm.Ctx.Done():
+			ticker.Stop()
+			return
+		case <-c.wakeCh:
+			// Drain any pending notification to avoid stale signals
+			select {
+			case <-c.wakeCh:
+			default:
+			}
+			ticker.Stop()
+			c.run()
+		case <-ticker.C:
+			ticker.Stop()
+			c.run()
+		}
+	}
+}
+
+// nextInterval returns the duration until the nearest pending task tick, or
+// timerRefreshInterval when there are no scheduled tasks. The returned value
+// is always clamped to [1ms, timerRefreshInterval] to prevent zero-duration
+// ticks or excessive latency.
+func (c *TimerEngine) nextInterval() time.Duration {
+	c.tasklk.RLock()
+	defer c.tasklk.RUnlock()
+	if len(c.tasks) == 0 {
+		return timerRefreshInterval
+	}
+	nearest := time.Time{}
+	now := time.Now()
+	for _, v := range c.tasks {
+		if v.tick.IsZero() {
+			continue
+		}
+		if nearest.IsZero() || v.tick.Before(nearest) {
+			nearest = v.tick
+		}
+	}
+	// If no valid ticks found, return fallback interval
+	if nearest.IsZero() {
+		return timerRefreshInterval
+	}
+	// If tick is in the past, use short interval to process it promptly
+	if nearest.Before(now) {
+		return time.Millisecond
+	}
+	d := time.Until(nearest)
+	if d < time.Millisecond {
+		return time.Millisecond
+	}
+	if d > timerRefreshInterval {
+		return timerRefreshInterval
+	}
+	return d
+}
+
+// Stop signals the run loop to exit. Safe to call multiple times.
+func (c *TimerEngine) Stop() {
+	if c.stopCh != nil {
+		c.stopOnce.Do(func() {
+			close(c.stopCh)
+		})
+	}
+}
+
+// Wake notifies the run loop that a timer was added or refreshed and should
+// be re-evaluated. It is non-blocking and safe to call from any goroutine.
+func (c *TimerEngine) Wake() {
+	if c.wakeCh != nil {
+		select {
+		case c.wakeCh <- struct{}{}:
+		default:
+		}
+	}
+}
+
+// run iterates over all scheduled tasks and fires those whose tick is due.
+// It snapshots the task list under a read-lock, releases the lock, and then
+// executes each timer outside the lock to avoid blocking concurrent calls to
+// Refresh / Delete / resetOne while slow operations (service.TriggerTimer,
+// Mgr.BuildEgn().Put) are in flight.
 func (c *TimerEngine) run() {
 	defer util.RecoverLog("TimerEngine.run")
 
-	c.tasklk.Lock()
-	defer c.tasklk.Unlock()
+	c.tasklk.RLock()
+	snap := make([]*timerExec, 0, len(c.tasks))
 	for _, v := range c.tasks {
+		snap = append(snap, v)
+	}
+	c.tasklk.RUnlock()
+
+	for _, v := range snap {
+		if comm.Ctx.Err() != nil {
+			return
+		}
 		c.execItem(v)
 	}
 }
+
 func (c *TimerEngine) execItem(v *timerExec) {
 	defer util.RecoverLog("TimerEngine.execItem")
-	if time.Since(v.tick) > 0 {
-		now := time.Now()
-		logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", v.tt.Name, v.typ, now.Format(common.TimeFmt), v.tick.Format(common.TimeFmt))
-		switch v.typ {
-		case 0:
-			go func(id string) {
-				defer util.RecoverLog("TimerEngine.delete")
-				c.Delete(id)
-			}(v.tt.Id)
-			time.Sleep(time.Millisecond * 10)
-		case 1:
-			v.tick = now.Add(time.Minute)
-		case 2:
-			v.tick = now.Add(time.Hour)
-		case 3:
-			v.tick = now.Add(time.Hour * 24)
-		case 4:
-			v.tick = now.Add(time.Hour * 24 * 7)
-		case 5:
-			v.tick = now.Add(time.Hour * 24 * 30)
-		}
-
-		rb, err := service.TriggerTimer(comm.Ctx, v.tt)
-		if err != nil {
-			logrus.Errorf("TriggerTimer err:%v", err)
-		} else {
-			Mgr.BuildEgn().Put(rb)
-		}
+	if time.Since(v.tick) <= 0 {
+		return
 	}
+	now := time.Now()
+	logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", v.tt.Name, v.typ, now.Format(common.TimeFmt), v.tick.Format(common.TimeFmt))
+	switch v.typ {
+	case 0:
+		// One-shot: fire once then remove. Use a goroutine for the delete
+		// so it can acquire the task lock without risking deadlock here.
+		go func(id string) {
+			defer util.RecoverLog("TimerEngine.delete")
+			c.Delete(id)
+		}(v.tt.Id)
+	case 1:
+		v.tick = now.Add(time.Minute)
+	case 2:
+		v.tick = now.Add(time.Hour)
+	case 3:
+		v.tick = now.Add(time.Hour * 24)
+	case 4:
+		v.tick = now.Add(time.Hour * 24 * 7)
+	case 5:
+		v.tick = now.Add(time.Hour * 24 * 30)
+	}
+
+	// Trigger outside of any lock to avoid blocking concurrent operations.
+	rb, err := service.TriggerTimer(comm.Ctx, v.tt)
+	if err != nil {
+		logrus.Errorf("TriggerTimer err:%v", err)
+		return
+	}
+	if Mgr.BuildEgn() == nil {
+		logrus.Warnf("Timer(%s) fired but build engine is unavailable", v.tt.Name)
+		return
+	}
+	Mgr.BuildEgn().Put(rb)
 }
 
 func (c *TimerEngine) refresh() {
@@ -188,7 +312,13 @@ func (c *TimerEngine) Refresh(tmrid string) error {
 		c.Delete(tmrid)
 		return fmt.Errorf("trigger %s not found or disabled: %w", tmrid, ErrBuildNotFound)
 	}
-	return c.resetOne(tmr)
+	if err := c.resetOne(tmr); err != nil {
+		return err
+	}
+	// Notify the run loop so the new/updated timer is picked up immediately
+	// rather than waiting for the next fallback tick.
+	c.Wake()
+	return nil
 }
 func (c *TimerEngine) Delete(tmrid string) {
 	c.tasklk.Lock()

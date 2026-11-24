@@ -50,6 +50,9 @@ func Start() error {
 		// Block until context is canceled instead of busy-waiting.
 		<-comm.Ctx.Done()
 		Mgr.buildEgn.Stop()
+		if Mgr.timerEgn != nil {
+			Mgr.timerEgn.Stop()
+		}
 		if Mgr.shellRun != nil {
 			Mgr.shellRun.Stop()
 		}
