@@ -1,19 +1,20 @@
 package bean
 
 import (
+	"errors"
 	"testing"
 )
 
 func TestTriggerParamCheck(t *testing.T) {
 	tests := []struct {
-		name    string
-		param   TriggerParam
-		wantErr bool
-		errMsg  string
+		name        string
+		param       *TriggerParam
+		wantErr     bool
+		sentinelErr error
 	}{
 		{
 			name: "valid trigger param",
-			param: TriggerParam{
+			param: &TriggerParam{
 				PipelineId: "pipe-1",
 				Types:      "webhook",
 				Name:       "my-trigger",
@@ -23,53 +24,59 @@ func TestTriggerParamCheck(t *testing.T) {
 		},
 		{
 			name: "empty pipeline ID",
-			param: TriggerParam{
+			param: &TriggerParam{
 				PipelineId: "",
 				Types:      "webhook",
 				Name:       "my-trigger",
 				Params:     `{"hookType":"github"}`,
 			},
-			wantErr: true,
-			errMsg:  "pipeline ID is required",
+			wantErr:     true,
+			sentinelErr: ErrPipelineIdRequired,
 		},
 		{
 			name: "empty types",
-			param: TriggerParam{
+			param: &TriggerParam{
 				PipelineId: "pipe-1",
 				Types:      "",
 				Name:       "my-trigger",
 				Params:     `{"hookType":"github"}`,
 			},
-			wantErr: true,
-			errMsg:  "trigger type is required",
+			wantErr:     true,
+			sentinelErr: ErrTriggerTypeRequired,
 		},
 		{
 			name: "empty name",
-			param: TriggerParam{
+			param: &TriggerParam{
 				PipelineId: "pipe-1",
 				Types:      "webhook",
 				Name:       "",
 				Params:     `{"hookType":"github"}`,
 			},
-			wantErr: true,
-			errMsg:  "trigger name is required",
+			wantErr:     true,
+			sentinelErr: ErrTriggerNameRequired,
 		},
 		{
 			name: "empty params",
-			param: TriggerParam{
+			param: &TriggerParam{
 				PipelineId: "pipe-1",
 				Types:      "webhook",
 				Name:       "my-trigger",
 				Params:     "",
 			},
-			wantErr: true,
-			errMsg:  "trigger params is required",
+			wantErr:     true,
+			sentinelErr: ErrTriggerParamsRequired,
 		},
 		{
-			name:    "all fields empty",
-			param:   TriggerParam{},
-			wantErr: true,
-			errMsg:  "pipeline ID is required",
+			name:        "all fields empty",
+			param:       &TriggerParam{},
+			wantErr:     true,
+			sentinelErr: ErrPipelineIdRequired,
+		},
+		{
+			name:        "nil trigger param",
+			param:       nil,
+			wantErr:     true,
+			sentinelErr: nil, // nil param error is not a sentinel
 		},
 	}
 	for _, tt := range tests {
@@ -79,8 +86,8 @@ func TestTriggerParamCheck(t *testing.T) {
 				t.Errorf("TriggerParam.Check() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if err != nil && tt.errMsg != "" && err.Error() != tt.errMsg {
-				t.Errorf("TriggerParam.Check() error message = %q, want %q", err.Error(), tt.errMsg)
+			if err != nil && tt.sentinelErr != nil && !errors.Is(err, tt.sentinelErr) {
+				t.Errorf("TriggerParam.Check() error does not wrap sentinel %v, got: %v", tt.sentinelErr, err)
 			}
 		})
 	}

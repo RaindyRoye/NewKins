@@ -124,6 +124,9 @@ func CurrUserCacheCtx(ctx context.Context, c *gin.Context) (*model.TUser, bool) 
 	return GetUserCacheCtx(ctx, uids)
 }
 func IsAdmin(usr *model.TUser) bool {
+	if usr == nil {
+		return false
+	}
 	return usr.Id == "admin"
 }
 

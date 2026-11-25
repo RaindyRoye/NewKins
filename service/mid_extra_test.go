@@ -175,15 +175,11 @@ func TestIsAdmin_VariousUserIds(t *testing.T) {
 }
 
 func TestIsAdmin_NilUser(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Logf("IsAdmin(nil) panicked (expected - nil pointer dereference): %v", r)
-		}
-	}()
-	// IsAdmin(nil) will panic because it accesses usr.Id without nil check
-	// This test documents the behavior
+	// IsAdmin(nil) should return false (not panic) after the nil-guard fix.
 	result := IsAdmin(nil)
-	t.Logf("IsAdmin(nil) returned %v (no panic)", result)
+	if result != false {
+		t.Errorf("IsAdmin(nil) = %v, want false", result)
+	}
 }
 
 // --- LgUserKey tests ---
