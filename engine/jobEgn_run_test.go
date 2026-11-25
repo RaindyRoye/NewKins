@@ -225,7 +225,9 @@ func TestJobEngineRmExecConcurrent(t *testing.T) {
 		jobs:  make(map[string]*jobSync),
 	}
 
-	var wg sync.WaitGroup
+	// Phase 1: Populate the map with all executers BEFORE starting goroutines
+	// This prevents a race between map writes in setup and map deletes in rmExec
+	executers := make([]*executer, 0, 10)
 	for i := 0; i < 10; i++ {
 		name := "plugin-concurrent-" + string(rune('a'+i))
 		ex := &executer{
@@ -234,14 +236,21 @@ func TestJobEngineRmExecConcurrent(t *testing.T) {
 			jobwt: list.New(),
 		}
 		c.execs[name] = ex
+		executers = append(executers, ex)
+	}
+
+	// Phase 2: Launch all goroutines concurrently to call rmExec
+	var wg sync.WaitGroup
+	for _, ex := range executers {
 		wg.Add(1)
-		go func(n string, e *executer) {
+		go func(e *executer) {
 			defer wg.Done()
-			c.rmExec(n, e)
-		}(name, ex)
+			c.rmExec(e.plug, e)
+		}(ex)
 	}
 	wg.Wait()
 
+	// Verify all executers were removed
 	c.exelk.RLock()
 	remaining := len(c.execs)
 	c.exelk.RUnlock()
