@@ -401,8 +401,11 @@ func TestBuildTask_GenRunjob_StringCommands(t *testing.T) {
 	}
 
 	err := bt.genRunjob(stage, job)
-	// Will fail because no DB, but we're testing the code path
-	assert.Error(t, err)
+	// With nil DB, genRunjob now gracefully handles it by populating in-memory maps
+	// without persisting to database
+	assert.NoError(t, err)
+	assert.NotNil(t, job.runjb)
+	assert.NotEmpty(t, job.cmdmp)
 }
 
 // TestBuildTask_GenRunjob_SliceCommands tests genRunjob with slice commands
@@ -444,8 +447,11 @@ func TestBuildTask_GenRunjob_SliceCommands(t *testing.T) {
 	}
 
 	err := bt.genRunjob(stage, job)
-	// Will fail because no DB, but we're testing the code path
-	assert.Error(t, err)
+	// With nil DB, genRunjob now gracefully handles it by populating in-memory maps
+	// without persisting to database
+	assert.NoError(t, err)
+	assert.NotNil(t, job.runjb)
+	assert.NotEmpty(t, job.cmdmp)
 }
 
 // TestBuildTask_GenRunjob_StringSliceCommands tests genRunjob with []string commands
@@ -484,8 +490,11 @@ func TestBuildTask_GenRunjob_StringSliceCommands(t *testing.T) {
 	}
 
 	err := bt.genRunjob(stage, job)
-	// Will fail because no DB, but we're testing the code path
-	assert.Error(t, err)
+	// With nil DB, genRunjob now gracefully handles it by populating in-memory maps
+	// without persisting to database
+	assert.NoError(t, err)
+	assert.NotNil(t, job.runjb)
+	assert.NotEmpty(t, job.cmdmp)
 }
 
 // TestBuildTask_GenRunjob_GitStep tests genRunjob with git step
@@ -527,8 +536,11 @@ func TestBuildTask_GenRunjob_GitStep(t *testing.T) {
 	}
 
 	err := bt.genRunjob(stage, job)
-	// Will fail because no DB, but we're testing the code path
-	assert.Error(t, err)
+	// With nil DB, genRunjob now gracefully handles it by populating in-memory maps
+	// without persisting to database
+	assert.NoError(t, err)
+	assert.NotNil(t, job.runjb)
+	assert.NotEmpty(t, job.cmdmp)
 }
 
 // TestBuildTask_AppendCmds tests appendcmds method

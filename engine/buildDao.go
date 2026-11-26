@@ -26,6 +26,11 @@ func (c *BuildTask) taskCtx() context.Context {
 func (c *BuildTask) updateBuild(build *runtime.Build) {
 	defer util.RecoverLog("BuildTask.updateBuild")
 
+	if comm.Db == nil {
+		logrus.Warnf("BuildTask.updateBuild: comm.Db is nil, skipping database update for build %s", build.Id)
+		return
+	}
+
 	ctx := c.taskCtx()
 
 	e := &model.TBuild{
@@ -81,6 +86,11 @@ func (c *BuildTask) updateBuild(build *runtime.Build) {
 func (c *BuildTask) updateStage(stage *runtime.Stage) {
 	defer util.RecoverLog("BuildTask.updateStage")
 
+	if comm.Db == nil {
+		logrus.Warnf("BuildTask.updateStage: comm.Db is nil, skipping database update for stage %s", stage.Id)
+		return
+	}
+
 	ctx := c.taskCtx()
 
 	e := &model.TStage{
@@ -113,6 +123,11 @@ func (c *BuildTask) updateStage(stage *runtime.Stage) {
 }
 func (c *BuildTask) updateStep(job *jobSync) {
 	defer util.RecoverLog("BuildTask.updateStep")
+
+	if comm.Db == nil {
+		logrus.Warnf("BuildTask.updateStep: comm.Db is nil, skipping database update for step %s", job.step.Id)
+		return
+	}
 
 	ctx := c.taskCtx()
 
@@ -150,6 +165,11 @@ func (c *BuildTask) updateStep(job *jobSync) {
 func (c *BuildTask) updateStepCmd(cmd *cmdSync) {
 	defer util.RecoverLog("BuildTask.updateStepCmd")
 
+	if comm.Db == nil {
+		logrus.Warnf("BuildTask.updateStepCmd: comm.Db is nil, skipping database update for cmd %s", cmd.cmd.Id)
+		return
+	}
+
 	ctx := c.taskCtx()
 
 	cmd.RLock()
@@ -166,6 +186,9 @@ func (c *BuildTask) updateStepCmd(cmd *cmdSync) {
 	default:
 		cmde.Finished = cmd.finished
 		cols = append(cols, "finished")
+		if cmd.code != 0 {
+			cols = append(cols, "code")
+		}
 	}
 	_, err := comm.Db.Context(ctx).Cols(cols...).Where("id=?", cmd.cmd.Id).Update(cmde)
 	if err != nil {

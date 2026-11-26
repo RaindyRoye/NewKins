@@ -56,6 +56,14 @@ func (c *TimerEngine) run() {
 }
 func (c *TimerEngine) execItem(v *timerExec) {
 	defer util.RecoverLog("TimerEngine.execItem")
+	if v == nil || v.tt == nil {
+		logrus.Warnf("TimerEngine.execItem: nil timerExec or trigger, skipping")
+		return
+	}
+	if comm.Db == nil {
+		logrus.Warnf("TimerEngine.execItem: comm.Db is nil, skipping execution for timer %s", v.tt.Id)
+		return
+	}
 	if time.Since(v.tick) > 0 {
 		now := time.Now()
 		logrus.Debugf("Timer(%s[%d]:%s) tick on:%s", v.tt.Name, v.typ, now.Format(common.TimeFmt), v.tick.Format(common.TimeFmt))
@@ -89,6 +97,10 @@ func (c *TimerEngine) execItem(v *timerExec) {
 
 func (c *TimerEngine) refresh() {
 	defer util.RecoverLog("TimerEngine.refresh")
+	if comm.Db == nil {
+		logrus.Warnf("TimerEngine.refresh: comm.Db is nil, skipping refresh")
+		return
+	}
 	var ls []*model.TTrigger
 	if err := comm.Db.Context(comm.Ctx).Where("enabled = 1 AND types = 'timer'").Find(&ls); err != nil {
 		logrus.Errorf("TimerEngine refresh find err: %v", err)
@@ -104,6 +116,9 @@ func (c *TimerEngine) refresh() {
 }
 func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 	defer util.RecoverResult(&rterr, "TimerEngine.resetOne")
+	if tmr == nil {
+		return fmt.Errorf("%w: trigger is nil", ErrEmptyParams)
+	}
 	if tmr.Types != "timer" {
 		return fmt.Errorf("%w: expected 'timer', got '%s'", ErrInvalidTriggerType, tmr.Types)
 	}
@@ -183,6 +198,9 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 func (c *TimerEngine) Refresh(tmrid string) error {
 	if tmrid == "" {
 		return fmt.Errorf("timer id is empty: %w", ErrEmptyParams)
+	}
+	if comm.Db == nil {
+		return fmt.Errorf("database not initialized: %w", ErrRepositoryNil)
 	}
 	tmr := &model.TTrigger{}
 	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", tmrid).Get(tmr)

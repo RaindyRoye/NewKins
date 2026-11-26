@@ -180,6 +180,17 @@ func (c *BuildTask) genRunjob(stage *runtime.Stage, job *jobSync) (rterr error) 
 		return errors.New("command format empty")
 	} */
 	job.runjb = runjb
+	if comm.Db == nil {
+		// Without a database, we can't persist commands but we can still validate
+		// the job structure. Populate the in-memory maps and return successfully.
+		for _, v := range runjb.Commands {
+			job.cmdmp[v.Id] = &cmdSync{
+				cmd:    v,
+				status: common.BuildStatusPending,
+			}
+		}
+		return nil
+	}
 	for i, v := range runjb.Commands {
 		job.cmdmp[v.Id] = &cmdSync{
 			cmd:    v,
