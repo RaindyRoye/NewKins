@@ -68,7 +68,11 @@ func PostCtx(ctx context.Context, ul string, params *url.Values, timeout time.Du
 	request.Header = header
 	client := *defaultClient
 	client.Timeout = time.Second * timeout
-	return client.Do(request)
+	res, err := client.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("executing POST request: %w", err)
+	}
+	return res, nil
 }
 
 // Posts sends a POST request and returns the status code and response body.
@@ -131,7 +135,11 @@ func PostJSONCtx(ctx context.Context, ul string, params any, timeout time.Durati
 	request.Header = header
 	client := *defaultClient
 	client.Timeout = time.Second * timeout
-	return client.Do(request)
+	res, err := client.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("executing POST JSON request: %w", err)
+	}
+	return res, nil
 }
 
 // PostResult sends a POST request and unmarshals the JSON response into result.
@@ -147,7 +155,7 @@ func PostResultCtx(ctx context.Context, ul string, params *url.Values, result an
 	}
 	res, err := PostCtx(ctx, ul, params, timeout, hds...)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("PostResult: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
 	bts, err := io.ReadAll(res.Body)
@@ -176,7 +184,7 @@ func PostJSONResultCtx(ctx context.Context, ul string, params any, result any, t
 	}
 	res, err := PostJSONCtx(ctx, ul, params, timeout, hds...)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("PostJSONResult: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
 	bts, err := io.ReadAll(res.Body)

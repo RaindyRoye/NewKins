@@ -64,7 +64,7 @@ func findCountCtx(ctx context.Context, cds builder.Cond, data any) (int64, error
 func FindPage(ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
 	count, err := findCount(ses.Conds(), ls)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("FindPage: count: %w", err)
 	}
 	return findPages(ses, ls, count, page, size...)
 }
@@ -75,7 +75,7 @@ func FindPage(ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page,
 func FindPageCtx(ctx context.Context, ses *xorm.Session, ls any, page int64, size ...int64) (*bean.Page, error) {
 	count, err := findCountCtx(ctx, ses.Conds(), ls)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("FindPageCtx: count: %w", err)
 	}
 	dataSes := Db.Context(ctx).Where(ses.Conds())
 	return findPages(dataSes, ls, count, page, size...)
