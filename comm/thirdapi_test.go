@@ -1,7 +1,10 @@
 package comm
 
 import (
+	"sync"
 	"testing"
+
+	"github.com/gokins/gokins/thirdapi"
 )
 
 func TestGetThirdApi_GitlabTypo(t *testing.T) {
@@ -78,5 +81,65 @@ func TestGetThirdApi_GiteaError(t *testing.T) {
 	// If there IS an error, it should contain context about gitea.
 	if errStr := err.Error(); len(errStr) == 0 {
 		t.Error("error message should not be empty")
+	}
+}
+
+func TestGetThirdApi_ConcurrentAccess(t *testing.T) {
+	// Reset the global apiClient.
+	apiClient = nil
+	defer func() { apiClient = nil }()
+
+	const goroutines = 20
+	type result struct {
+		client *thirdapi.Client
+		err    error
+	}
+	results := make([]result, goroutines)
+
+	var wg sync.WaitGroup
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			c, err := GetThirdApi("github", "")
+			results[idx] = result{client: c, err: err}
+		}(i)
+	}
+	wg.Wait()
+
+	// All goroutines should have received the same client instance.
+	expected := results[0].client
+	for i, r := range results {
+		if r.err != nil {
+			t.Errorf("goroutine %d returned error: %v", i, r.err)
+		}
+		if r.client != expected {
+			t.Errorf("goroutine %d got different client instance, expected concurrent safety", i)
+		}
+	}
+}
+
+func TestGetThirdApi_NoDoubleInit(t *testing.T) {
+	// Reset the global apiClient.
+	apiClient = nil
+	defer func() { apiClient = nil }()
+
+	// First call creates the client.
+	c1, err := GetThirdApi("github", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Directly overwrite apiClient to nil to simulate a race condition
+	// where another goroutine might have set it between the check and the assignment.
+	// With the mutex, this should NOT happen during concurrent access.
+	// Here we just verify that after a successful init, subsequent calls
+	// return the same cached client even with a different provider name.
+	c2, err := GetThirdApi("gitee", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if c1 != c2 {
+		t.Error("expected cached client to be returned regardless of provider argument")
 	}
 }

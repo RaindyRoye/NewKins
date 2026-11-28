@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -180,12 +181,21 @@ func (c *TimerEngine) resetOne(tmr *model.TTrigger) (rterr error) {
 	}
 	return nil
 }
+
+// Refresh reloads a single timer trigger from the database using the
+// global context. Prefer RefreshCtx when a request context is available.
 func (c *TimerEngine) Refresh(tmrid string) error {
+	return c.RefreshCtx(comm.Ctx, tmrid)
+}
+
+// RefreshCtx reloads a single timer trigger from the database with explicit
+// context support for the database query, enabling cancellation and timeout.
+func (c *TimerEngine) RefreshCtx(ctx context.Context, tmrid string) error {
 	if tmrid == "" {
 		return fmt.Errorf("timer id is empty: %w", ErrEmptyParams)
 	}
 	tmr := &model.TTrigger{}
-	ok, err := comm.Db.Context(comm.Ctx).Where("id=?", tmrid).Get(tmr)
+	ok, err := comm.Db.Context(ctx).Where("id=?", tmrid).Get(tmr)
 	if err != nil {
 		return fmt.Errorf("query trigger %s: %w", tmrid, err)
 	}
