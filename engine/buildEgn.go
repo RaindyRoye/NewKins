@@ -78,29 +78,60 @@ func (c *BuildEngine) Stop() {
 }
 func (c *BuildEngine) init() {
 	cont := "server restart"
-	if _, err := comm.Db.Context(comm.Ctx).Exec(
-		"update `t_build` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
+
+	// Use a single transaction for all updates to ensure atomicity
+	// and reduce database round trips. If any update fails, the transaction
+	// is rolled back and logged, but the engine continues starting up.
+	session := comm.Db.NewSession()
+	defer func() { _ = session.Close() }()
+	if err := session.Begin(); err != nil {
+		logrus.Errorf("BuildEngine init: failed to begin transaction: %v", err)
+		return
+	}
+
+	// Cancel pending builds
+	if _, err := session.Exec(
+		"UPDATE `t_build` SET `status`=?, `error`=? WHERE `status`!=? AND `status`!=? AND `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	); err != nil {
 		logrus.Errorf("BuildEngine init: failed to cancel pending builds: %v", err)
+		_ = session.Rollback()
+		return
 	}
-	if _, err := comm.Db.Context(comm.Ctx).Exec(
-		"update `t_stage` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
+
+	// Cancel pending stages
+	if _, err := session.Exec(
+		"UPDATE `t_stage` SET `status`=?, `error`=? WHERE `status`!=? AND `status`!=? AND `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	); err != nil {
 		logrus.Errorf("BuildEngine init: failed to cancel pending stages: %v", err)
+		_ = session.Rollback()
+		return
 	}
-	if _, err := comm.Db.Context(comm.Ctx).Exec(
-		"update `t_step` set `status`=?,`error`=? where `status`!=? and `status`!=? and `status`!=?",
+
+	// Cancel pending steps
+	if _, err := session.Exec(
+		"UPDATE `t_step` SET `status`=?, `error`=? WHERE `status`!=? AND `status`!=? AND `status`!=?",
 		common.BuildStatusCancel, cont, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	); err != nil {
 		logrus.Errorf("BuildEngine init: failed to cancel pending steps: %v", err)
+		_ = session.Rollback()
+		return
 	}
-	if _, err := comm.Db.Context(comm.Ctx).Exec(
-		"update `t_cmd_line` set `status`=? where `status`!=? and `status`!=? and `status`!=?",
+
+	// Cancel pending command lines
+	if _, err := session.Exec(
+		"UPDATE `t_cmd_line` SET `status`=? WHERE `status`!=? AND `status`!=? AND `status`!=?",
 		common.BuildStatusCancel, common.BuildStatusOk, common.BuildStatusError, common.BuildStatusCancel,
 	); err != nil {
 		logrus.Errorf("BuildEngine init: failed to cancel pending cmd lines: %v", err)
+		_ = session.Rollback()
+		return
+	}
+
+	if err := session.Commit(); err != nil {
+		logrus.Errorf("BuildEngine init: failed to commit transaction: %v", err)
+		_ = session.Rollback()
 	}
 }
 
